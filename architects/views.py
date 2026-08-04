@@ -3,6 +3,7 @@ from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
+from applications.models import Application
 from architects.forms import ArchitectProfileForm, PortfolioImageForm, PortfolioProjectForm
 from architects.models import ArchitectProfile, Style
 from wallet.models import Wallet
@@ -46,7 +47,10 @@ def onboarding(request):
 @architect_required
 def dashboard(request):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
-    return render(request, "architects/dashboard.html", {"profile": profile})
+    open_applications = Application.objects.filter(status=Application.Status.OPEN)
+    return render(request, "architects/dashboard.html", {
+        "profile": profile, "open_applications": open_applications,
+    })
 
 
 @architect_required

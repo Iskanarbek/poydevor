@@ -69,13 +69,76 @@
   </div>
 
   <div x-show="tab === 'arizalar'">
-    {% comment %}filled in Chunk 4{% endcomment %}
-    <p class="text-sm text-slate-400">Bu bo'lim tez orada ishga tushadi.</p>
+    <div class="space-y-4">
+      {% for offer in profile.offers.all %}
+        <div class="border border-gray-200 rounded-xl p-5">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+            <div>
+              <a href="{% url 'applications:detail' offer.application.pk %}" class="font-medium text-slate-900 hover:underline">
+                {{ offer.application.location }} — {{ offer.application.rooms_count }} xona
+              </a>
+              <p class="text-xs text-slate-400">
+                {% if offer.source == 'architect_applied' %}Siz qatnashdingiz{% else %}Foydalanuvchi taklif qildi{% endif %}
+              </p>
+            </div>
+            <span class="text-xs font-medium px-2.5 py-1 rounded-full
+              {% if offer.status == 'pending' %}bg-amber-50 text-amber-700
+              {% elif offer.status == 'accepted' %}bg-green-50 text-green-700
+              {% elif offer.status == 'completed' %}bg-gray-100 text-gray-600
+              {% else %}bg-red-50 text-red-700{% endif %}">
+              {{ offer.get_status_display }}
+            </span>
+          </div>
+
+          {% if offer.status == 'accepted' or offer.status == 'completed' %}
+            <p class="text-sm text-slate-600 mb-3">Foydalanuvchi telefoni: {{ offer.application.owner.phone }}</p>
+          {% endif %}
+
+          {% if offer.status == 'pending' and offer.source == 'user_invited' %}
+            <div class="flex gap-2">
+              <form method="post" action="{% url 'offers:respond' offer.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="accept">
+                <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+                  Qabul qilish
+                </button>
+              </form>
+              <form method="post" action="{% url 'offers:respond' offer.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="decision" value="reject">
+                <button type="submit" class="text-sm border border-gray-300 text-slate-700 font-medium rounded-lg px-4 py-2 hover:border-gray-400 transition">
+                  Rad etish
+                </button>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      {% empty %}
+        <p class="text-sm text-slate-400">Hozircha arizalar yo'q.</p>
+      {% endfor %}
+    </div>
   </div>
 
   <div x-show="tab === 'elonlar'">
-    {% comment %}filled in Chunk 5{% endcomment %}
-    <p class="text-sm text-slate-400">Bu bo'lim tez orada ishga tushadi.</p>
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for application in open_applications %}
+        <div class="border border-gray-200 rounded-xl p-4">
+          <h3 class="font-medium text-slate-900">{{ application.location }} — {{ application.rooms_count }} xona</h3>
+          <p class="text-sm text-slate-500 mb-1">
+            {% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Maydon noma'lum{% endif %}
+          </p>
+          {% if application.budget %}<p class="text-sm text-slate-500 mb-3">Byudjet: {{ application.budget }}</p>{% endif %}
+          <form method="post" action="{% url 'offers:architect_apply' application.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+              Qatnashish (20 tanga)
+            </button>
+          </form>
+        </div>
+      {% empty %}
+        <p class="text-sm text-slate-400">Hozircha ochiq e'lonlar yo'q.</p>
+      {% endfor %}
+    </div>
   </div>
 </div>
 {% endblock %}

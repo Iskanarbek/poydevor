@@ -40,6 +40,63 @@
     </dd>
   </dl>
 
-  {% comment %}offers list added in Chunk 4{% endcomment %}
+  <h2 class="text-lg font-semibold text-slate-900 mt-10 mb-4">Arizalar</h2>
+  <div class="space-y-4">
+    {% for offer in application.offers.all %}
+      <div class="border border-gray-200 rounded-xl p-5">
+        <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+          <a href="{% url 'architects:detail' offer.architect.id %}" class="font-medium text-slate-900 hover:underline">
+            {{ offer.architect }}
+          </a>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full
+            {% if offer.status == 'pending' %}bg-amber-50 text-amber-700
+            {% elif offer.status == 'accepted' %}bg-green-50 text-green-700
+            {% elif offer.status == 'completed' %}bg-gray-100 text-gray-600
+            {% else %}bg-red-50 text-red-700{% endif %}">
+            {{ offer.get_status_display }}
+          </span>
+        </div>
+
+        {% if offer.status == 'accepted' or offer.status == 'completed' %}
+          <div class="text-sm text-slate-600 mb-3">
+            <p>Telefon: {{ offer.architect.user.phone }}</p>
+            {% if offer.architect.telegram_username %}
+              <p>Telegram: @{{ offer.architect.telegram_username }}</p>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if offer.status == 'pending' and offer.source == 'architect_applied' %}
+          <div class="flex gap-2">
+            <form method="post" action="{% url 'offers:user_respond' offer.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="decision" value="accept">
+              <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+                Qabul qilish
+              </button>
+            </form>
+            <form method="post" action="{% url 'offers:user_respond' offer.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="decision" value="reject">
+              <button type="submit" class="text-sm border border-gray-300 text-slate-700 font-medium rounded-lg px-4 py-2 hover:border-gray-400 transition">
+                Rad etish
+              </button>
+            </form>
+          </div>
+        {% endif %}
+
+        {% if offer.status == 'accepted' %}
+          <form method="post" action="{% url 'offers:complete' offer.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+              Loyihani yakunlash
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="text-sm text-slate-400">Hozircha arizalar yo'q.</p>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
