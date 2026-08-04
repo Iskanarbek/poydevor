@@ -71,6 +71,14 @@
       border-color: #B5562A;
       box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.15);
     }
+
+    /* Highlights whichever project card a URL fragment (#project-<id>) points
+       to, e.g. arriving from the project gallery, so it's visually distinct
+       from its siblings instead of just scrolled into view. */
+    .target-highlight:target {
+      border-color: #B5562A;
+      box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.25);
+    }
   </style>
 </head>
 <body class="bg-cream-50 text-charcoal-900 min-h-screen flex flex-col">

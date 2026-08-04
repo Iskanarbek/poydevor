@@ -69,7 +69,7 @@
 <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Portfolio</h2>
 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for project in projects %}
-    <div id="project-{{ project.pk }}" class="border border-charcoal-200 rounded-2xl bg-white shadow-sm overflow-hidden scroll-mt-24">
+    <div id="project-{{ project.pk }}" class="target-highlight border border-charcoal-200 rounded-2xl bg-white shadow-sm overflow-hidden scroll-mt-24">
       <div
         x-data="{
           images: [{% for image in project.images.all %}'{{ image.image.url }}',{% endfor %}],
@@ -95,7 +95,7 @@
       <div class="p-4">
         <h3 class="font-serif font-medium text-charcoal-900">{{ project.title }}</h3>
         {% if project.style %}<p class="text-xs text-charcoal-500 mb-1">{{ project.style }}</p>{% endif %}
-        <p class="text-sm text-charcoal-600">{{ project.description|truncatewords:20 }}</p>
+        <p class="text-sm text-charcoal-600">{{ project.description }}</p>
       </div>
     </div>
   {% empty %}
