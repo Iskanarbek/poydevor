@@ -93,6 +93,7 @@
       <span class="text-xl font-serif font-semibold tracking-tight text-charcoal-900 group-hover:text-clay-700 transition">Poydevor</span>
     </a>
     <div class="flex gap-4 text-sm items-center">
+      <a href="{% url 'architects:project_gallery' %}" class="text-charcoal-600 hover:text-charcoal-900">Barcha loyihalar</a>
       {% if user.is_authenticated %}
         {% if architect_wallet %}
           <a href="{% url 'wallet:dashboard' %}" class="flex items-center gap-1.5 rounded-full bg-clay-50 border border-clay-200 text-clay-700 font-medium px-3 py-1.5 hover:bg-clay-100 transition">
@@ -106,7 +107,6 @@
         {% endif %}
         {% if user.role == 'user' %}
           <a href="{% url 'applications:dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Mening buyurtmalarim</a>
-          <a href="{% url 'architects:project_gallery' %}" class="text-charcoal-600 hover:text-charcoal-900">Barcha loyihalar</a>
         {% else %}
           <a href="{% url 'dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Boshqaruv paneli</a>
         {% endif %}
