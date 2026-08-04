@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Mening e'lonlarim — Poydevor{% endblock %}
+
+{% block content %}
+<div class="flex justify-between items-center mb-8">
+  <h1 class="text-2xl font-semibold text-slate-900">Mening e'lonlarim</h1>
+  <a href="{% url 'applications:post' %}" class="rounded-lg bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-900 transition">
+    Yangi e'lon joylashtirish
+  </a>
+</div>
+
+{% if applications %}
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for application in applications %}
+      <a href="{% url 'applications:detail' application.pk %}" class="block rounded-xl border border-gray-200 p-5 hover:border-slate-400 transition">
+        <div class="flex justify-between items-start mb-2">
+          <h2 class="font-medium text-slate-900">{{ application.location }}</h2>
+          <span class="text-xs font-medium px-2.5 py-1 rounded-full
+            {% if application.status == 'open' %}bg-green-50 text-green-700
+            {% elif application.status == 'in_progress' %}bg-amber-50 text-amber-700
+            {% else %}bg-gray-100 text-gray-600{% endif %}">
+            {{ application.get_status_display }}
+          </span>
+        </div>
+        <p class="text-sm text-slate-500">{{ application.rooms_count }} xona</p>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="text-sm text-slate-500">Sizda hali e'lonlar yo'q.</p>
+{% endif %}
+{% endblock %}

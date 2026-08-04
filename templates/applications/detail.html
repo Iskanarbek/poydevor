@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application.location }} — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex justify-between items-start mb-6">
+    <h1 class="text-2xl font-semibold text-slate-900">{{ application.location }}</h1>
+    <span class="text-xs font-medium px-2.5 py-1 rounded-full
+      {% if application.status == 'open' %}bg-green-50 text-green-700
+      {% elif application.status == 'in_progress' %}bg-amber-50 text-amber-700
+      {% else %}bg-gray-100 text-gray-600{% endif %}">
+      {{ application.get_status_display }}
+    </span>
+  </div>
+
+  <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-gray-200 rounded-xl p-6">
+    <dt class="text-slate-500">Maydon</dt>
+    <dd class="text-slate-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
+
+    <dt class="text-slate-500">Xonalar soni</dt>
+    <dd class="text-slate-900">{{ application.rooms_count }}</dd>
+
+    <dt class="text-slate-500">Manzil</dt>
+    <dd class="text-slate-900">{{ application.location }}</dd>
+
+    <dt class="text-slate-500">Interyer uslubi</dt>
+    <dd class="text-slate-900">{{ application.interior_style|default:"Belgilanmagan" }}</dd>
+
+    <dt class="text-slate-500">Byudjet</dt>
+    <dd class="text-slate-900">{% if application.budget %}{{ application.budget }}{% else %}Belgilanmagan{% endif %}</dd>
+
+    <dt class="text-slate-500">Uy rejasi (PDF)</dt>
+    <dd class="text-slate-900">
+      {% if application.plan_pdf %}
+        <a href="{{ application.plan_pdf.url }}" class="text-slate-700 underline">Yuklab olish</a>
+      {% else %}
+        Yuklanmagan
+      {% endif %}
+    </dd>
+  </dl>
+
+  {% comment %}offers list added in Chunk 4{% endcomment %}
+</div>
+{% endblock %}
