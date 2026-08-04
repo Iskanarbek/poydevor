@@ -1,3 +1,5 @@
+from functools import wraps
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -5,7 +7,24 @@ from architects.forms import ArchitectProfileForm, PortfolioImageForm, Portfolio
 from architects.models import ArchitectProfile, Style
 
 
-@login_required
+def architect_required(view_func):
+    """Restrict a view to logged-in users with the architect role.
+
+    Non-architect users are redirected to the role-aware ``dashboard``
+    stub, which routes them to the area appropriate for their role.
+    """
+
+    @wraps(view_func)
+    @login_required
+    def wrapper(request, *args, **kwargs):
+        if request.user.role != request.user.Role.ARCHITECT:
+            return redirect("dashboard")
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
+
+
+@architect_required
 def onboarding(request):
     if hasattr(request.user, "architect_profile"):
         return redirect("architects:dashboard")
@@ -22,13 +41,13 @@ def onboarding(request):
     return render(request, "architects/onboarding.html", {"form": form})
 
 
-@login_required
+@architect_required
 def dashboard(request):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
     return render(request, "architects/dashboard.html", {"profile": profile})
 
 
-@login_required
+@architect_required
 def portfolio_edit(request):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
     if request.method == "POST":
@@ -41,7 +60,7 @@ def portfolio_edit(request):
     return render(request, "architects/portfolio_form.html", {"form": form, "profile": profile})
 
 
-@login_required
+@architect_required
 def project_create(request):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
     if request.method == "POST":
@@ -56,7 +75,7 @@ def project_create(request):
     return render(request, "architects/project_form.html", {"form": form})
 
 
-@login_required
+@architect_required
 def project_image_add(request, project_id):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
     project = get_object_or_404(profile.projects, id=project_id)
@@ -87,4 +106,11 @@ def public_detail(request, pk):
     projects = profile.projects.all()
     if style_id:
         projects = projects.filter(style_id=style_id)
+    # Filtering drops the prefetch cache populated by the profile queryset's
+    # `prefetch_related("projects__images", ...)`, so re-prefetch images
+    # explicitly on the (possibly filtered) queryset to avoid N+1 queries
+    # in the template's `project.images.all()` loop. select_related("style")
+    # likewise avoids a per-project query for the template's `project.style`
+    # access.
+    projects = projects.select_related("style").prefetch_related("images")
     return render(request, "architects/public_detail.html", {"profile": profile, "projects": projects, "selected_style": style_id})
