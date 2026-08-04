@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'architects',
     'applications',
     'wallet',
+    'offers',
 ]
 
 MIDDLEWARE = [
