@@ -7,6 +7,7 @@ from architects.models import ArchitectProfile
 from offers.models import Offer
 from offers.services import (
     MaxArchitectsReachedError,
+    OfferAlreadyDecidedError,
     accept_offer,
     complete_offer,
     reject_offer,
@@ -96,6 +97,22 @@ class AcceptRejectOfferTests(TestCase):
         self.offers[1].refresh_from_db()
         self.assertEqual(self.offers[0].status, Offer.Status.REJECTED)
         self.assertEqual(self.offers[1].status, Offer.Status.PENDING)
+
+    def test_second_accept_on_same_application_raises_after_first_wins(self):
+        accept_offer(self.offers[0])
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, Application.Status.IN_PROGRESS)
+        # Winning accept already rejected its siblings, including offers[1].
+        self.offers[1].refresh_from_db()
+        self.assertEqual(self.offers[1].status, Offer.Status.REJECTED)
+
+        with self.assertRaises(OfferAlreadyDecidedError):
+            accept_offer(self.offers[1])
+
+        # The failed attempt must not have flipped it to accepted.
+        self.offers[1].refresh_from_db()
+        self.assertNotEqual(self.offers[1].status, Offer.Status.ACCEPTED)
+        self.assertEqual(self.offers[1].status, Offer.Status.REJECTED)
 
     def test_complete_offer_updates_counts_and_application(self):
         accept_offer(self.offers[0])

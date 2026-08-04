@@ -13,6 +13,10 @@ class MaxArchitectsReachedError(Exception):
     pass
 
 
+class OfferAlreadyDecidedError(Exception):
+    pass
+
+
 @transaction.atomic
 def send_offer(application: Application, architect, source: str) -> Offer:
     pending_count = application.offers.select_for_update().filter(status=Offer.Status.PENDING).count()
@@ -27,6 +31,12 @@ def send_offer(application: Application, architect, source: str) -> Offer:
 
 @transaction.atomic
 def accept_offer(offer: Offer) -> None:
+    updated = Application.objects.filter(
+        pk=offer.application_id, status=Application.Status.OPEN,
+    ).update(status=Application.Status.IN_PROGRESS)
+    if updated == 0:
+        raise OfferAlreadyDecidedError("Bu ariza bo'yicha qaror allaqachon qabul qilingan")
+
     offer.status = Offer.Status.ACCEPTED
     offer.decided_at = timezone.now()
     offer.save(update_fields=["status", "decided_at"])
@@ -34,9 +44,6 @@ def accept_offer(offer: Offer) -> None:
     offer.application.offers.filter(status=Offer.Status.PENDING).exclude(pk=offer.pk).update(
         status=Offer.Status.REJECTED, decided_at=timezone.now(),
     )
-
-    offer.application.status = Application.Status.IN_PROGRESS
-    offer.application.save(update_fields=["status"])
 
 
 @transaction.atomic

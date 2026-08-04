@@ -36,17 +36,19 @@ def send_from_architect_profile(request, architect_pk):
 def architect_apply(request, application_pk):
     application = get_object_or_404(Application, pk=application_pk, status=Application.Status.OPEN)
     architect = get_object_or_404(ArchitectProfile, user=request.user)
-    try:
-        send_offer(application, architect, source=Offer.Source.ARCHITECT_APPLIED)
-    except (MaxArchitectsReachedError, InsufficientCoinsError) as e:
-        return render(request, "offers/apply_error.html", {"error": str(e), "application": application})
-    except IntegrityError:
-        # Double-submit: this architect already has a pending offer on this application
-        # (hits the partial unique constraint) — treat it the same as the max-reached case.
-        return render(request, "offers/apply_error.html", {
-            "error": "Siz bu e'longa allaqachon ariza yubordingiz.", "application": application,
-        })
-    return redirect("architects:dashboard")
+    if request.method == "POST":
+        try:
+            send_offer(application, architect, source=Offer.Source.ARCHITECT_APPLIED)
+        except (MaxArchitectsReachedError, InsufficientCoinsError) as e:
+            return render(request, "offers/apply_error.html", {"error": str(e), "application": application})
+        except IntegrityError:
+            # Double-submit: this architect already has a pending offer on this application
+            # (hits the partial unique constraint) — treat it the same as the max-reached case.
+            return render(request, "offers/apply_error.html", {
+                "error": "Siz bu e'longa allaqachon ariza yubordingiz.", "application": application,
+            })
+        return redirect("architects:dashboard")
+    return render(request, "offers/architect_apply_confirm.html", {"application": application})
 
 
 @login_required
