@@ -1,3 +1,4 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
 from django.test.utils import CaptureQueriesContext
 from django.db import connection
@@ -146,3 +147,36 @@ class ProjectCreateViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         second_project = PortfolioProject.objects.get(title="Ikkinchi loyiha")
         self.assertGreater(second_project.order, first_project.order)
+
+
+class ProjectImageAddViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            phone="+998901112244", password="x",
+            first_name="Nodir", last_name="Yusupov", role=User.Role.ARCHITECT,
+        )
+        self.profile = ArchitectProfile.objects.create(user=self.user, bio="x")
+        self.style = Style.objects.create(name="Zamonaviy")
+        self.project = PortfolioProject.objects.create(
+            architect=self.profile, title="Loyiha", description="desc", style=self.style, order=1,
+        )
+        self.client.force_login(self.user)
+
+    def _image_file(self, name="test.gif"):
+        gif = (
+            b"\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\x05\x04\x04"
+            b"\x00\x00\x00\x2c\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3b"
+        )
+        return SimpleUploadedFile(name, gif, content_type="image/gif")
+
+    def test_add_image_without_order_field_succeeds_and_auto_assigns_order(self):
+        url = reverse("architects:project_image_add", args=[self.project.id])
+        response = self.client.post(url, {"image": self._image_file("a.gif")})
+        self.assertEqual(response.status_code, 302)
+        first_image = self.project.images.get()
+        self.assertEqual(first_image.order, 1)
+
+        response = self.client.post(url, {"image": self._image_file("b.gif")})
+        self.assertEqual(response.status_code, 302)
+        second_image = self.project.images.exclude(id=first_image.id).get()
+        self.assertGreater(second_image.order, first_image.order)

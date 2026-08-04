@@ -97,6 +97,7 @@ def project_image_add(request, project_id):
         if form.is_valid():
             image = form.save(commit=False)
             image.project = project
+            image.order = (project.images.aggregate(Max("order"))["order__max"] or 0) + 1
             image.save()
             return redirect("architects:dashboard")
     else:

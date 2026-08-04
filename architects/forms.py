@@ -34,4 +34,4 @@ class PortfolioProjectForm(forms.ModelForm):
 class PortfolioImageForm(forms.ModelForm):
     class Meta:
         model = PortfolioImage
-        fields = ["image", "order"]
+        fields = ["image"]
