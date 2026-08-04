@@ -69,7 +69,7 @@
 <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Portfolio</h2>
 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for project in projects %}
-    <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm overflow-hidden">
+    <div id="project-{{ project.pk }}" class="border border-charcoal-200 rounded-2xl bg-white shadow-sm overflow-hidden scroll-mt-24">
       <div
         x-data="{
           images: [{% for image in project.images.all %}'{{ image.image.url }}',{% endfor %}],

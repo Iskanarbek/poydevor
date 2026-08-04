@@ -5,6 +5,7 @@ from architects import views
 app_name = "architects"
 urlpatterns = [
     path("arxitektorlar/", views.public_list, name="list"),
+    path("loyihalar/", views.project_gallery, name="project_gallery"),
     path("arxitektorlar/<int:pk>/", views.public_detail, name="detail"),
     path("panel/ro'yxatdan-o'tish/", views.onboarding, name="onboarding"),
     path("panel/", views.dashboard, name="dashboard"),

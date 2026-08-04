@@ -96,7 +96,12 @@
             {{ architect_wallet.balance }} tanga
           </a>
         {% endif %}
-        <a href="{% url 'dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Boshqaruv paneli</a>
+        {% if user.role == 'user' %}
+          <a href="{% url 'applications:dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Mening buyurtmalarim</a>
+          <a href="{% url 'architects:project_gallery' %}" class="text-charcoal-600 hover:text-charcoal-900">Barcha loyihalar</a>
+        {% else %}
+          <a href="{% url 'dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Boshqaruv paneli</a>
+        {% endif %}
         <a href="{% url 'accounts:logout' %}" class="text-charcoal-600 hover:text-charcoal-900">Chiqish</a>
       {% else %}
         <a href="{% url 'accounts:login' %}" class="text-charcoal-600 hover:text-charcoal-900">Kirish</a>

@@ -11,7 +11,7 @@ from architects.forms import (
     PortfolioImageForm,
     PortfolioProjectForm,
 )
-from architects.models import ArchitectProfile, Style
+from architects.models import ArchitectProfile, PortfolioProject, Style
 from offers.models import Offer
 from offers.services import MAX_ACTIVE_OFFERS_PER_APPLICATION
 from wallet.models import Wallet
@@ -146,3 +146,16 @@ def public_detail(request, pk):
     # access.
     projects = projects.select_related("style").prefetch_related("images")
     return render(request, "architects/public_detail.html", {"profile": profile, "projects": projects, "selected_style": style_id})
+
+
+def project_gallery(request):
+    projects = PortfolioProject.objects.select_related("architect__user", "style").prefetch_related("images")
+    style_id = request.GET.get("style")
+    if style_id:
+        projects = projects.filter(style_id=style_id)
+    styles = Style.objects.all()
+    return render(request, "architects/project_gallery.html", {
+        "projects": projects,
+        "styles": styles,
+        "selected_style": style_id,
+    })

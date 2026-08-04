@@ -64,6 +64,43 @@ class PublicListViewTests(TestCase):
         self.assertNotContains(response, "Malika")
 
 
+class ProjectGalleryViewTests(TestCase):
+    def _build_profile_with_project(self, phone, first_name, style):
+        user = User.objects.create_user(
+            phone=phone, password="x", first_name=first_name, last_name="Yusupov", role=User.Role.ARCHITECT,
+        )
+        profile = ArchitectProfile.objects.create(user=user, bio="x")
+        profile.styles.add(style)
+        project = PortfolioProject.objects.create(architect=profile, title=f"{first_name} loyihasi", style=style)
+        return profile, project
+
+    def setUp(self):
+        self.modern = Style.objects.create(name="Zamonaviy")
+        self.classic = Style.objects.create(name="Klassik")
+        self.profile_a, self.project_a = self._build_profile_with_project(
+            "+998901112200", "Nodir", self.modern,
+        )
+        self.profile_b, self.project_b = self._build_profile_with_project(
+            "+998901112201", "Malika", self.classic,
+        )
+
+    def test_gallery_lists_projects_from_multiple_architects(self):
+        response = self.client.get(reverse("architects:project_gallery"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Nodir loyihasi")
+        self.assertContains(response, "Malika loyihasi")
+
+    def test_style_filter_excludes_non_matching_projects(self):
+        response = self.client.get(reverse("architects:project_gallery"), {"style": self.modern.id})
+        self.assertContains(response, "Nodir loyihasi")
+        self.assertNotContains(response, "Malika loyihasi")
+
+    def test_gallery_card_links_to_architect_detail(self):
+        response = self.client.get(reverse("architects:project_gallery"))
+        expected_url = reverse("architects:detail", args=[self.profile_a.id])
+        self.assertContains(response, f'href="{expected_url}#project-{self.project_a.pk}"')
+
+
 class PublicDetailViewTests(TestCase):
     def _build_profile_with_projects(self, project_count):
         user = User.objects.create_user(
