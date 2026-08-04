@@ -102,4 +102,25 @@
     <p class="text-sm text-slate-400">Ushbu uslubda loyihalar topilmadi.</p>
   {% endfor %}
 </div>
+
+<h2 class="text-lg font-semibold text-slate-900 mt-10 mb-4">Sharhlar</h2>
+<div class="space-y-4">
+  {% for review in profile.reviews.all %}
+    <div class="border border-gray-200 rounded-xl p-5">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+        <span class="font-medium text-slate-900">{{ review.user.first_name }}</span>
+        <div class="flex items-center gap-1 text-amber-400 text-sm">
+          {% for i in "12345" %}
+            {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% if review.comment %}
+        <p class="text-sm text-slate-600">{{ review.comment }}</p>
+      {% endif %}
+    </div>
+  {% empty %}
+    <p class="text-sm text-slate-400">Hozircha sharhlar yo'q.</p>
+  {% endfor %}
+</div>
 {% endblock %}

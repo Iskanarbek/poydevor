@@ -93,6 +93,26 @@
             </button>
           </form>
         {% endif %}
+
+        {% if offer.status == 'completed' %}
+          {% if offer.review %}
+            <div class="text-sm text-slate-600 border-t border-gray-100 pt-3 mt-3">
+              <div class="flex items-center gap-1 text-amber-400">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= offer.review.rating %}★{% else %}☆{% endif %}
+                {% endfor %}
+                <span class="text-slate-400 ml-1">{{ offer.review.rating }}</span>
+              </div>
+              {% if offer.review.comment %}
+                <p class="text-slate-600 mt-1">{{ offer.review.comment }}</p>
+              {% endif %}
+            </div>
+          {% else %}
+            <a href="{% url 'reviews:submit' offer.pk %}" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition inline-block">
+              Baholash
+            </a>
+          {% endif %}
+        {% endif %}
       </div>
     {% empty %}
       <p class="text-sm text-slate-400">Hozircha arizalar yo'q.</p>
