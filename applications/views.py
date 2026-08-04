@@ -29,3 +29,14 @@ def dashboard(request):
 def detail(request, pk):
     application = get_object_or_404(Application, pk=pk, owner=request.user)
     return render(request, "applications/detail.html", {"application": application})
+
+
+@login_required
+def delete_application(request, pk):
+    if request.method != "POST":
+        return redirect("applications:detail", pk=pk)
+    application = get_object_or_404(
+        Application, pk=pk, owner=request.user, status=Application.Status.OPEN,
+    )
+    application.delete()
+    return redirect("applications:dashboard")
