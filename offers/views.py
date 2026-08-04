@@ -7,6 +7,7 @@ from architects.models import ArchitectProfile
 from offers.models import Offer
 from offers.services import (
     MaxArchitectsReachedError,
+    OfferAlreadyDecidedError,
     accept_offer,
     complete_offer,
     reject_offer,
@@ -56,7 +57,10 @@ def respond(request, offer_pk):
     offer = get_object_or_404(Offer, pk=offer_pk, architect__user=request.user, status=Offer.Status.PENDING)
     if request.method == "POST":
         if request.POST.get("decision") == "accept":
-            accept_offer(offer)
+            try:
+                accept_offer(offer)
+            except OfferAlreadyDecidedError:
+                return redirect("architects:dashboard")
         else:
             reject_offer(offer)
     return redirect("architects:dashboard")
@@ -69,7 +73,10 @@ def user_respond(request, offer_pk):
     )
     if request.method == "POST":
         if request.POST.get("decision") == "accept":
-            accept_offer(offer)
+            try:
+                accept_offer(offer)
+            except OfferAlreadyDecidedError:
+                return redirect("applications:detail", pk=offer.application.pk)
         else:
             reject_offer(offer)
     return redirect("applications:detail", pk=offer.application.pk)

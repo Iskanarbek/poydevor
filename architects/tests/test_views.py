@@ -23,6 +23,14 @@ class OnboardingViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(ArchitectProfile.objects.filter(user=self.user).exists())
 
+    def test_onboarding_without_skills_shows_form_error(self):
+        response = self.client.post(reverse("architects:onboarding"), {
+            "bio": "10 yillik tajriba", "skills": [],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["form"].errors.get("skills"))
+        self.assertFalse(ArchitectProfile.objects.filter(user=self.user).exists())
+
 
 class PublicListViewTests(TestCase):
     def setUp(self):

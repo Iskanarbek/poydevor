@@ -4,7 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.models import Application
-from architects.forms import ArchitectProfileForm, PortfolioImageForm, PortfolioProjectForm
+from architects.forms import (
+    ArchitectOnboardingForm,
+    ArchitectProfileForm,
+    PortfolioImageForm,
+    PortfolioProjectForm,
+)
 from architects.models import ArchitectProfile, Style
 from wallet.models import Wallet
 
@@ -31,7 +36,7 @@ def onboarding(request):
     if hasattr(request.user, "architect_profile"):
         return redirect("architects:dashboard")
     if request.method == "POST":
-        form = ArchitectProfileForm(request.POST, request.FILES)
+        form = ArchitectOnboardingForm(request.POST, request.FILES)
         if form.is_valid():
             profile = form.save(commit=False)
             profile.user = request.user
@@ -40,7 +45,7 @@ def onboarding(request):
             form.save_m2m()
             return redirect("architects:dashboard")
     else:
-        form = ArchitectProfileForm()
+        form = ArchitectOnboardingForm()
     return render(request, "architects/onboarding.html", {"form": form})
 
 

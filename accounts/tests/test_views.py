@@ -70,3 +70,24 @@ class LoginViewTests(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("_auth_user_id", self.client.session)
+
+
+class HomeViewTests(TestCase):
+    def test_anonymous_visitor_redirected_to_architect_list(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("architects:list"))
+
+    def test_authenticated_user_redirected_to_dashboard(self):
+        User.objects.create_user(
+            phone="+998901112233", password="testpass123",
+            first_name="Aziz", last_name="Karimov", role=User.Role.USER,
+        )
+        self.client.login(phone="+998901112233", password="testpass123")
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("dashboard"))
+
+    def test_architect_list_still_resolves_and_is_not_shadowed(self):
+        response = self.client.get("/arxitektorlar/")
+        self.assertEqual(response.status_code, 200)
