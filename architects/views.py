@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from architects.forms import ArchitectProfileForm, PortfolioImageForm, PortfolioProjectForm
 from architects.models import ArchitectProfile, Style
+from wallet.models import Wallet
 
 
 def architect_required(view_func):
@@ -34,6 +35,7 @@ def onboarding(request):
             profile = form.save(commit=False)
             profile.user = request.user
             profile.save()
+            Wallet.objects.create(architect=profile)
             form.save_m2m()
             return redirect("architects:dashboard")
     else:
