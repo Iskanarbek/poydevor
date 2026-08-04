@@ -46,7 +46,7 @@ involved in a project (max 3 architects per posting).
 - `completed_projects_count` (int, incremented when an offer's project is
   marked complete)
 - `styles` (M2M → Style lookup table: modern, classic, minimalism, etc.)
-- `skills` (short text list / M2M to a Skill lookup table)
+- `skills` (M2M → Skill lookup table)
 - `avatar` (optional image; placeholder shown in UI if absent)
 
 ### architects.PortfolioProject (FK → ArchitectProfile)
@@ -62,12 +62,15 @@ involved in a project (max 3 architects per posting).
 
 - `rating` (1–5), `comment`, `created_at`
 - one review per completed offer
+- `architect` is denormalized from `offer.architect` purely to simplify
+  querying "all reviews for architect X"; it must always match `offer`'s
+  architect (enforced in the service layer that creates it)
 
 ### applications.Application (FK → User as owner)
 
-- `size_m2` (nullable — null when "I don't know, calculate roughly" is
-  chosen)
-- `size_unknown` (bool)
+- `size_m2` (nullable — null means the user chose "I don't know, calculate
+  roughly"; the rough rooms-based estimate is not stored separately, it's
+  just how `rooms_count` is framed to the user in that case)
 - `rooms_count`
 - `location`
 - `interior_style` (FK → Style, optional)
@@ -78,12 +81,13 @@ involved in a project (max 3 architects per posting).
 
 ### offers.Offer (FK → Application, FK → ArchitectProfile)
 
-- `status`: `pending` | `accepted` | `rejected`
+- `status`: `pending` | `accepted` | `rejected` | `completed`
 - `source`: `architect_applied` (architect spent coins on an open posting) |
   `user_invited` (user sent application directly from an architect's profile)
-- `created_at`, `decided_at`
+- `created_at`, `decided_at`, `completed_at`
 - Constraint enforced in service layer: an Application may have at most 3
-  Offers with status in (`pending`, `accepted`) at once.
+  Offers with status `pending` at once (accepting one moves the Application
+  out of the pool — see status-transition rules below).
 
 ### wallet.Wallet (OneToOne → ArchitectProfile)
 
@@ -127,22 +131,38 @@ them pick an existing one. Before sending, show a notice: contact details
 become visible only after the architect accepts. This creates an `Offer`
 with `source=user_invited`.
 
-### Offer response (architect)
+### Offer response and status transitions
 
-Architect accepts or rejects a pending offer.
-- Rejected → user sees a rejection message + prompt to choose another
-  architect.
-- Accepted → user sees an acceptance message and the architect's phone +
-  telegram become visible. If the offer's application already had other
-  pending offers from the same source flow, those remain independently
-  decidable (a user can still be waiting on a second architect).
+Either side can trigger acceptance depending on the flow:
+- `user_invited` offers are accepted/rejected by the **architect**.
+- `architect_applied` offers are accepted/rejected by the **user** (from the
+  up-to-3-replies list on their posting).
+
+Rules, applied uniformly regardless of source:
+- Rejected → the rejecting side's counterpart sees a rejection message. For
+  `user_invited`, the user sees a prompt to choose another architect. For
+  `architect_applied`, that architect's card simply drops off the user's
+  reply list. Coins already spent by an architect on a rejected
+  `architect_applied` offer are **not refunded**.
+- Accepted → all other `pending` Offers on the same Application are
+  automatically set to `rejected` (an Application can have exactly one
+  `accepted` Offer at a time), and the Application's `status` moves to
+  `in_progress`. Contact reveal is bidirectional: the architect's phone +
+  telegram become visible to the user, and the user's phone becomes visible
+  to the architect.
+- Completed → from the accepted state, the user can mark the project
+  complete ("Loyihani yakunlash"), which sets the Offer's status to
+  `completed` (with `completed_at`), the Application's status to `closed`,
+  increments the architect's `completed_projects_count`, and unlocks the
+  review form (see Reviews below).
 
 ### User: choosing among up to 3 architect replies
 
 When an open `Application` receives offers from architects browsing postings
 (`source=architect_applied`), the user sees up to 3 architect cards attached
-to their posting. They can review each and accept one (revealing contacts) or
-reject any/all.
+to their posting. They can review each and accept one — which auto-rejects
+the other pending offers per the transition rules above — or reject any/all
+individually while still waiting on the rest.
 
 ### Architect panel — 3 tabs
 
@@ -159,14 +179,17 @@ reject any/all.
 
 Plus a **Wallet** page: balance, transaction history, "Buy coins" button with
 packages (e.g. 20 / 40 / 100 coins ≈ $5 / $10 / $25) — instant mock credit
-(no real payment gateway yet), logged as a `CoinTransaction`.
+(no real payment gateway yet), logged as a `CoinTransaction`. Coins spent to
+get involved in a posting are never refunded, regardless of whether the
+offer is later accepted or rejected.
 
 ### Reviews
 
-Once an accepted offer's project is marked complete (a "Loyihani yakunlash"
-action available to the user on an accepted offer), the user can leave a
-1–5 star rating + comment. This creates a `Review` and updates the
-architect's `rating` (recomputed average) and `completed_projects_count`.
+Once an Offer reaches `completed` status (see status-transition rules
+above), the user can leave a 1–5 star rating + comment on that Offer. This
+creates a `Review` and updates the architect's `rating` (recomputed
+average). `completed_projects_count` is already incremented at the
+completion step, not by the review itself.
 
 ### Seed data
 
