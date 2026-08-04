@@ -1,3 +1,6 @@
+from architects.models import ArchitectProfile
+
+
 def architect_wallet(request):
     """Expose the logged-in architect's wallet to every template via base.html.
 
@@ -8,11 +11,17 @@ def architect_wallet(request):
     """
     user = getattr(request, "user", None)
     if (
-        user is not None
-        and user.is_authenticated
-        and getattr(user, "role", None) == user.Role.ARCHITECT
-        and hasattr(user, "architect_profile")
-        and hasattr(user.architect_profile, "wallet")
+        user is None
+        or not user.is_authenticated
+        or getattr(user, "role", None) != user.Role.ARCHITECT
     ):
-        return {"architect_wallet": user.architect_profile.wallet}
-    return {}
+        return {}
+
+    profile = (
+        ArchitectProfile.objects.select_related("wallet")
+        .filter(user=user)
+        .first()
+    )
+    if profile is None or not hasattr(profile, "wallet"):
+        return {}
+    return {"architect_wallet": profile.wallet}
