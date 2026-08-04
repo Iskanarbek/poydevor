@@ -4,17 +4,17 @@
 
 {% block content %}
 <div class="max-w-md mx-auto">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-2">Arxitektorni baholang</h1>
-  <p class="text-sm text-slate-500 mb-6">{{ offer.architect }}</p>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">Arxitektorni baholang</h1>
+  <p class="text-sm text-charcoal-500 mb-6">{{ offer.architect }}</p>
 
-  <form method="post" class="space-y-6 border border-gray-200 rounded-xl p-6" x-data="{ rating: '5' }">
+  <form method="post" class="space-y-6 border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6" x-data="{ rating: '5' }">
     {% csrf_token %}
 
     <div>
-      <label class="block text-sm font-medium text-slate-700 mb-2">Baho</label>
+      <label class="block text-sm font-medium text-charcoal-700 mb-2">Baho</label>
       <div class="flex items-center gap-1 text-2xl">
         {% for value, label in form.rating.field.choices %}
-          <label class="cursor-pointer" :class="rating >= '{{ value }}' ? 'text-amber-400' : 'text-gray-300'">
+          <label class="cursor-pointer" :class="rating >= '{{ value }}' ? 'text-amber-400' : 'text-charcoal-300'">
             <input type="radio" name="rating" value="{{ value }}" x-model="rating" class="sr-only" {% if value|stringformat:'s' == '5' %}checked{% endif %}>
             <span>★</span>
           </label>
@@ -26,14 +26,14 @@
     </div>
 
     <div>
-      <label for="{{ form.comment.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-2">Izoh</label>
+      <label for="{{ form.comment.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-2">Izoh</label>
       {{ form.comment }}
       {% if form.comment.errors %}
         <p class="text-sm text-red-600 mt-1">{{ form.comment.errors|striptags }}</p>
       {% endif %}
     </div>
 
-    <button type="submit" class="w-full text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2.5 hover:bg-slate-900 transition">
+    <button type="submit" class="w-full text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2.5 hover:bg-clay-700 transition">
       Baholashni yuborish
     </button>
   </form>

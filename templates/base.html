@@ -4,14 +4,62 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Poydevor{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            charcoal: {
+              50: '#F5F3F1',
+              100: '#E8E3DE',
+              200: '#D3CBC2',
+              300: '#B3A79B',
+              400: '#8C7F72',
+              500: '#6B5E52',
+              600: '#4F443B',
+              700: '#3A322B',
+              800: '#2A241F',
+              900: '#1F1B18',
+            },
+            clay: {
+              50: '#FBF0E9',
+              100: '#F5DCC9',
+              200: '#EABB98',
+              300: '#DE9868',
+              400: '#CD7A47',
+              500: '#C1622D',
+              600: '#B5562A',
+              700: '#954523',
+              800: '#75371C',
+              900: '#5C2C17',
+            },
+            cream: {
+              50: '#FBF7F2',
+              100: '#F7F2EC',
+              200: '#F0E8DE',
+            },
+          },
+          fontFamily: {
+            serif: ['"Fraunces"', 'ui-serif', 'Georgia', 'serif'],
+            sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <style>
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+
     input[type="text"], input[type="password"], input[type="tel"], input[type="number"],
     input[type="email"], input[type="file"], select, textarea {
       width: 100%;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
+      border: 1px solid #D3CBC2;
+      border-radius: 0.6rem;
       padding: 0.6rem 0.9rem;
       font-size: 0.95rem;
       background-color: #fff;
@@ -20,28 +68,46 @@
     input[type="text"]:focus, input[type="password"]:focus, input[type="tel"]:focus,
     input[type="number"]:focus, input[type="email"]:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #1e293b;
-      box-shadow: 0 0 0 3px rgba(30, 41, 59, 0.1);
+      border-color: #B5562A;
+      box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.15);
     }
   </style>
 </head>
-<body class="bg-white text-gray-900 min-h-screen flex flex-col">
-  <nav class="border-b border-gray-100 px-6 py-4 flex justify-between items-center">
-    <a href="{% url 'home' %}" class="text-xl font-semibold text-slate-800">Poydevor</a>
+<body class="bg-cream-50 text-charcoal-900 min-h-screen flex flex-col">
+  <nav class="border-b border-charcoal-100 bg-cream-50/90 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-10">
+    <a href="{% url 'home' %}" class="flex items-center gap-2 group">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+        <path d="M16 3 L29 12 V15 L16 6 L3 15 V12 Z" fill="#B5562A"/>
+        <rect x="6" y="15" width="20" height="12" rx="1.5" fill="#1F1B18"/>
+        <rect x="9.5" y="19" width="4.5" height="8" fill="#FBF7F2"/>
+        <rect x="18" y="19" width="4.5" height="4.5" fill="#FBF7F2"/>
+      </svg>
+      <span class="text-xl font-serif font-semibold tracking-tight text-charcoal-900 group-hover:text-clay-700 transition">Poydevor</span>
+    </a>
     <div class="flex gap-4 text-sm items-center">
       {% if user.is_authenticated %}
-        <a href="{% url 'dashboard' %}" class="text-slate-600 hover:text-slate-900">Boshqaruv paneli</a>
-        <a href="{% url 'accounts:logout' %}" class="text-slate-600 hover:text-slate-900">Chiqish</a>
+        {% if architect_wallet %}
+          <a href="{% url 'wallet:dashboard' %}" class="flex items-center gap-1.5 rounded-full bg-clay-50 border border-clay-200 text-clay-700 font-medium px-3 py-1.5 hover:bg-clay-100 transition">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              <path d="M9.5 9.8c0-1 .9-1.8 2.5-1.8s2.5.7 2.5 1.6c0 2.2-5 1.3-5 3.6 0 .9 1 1.6 2.5 1.6s2.5-.8 2.5-1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 6.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            {{ architect_wallet.balance }} tanga
+          </a>
+        {% endif %}
+        <a href="{% url 'dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Boshqaruv paneli</a>
+        <a href="{% url 'accounts:logout' %}" class="text-charcoal-600 hover:text-charcoal-900">Chiqish</a>
       {% else %}
-        <a href="{% url 'accounts:login' %}" class="text-slate-600 hover:text-slate-900">Kirish</a>
-        <a href="{% url 'accounts:signup' %}" class="text-slate-800 font-medium border border-slate-800 rounded-lg px-4 py-2 hover:bg-slate-800 hover:text-white transition">Ro'yxatdan o'tish</a>
+        <a href="{% url 'accounts:login' %}" class="text-charcoal-600 hover:text-charcoal-900">Kirish</a>
+        <a href="{% url 'accounts:signup' %}" class="text-clay-700 font-medium border border-clay-600 rounded-lg px-4 py-2 hover:bg-clay-600 hover:text-white transition">Ro'yxatdan o'tish</a>
       {% endif %}
     </div>
   </nav>
   <main class="flex-1 max-w-6xl mx-auto w-full px-6 py-10">
     {% block content %}{% endblock %}
   </main>
-  <footer class="border-t border-gray-100 px-6 py-6 text-center text-xs text-slate-400">
+  <footer class="border-t border-charcoal-100 px-6 py-6 text-center text-xs text-charcoal-400">
     &copy; {% now "Y" %} Poydevor. Barcha huquqlar himoyalangan.
   </footer>
 </body>

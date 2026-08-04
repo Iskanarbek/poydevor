@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="max-w-md mx-auto">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-1">Ro'yxatdan o'tish</h1>
-  <p class="text-sm text-slate-500 mb-8">Poydevor'da hisob yarating.</p>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">Ro'yxatdan o'tish</h1>
+  <p class="text-sm text-charcoal-500 mb-8">Poydevor'da hisob yarating.</p>
 
   {% if form.non_field_errors %}
     <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
@@ -18,54 +18,54 @@
 
     <div class="grid grid-cols-2 gap-3">
       <label
-        class="cursor-pointer rounded-xl border-2 px-4 py-4 text-center transition"
-        :class="role === 'user' ? 'border-slate-800 bg-slate-50' : 'border-gray-200 hover:border-gray-300'"
+        class="cursor-pointer rounded-2xl border-2 px-4 py-4 text-center transition"
+        :class="role === 'user' ? 'border-clay-600 bg-clay-50' : 'border-charcoal-200 hover:border-charcoal-300'"
       >
         <input type="radio" name="role" value="user" x-model="role" class="hidden">
-        <span class="block text-sm font-medium text-slate-800">Men foydalanuvchiman</span>
+        <span class="block text-sm font-medium text-clay-700">Men foydalanuvchiman</span>
       </label>
       <label
-        class="cursor-pointer rounded-xl border-2 px-4 py-4 text-center transition"
-        :class="role === 'architect' ? 'border-slate-800 bg-slate-50' : 'border-gray-200 hover:border-gray-300'"
+        class="cursor-pointer rounded-2xl border-2 px-4 py-4 text-center transition"
+        :class="role === 'architect' ? 'border-clay-600 bg-clay-50' : 'border-charcoal-200 hover:border-charcoal-300'"
       >
         <input type="radio" name="role" value="architect" x-model="role" class="hidden">
-        <span class="block text-sm font-medium text-slate-800">Men arxitektorman</span>
+        <span class="block text-sm font-medium text-clay-700">Men arxitektorman</span>
       </label>
     </div>
     {% if form.role.errors %}<p class="text-sm text-red-600">{{ form.role.errors|striptags }}</p>{% endif %}
 
     <div>
-      <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">{{ form.first_name.label }}</label>
+      <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.first_name.label }}</label>
       {{ form.first_name }}
       {% if form.first_name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.first_name.errors|striptags }}</p>{% endif %}
     </div>
 
     <div>
-      <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">{{ form.last_name.label }}</label>
+      <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.last_name.label }}</label>
       {{ form.last_name }}
       {% if form.last_name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.last_name.errors|striptags }}</p>{% endif %}
     </div>
 
     <div>
-      <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">{{ form.phone.label }}</label>
+      <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.phone.label }}</label>
       {{ form.phone }}
       {% if form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.phone.errors|striptags }}</p>{% endif %}
     </div>
 
     <div>
-      <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-slate-700 mb-1">{{ form.password.label }}</label>
+      <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.password.label }}</label>
       {{ form.password }}
       {% if form.password.errors %}<p class="mt-1 text-sm text-red-600">{{ form.password.errors|striptags }}</p>{% endif %}
     </div>
 
-    <button type="submit" class="w-full rounded-lg bg-slate-800 text-white font-medium py-3 hover:bg-slate-900 transition">
+    <button type="submit" class="w-full rounded-lg bg-clay-600 text-white font-medium py-3 hover:bg-clay-700 transition">
       Ro'yxatdan o'tish
     </button>
   </form>
 
-  <p class="mt-6 text-center text-sm text-slate-500">
+  <p class="mt-6 text-center text-sm text-charcoal-500">
     Hisobingiz bormi?
-    <a href="{% url 'accounts:login' %}" class="text-slate-800 font-medium hover:underline">Kirish</a>
+    <a href="{% url 'accounts:login' %}" class="text-clay-700 font-medium hover:underline">Kirish</a>
   </p>
 </div>
 {% endblock %}

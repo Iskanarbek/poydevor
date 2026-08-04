@@ -4,44 +4,44 @@
 
 {% block content %}
 <div class="mb-8">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-1">Hamyon</h1>
-  <p class="text-sm text-slate-500">Balansingiz va tanga tarixi</p>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">Hamyon</h1>
+  <p class="text-sm text-charcoal-500">Balansingiz va tanga tarixi</p>
 </div>
 
-<div class="rounded-xl border border-gray-200 p-6 mb-8 flex items-center justify-between">
+<div class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-6 mb-8 flex items-center justify-between">
   <div>
-    <p class="text-sm text-slate-500 mb-1">Joriy balans</p>
-    <p class="text-3xl font-semibold text-slate-900">{{ wallet.balance }} <span class="text-base font-normal text-slate-500">tanga</span></p>
+    <p class="text-sm text-charcoal-500 mb-1">Joriy balans</p>
+    <p class="text-3xl font-semibold text-charcoal-900">{{ wallet.balance }} <span class="text-base font-normal text-charcoal-500">tanga</span></p>
   </div>
 </div>
 
 <div class="mb-10">
-  <h2 class="text-lg font-semibold text-slate-900 mb-4">Tanga sotib olish</h2>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Tanga sotib olish</h2>
   <div class="grid gap-4 sm:grid-cols-3">
-    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-xl border border-gray-200 p-5 text-center">
+    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5 text-center">
       {% csrf_token %}
       <input type="hidden" name="package" value="20">
-      <p class="text-2xl font-semibold text-slate-900 mb-1">20 <span class="text-sm font-normal text-slate-500">tanga</span></p>
-      <p class="text-sm text-slate-500 mb-4">≈ $5</p>
-      <button type="submit" class="w-full rounded-lg bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-900 transition">
+      <p class="text-2xl font-semibold text-charcoal-900 mb-1">20 <span class="text-sm font-normal text-charcoal-500">tanga</span></p>
+      <p class="text-sm text-charcoal-500 mb-4">≈ $5</p>
+      <button type="submit" class="w-full rounded-lg bg-clay-600 text-white text-sm font-medium px-4 py-2.5 hover:bg-clay-700 transition">
         Sotib olish
       </button>
     </form>
-    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-xl border border-gray-200 p-5 text-center">
+    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5 text-center">
       {% csrf_token %}
       <input type="hidden" name="package" value="40">
-      <p class="text-2xl font-semibold text-slate-900 mb-1">40 <span class="text-sm font-normal text-slate-500">tanga</span></p>
-      <p class="text-sm text-slate-500 mb-4">≈ $10</p>
-      <button type="submit" class="w-full rounded-lg bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-900 transition">
+      <p class="text-2xl font-semibold text-charcoal-900 mb-1">40 <span class="text-sm font-normal text-charcoal-500">tanga</span></p>
+      <p class="text-sm text-charcoal-500 mb-4">≈ $10</p>
+      <button type="submit" class="w-full rounded-lg bg-clay-600 text-white text-sm font-medium px-4 py-2.5 hover:bg-clay-700 transition">
         Sotib olish
       </button>
     </form>
-    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-xl border border-gray-200 p-5 text-center">
+    <form method="post" action="{% url 'wallet:buy' %}" class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5 text-center">
       {% csrf_token %}
       <input type="hidden" name="package" value="100">
-      <p class="text-2xl font-semibold text-slate-900 mb-1">100 <span class="text-sm font-normal text-slate-500">tanga</span></p>
-      <p class="text-sm text-slate-500 mb-4">≈ $25</p>
-      <button type="submit" class="w-full rounded-lg bg-slate-800 text-white text-sm font-medium px-4 py-2.5 hover:bg-slate-900 transition">
+      <p class="text-2xl font-semibold text-charcoal-900 mb-1">100 <span class="text-sm font-normal text-charcoal-500">tanga</span></p>
+      <p class="text-sm text-charcoal-500 mb-4">≈ $25</p>
+      <button type="submit" class="w-full rounded-lg bg-clay-600 text-white text-sm font-medium px-4 py-2.5 hover:bg-clay-700 transition">
         Sotib olish
       </button>
     </form>
@@ -49,22 +49,22 @@
 </div>
 
 <div>
-  <h2 class="text-lg font-semibold text-slate-900 mb-4">Tranzaksiyalar tarixi</h2>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Tranzaksiyalar tarixi</h2>
   {% if wallet.transactions.all %}
-    <div class="overflow-x-auto rounded-xl border border-gray-200">
+    <div class="overflow-x-auto rounded-2xl border border-charcoal-200 bg-white shadow-sm">
       <table class="w-full text-sm text-left">
-        <thead class="bg-gray-50 text-slate-500">
+        <thead class="bg-cream-100 text-charcoal-500">
           <tr>
             <th class="px-4 py-3 font-medium">Sana</th>
             <th class="px-4 py-3 font-medium">Sabab</th>
             <th class="px-4 py-3 font-medium text-right">Miqdor</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-100">
+        <tbody class="divide-y divide-charcoal-100">
           {% for tx in wallet.transactions.all %}
             <tr>
-              <td class="px-4 py-3 text-slate-600">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ tx.get_reason_display }}</td>
+              <td class="px-4 py-3 text-charcoal-600">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="px-4 py-3 text-charcoal-600">{{ tx.get_reason_display }}</td>
               <td class="px-4 py-3 text-right font-medium {% if tx.amount > 0 %}text-green-700{% else %}text-red-600{% endif %}">
                 {% if tx.amount > 0 %}+{% endif %}{{ tx.amount }}
               </td>
@@ -74,7 +74,7 @@
       </table>
     </div>
   {% else %}
-    <p class="text-sm text-slate-500">Hali tranzaksiyalar yo'q.</p>
+    <p class="text-sm text-charcoal-500">Hali tranzaksiyalar yo'q.</p>
   {% endif %}
 </div>
 {% endblock %}

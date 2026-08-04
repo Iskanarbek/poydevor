@@ -8,68 +8,68 @@
     {% if profile.avatar %}
       <img src="{{ profile.avatar.url }}" alt="{{ profile }}" class="w-20 h-20 rounded-full object-cover">
     {% else %}
-      <span class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+      <span class="w-20 h-20 rounded-full bg-charcoal-100 flex items-center justify-center text-charcoal-400">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10">
           <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12Zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9Z"/>
         </svg>
       </span>
     {% endif %}
     <div>
-      <h1 class="text-2xl font-semibold text-slate-900">{{ profile }}</h1>
+      <h1 class="font-serif text-2xl font-semibold text-charcoal-900">{{ profile }}</h1>
       <div class="flex items-center gap-1 text-amber-400 text-sm">
         {% for i in "12345" %}
           {% if forloop.counter <= profile.rating %}★{% else %}☆{% endif %}
         {% endfor %}
-        <span class="text-slate-400 ml-1">{{ profile.rating }}</span>
+        <span class="text-charcoal-400 ml-1">{{ profile.rating }}</span>
       </div>
-      <p class="text-sm text-slate-500">{{ profile.completed_projects_count }} loyiha yakunlangan</p>
+      <p class="text-sm text-charcoal-500">{{ profile.completed_projects_count }} loyiha yakunlangan</p>
     </div>
   </div>
   <div class="text-right">
     {% if user.is_authenticated %}
-      <a href="{% url 'offers:send' profile.id %}" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-slate-900 transition inline-block">
+      <a href="{% url 'offers:send' profile.id %}" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-clay-700 transition inline-block">
         Ariza yuborish
       </a>
     {% else %}
-      <a href="{% url 'accounts:login' %}" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-slate-900 transition inline-block">
+      <a href="{% url 'accounts:login' %}" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-clay-700 transition inline-block">
         Ariza yuborish
       </a>
     {% endif %}
-    <p class="text-xs text-slate-400 mt-2 max-w-[220px]">
+    <p class="text-xs text-charcoal-400 mt-2 max-w-[220px]">
       Arxitektor qabul qilgandan so'ng aloqa ma'lumotlari ko'rinadi
     </p>
   </div>
 </div>
 
 {% if profile.bio %}
-  <p class="text-slate-700 mb-6 max-w-2xl">{{ profile.bio }}</p>
+  <p class="text-charcoal-700 mb-6 max-w-2xl">{{ profile.bio }}</p>
 {% endif %}
 
 {% if profile.skills.all %}
   <div class="flex flex-wrap gap-2 mb-6">
     {% for skill in profile.skills.all %}
-      <span class="rounded-full bg-gray-100 text-slate-700 text-sm px-3 py-1">{{ skill.name }}</span>
+      <span class="rounded-full bg-charcoal-100 text-charcoal-700 text-sm px-3 py-1">{{ skill.name }}</span>
     {% endfor %}
   </div>
 {% endif %}
 
 <div class="flex flex-wrap gap-2 mb-8">
   <a href="{% url 'architects:detail' profile.id %}"
-     class="rounded-full border px-4 py-1.5 text-sm transition {% if not selected_style %}bg-slate-800 text-white border-slate-800{% else %}border-gray-300 text-slate-700 hover:border-gray-400{% endif %}">
+     class="rounded-full border px-4 py-1.5 text-sm transition {% if not selected_style %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
     Barchasi
   </a>
   {% for style in profile.styles.all %}
     <a href="?style={{ style.id }}"
-       class="rounded-full border px-4 py-1.5 text-sm transition {% if selected_style == style.id|stringformat:'s' %}bg-slate-800 text-white border-slate-800{% else %}border-gray-300 text-slate-700 hover:border-gray-400{% endif %}">
+       class="rounded-full border px-4 py-1.5 text-sm transition {% if selected_style == style.id|stringformat:'s' %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
       {{ style.name }}
     </a>
   {% endfor %}
 </div>
 
-<h2 class="text-lg font-semibold text-slate-900 mb-4">Portfolio</h2>
+<h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Portfolio</h2>
 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for project in projects %}
-    <div class="border border-gray-200 rounded-xl overflow-hidden">
+    <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm overflow-hidden">
       <div
         x-data="{
           images: [{% for image in project.images.all %}'{{ image.image.url }}',{% endfor %}],
@@ -77,7 +77,7 @@
           start() { if (this.images.length > 1) { setInterval(() => { this.current = (this.current + 1) % this.images.length }, 3000) } }
         }"
         x-init="start()"
-        class="aspect-video bg-gray-100 relative"
+        class="aspect-video bg-charcoal-100 relative"
       >
         <template x-if="images.length > 0">
           <template x-for="(img, index) in images" :key="index">
@@ -85,7 +85,7 @@
           </template>
         </template>
         {% if not project.images.all %}
-          <span class="absolute inset-0 flex items-center justify-center text-gray-300">
+          <span class="absolute inset-0 flex items-center justify-center text-charcoal-300">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-12 h-12">
               <path d="M3 21V8l9-6 9 6v13h-6v-7H9v7H3Z"/>
             </svg>
@@ -93,22 +93,22 @@
         {% endif %}
       </div>
       <div class="p-4">
-        <h3 class="font-medium text-slate-900">{{ project.title }}</h3>
-        {% if project.style %}<p class="text-xs text-slate-500 mb-1">{{ project.style }}</p>{% endif %}
-        <p class="text-sm text-slate-600">{{ project.description|truncatewords:20 }}</p>
+        <h3 class="font-serif font-medium text-charcoal-900">{{ project.title }}</h3>
+        {% if project.style %}<p class="text-xs text-charcoal-500 mb-1">{{ project.style }}</p>{% endif %}
+        <p class="text-sm text-charcoal-600">{{ project.description|truncatewords:20 }}</p>
       </div>
     </div>
   {% empty %}
-    <p class="text-sm text-slate-400">Ushbu uslubda loyihalar topilmadi.</p>
+    <p class="text-sm text-charcoal-400">Ushbu uslubda loyihalar topilmadi.</p>
   {% endfor %}
 </div>
 
-<h2 class="text-lg font-semibold text-slate-900 mt-10 mb-4">Sharhlar</h2>
+<h2 class="font-serif text-lg font-semibold text-charcoal-900 mt-10 mb-4">Sharhlar</h2>
 <div class="space-y-4">
   {% for review in profile.reviews.all %}
-    <div class="border border-gray-200 rounded-xl p-5">
+    <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-5">
       <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
-        <span class="font-medium text-slate-900">{{ review.user.first_name }}</span>
+        <span class="font-medium text-charcoal-900">{{ review.user.first_name }}</span>
         <div class="flex items-center gap-1 text-amber-400 text-sm">
           {% for i in "12345" %}
             {% if forloop.counter <= review.rating %}★{% else %}☆{% endif %}
@@ -116,11 +116,11 @@
         </div>
       </div>
       {% if review.comment %}
-        <p class="text-sm text-slate-600">{{ review.comment }}</p>
+        <p class="text-sm text-charcoal-600">{{ review.comment }}</p>
       {% endif %}
     </div>
   {% empty %}
-    <p class="text-sm text-slate-400">Hozircha sharhlar yo'q.</p>
+    <p class="text-sm text-charcoal-400">Hozircha sharhlar yo'q.</p>
   {% endfor %}
 </div>
 {% endblock %}

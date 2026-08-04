@@ -5,60 +5,60 @@
 {% block content %}
 <div class="max-w-2xl mx-auto">
   <div class="flex justify-between items-start mb-6">
-    <h1 class="text-2xl font-semibold text-slate-900">{{ application.location }}</h1>
+    <h1 class="font-serif text-2xl font-semibold text-charcoal-900">{{ application.location }}</h1>
     <span class="text-xs font-medium px-2.5 py-1 rounded-full
       {% if application.status == 'open' %}bg-green-50 text-green-700
       {% elif application.status == 'in_progress' %}bg-amber-50 text-amber-700
-      {% else %}bg-gray-100 text-gray-600{% endif %}">
+      {% else %}bg-charcoal-100 text-charcoal-600{% endif %}">
       {{ application.get_status_display }}
     </span>
   </div>
 
-  <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-gray-200 rounded-xl p-6">
-    <dt class="text-slate-500">Maydon</dt>
-    <dd class="text-slate-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
+  <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
+    <dt class="text-charcoal-500">Maydon</dt>
+    <dd class="text-charcoal-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
 
-    <dt class="text-slate-500">Xonalar soni</dt>
-    <dd class="text-slate-900">{{ application.rooms_count }}</dd>
+    <dt class="text-charcoal-500">Xonalar soni</dt>
+    <dd class="text-charcoal-900">{{ application.rooms_count }}</dd>
 
-    <dt class="text-slate-500">Manzil</dt>
-    <dd class="text-slate-900">{{ application.location }}</dd>
+    <dt class="text-charcoal-500">Manzil</dt>
+    <dd class="text-charcoal-900">{{ application.location }}</dd>
 
-    <dt class="text-slate-500">Interyer uslubi</dt>
-    <dd class="text-slate-900">{{ application.interior_style|default:"Belgilanmagan" }}</dd>
+    <dt class="text-charcoal-500">Interyer uslubi</dt>
+    <dd class="text-charcoal-900">{{ application.interior_style|default:"Belgilanmagan" }}</dd>
 
-    <dt class="text-slate-500">Byudjet</dt>
-    <dd class="text-slate-900">{% if application.budget %}{{ application.budget }}{% else %}Belgilanmagan{% endif %}</dd>
+    <dt class="text-charcoal-500">Byudjet</dt>
+    <dd class="text-charcoal-900">{% if application.budget %}{{ application.budget }}{% else %}Belgilanmagan{% endif %}</dd>
 
-    <dt class="text-slate-500">Uy rejasi (PDF)</dt>
-    <dd class="text-slate-900">
+    <dt class="text-charcoal-500">Uy rejasi (PDF)</dt>
+    <dd class="text-charcoal-900">
       {% if application.plan_pdf %}
-        <a href="{{ application.plan_pdf.url }}" class="text-slate-700 underline">Yuklab olish</a>
+        <a href="{{ application.plan_pdf.url }}" class="text-charcoal-700 underline">Yuklab olish</a>
       {% else %}
         Yuklanmagan
       {% endif %}
     </dd>
   </dl>
 
-  <h2 class="text-lg font-semibold text-slate-900 mt-10 mb-4">Arizalar</h2>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mt-10 mb-4">Arizalar</h2>
   <div class="space-y-4">
     {% for offer in application.offers.all %}
-      <div class="border border-gray-200 rounded-xl p-5">
+      <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-5">
         <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-          <a href="{% url 'architects:detail' offer.architect.id %}" class="font-medium text-slate-900 hover:underline">
+          <a href="{% url 'architects:detail' offer.architect.id %}" class="font-medium text-charcoal-900 hover:underline">
             {{ offer.architect }}
           </a>
           <span class="text-xs font-medium px-2.5 py-1 rounded-full
             {% if offer.status == 'pending' %}bg-amber-50 text-amber-700
             {% elif offer.status == 'accepted' %}bg-green-50 text-green-700
-            {% elif offer.status == 'completed' %}bg-gray-100 text-gray-600
+            {% elif offer.status == 'completed' %}bg-charcoal-100 text-charcoal-600
             {% else %}bg-red-50 text-red-700{% endif %}">
             {{ offer.get_status_display }}
           </span>
         </div>
 
         {% if offer.status == 'accepted' or offer.status == 'completed' %}
-          <div class="text-sm text-slate-600 mb-3">
+          <div class="text-sm text-charcoal-600 mb-3">
             <p>Telefon: {{ offer.architect.user.phone }}</p>
             {% if offer.architect.telegram_username %}
               <p>Telegram: @{{ offer.architect.telegram_username }}</p>
@@ -71,14 +71,14 @@
             <form method="post" action="{% url 'offers:user_respond' offer.pk %}">
               {% csrf_token %}
               <input type="hidden" name="decision" value="accept">
-              <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+              <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">
                 Qabul qilish
               </button>
             </form>
             <form method="post" action="{% url 'offers:user_respond' offer.pk %}">
               {% csrf_token %}
               <input type="hidden" name="decision" value="reject">
-              <button type="submit" class="text-sm border border-gray-300 text-slate-700 font-medium rounded-lg px-4 py-2 hover:border-gray-400 transition">
+              <button type="submit" class="text-sm border border-charcoal-300 text-charcoal-700 font-medium rounded-lg px-4 py-2 hover:border-charcoal-400 transition">
                 Rad etish
               </button>
             </form>
@@ -88,7 +88,7 @@
         {% if offer.status == 'accepted' %}
           <form method="post" action="{% url 'offers:complete' offer.pk %}">
             {% csrf_token %}
-            <button type="submit" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition">
+            <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">
               Loyihani yakunlash
             </button>
           </form>
@@ -96,26 +96,26 @@
 
         {% if offer.status == 'completed' %}
           {% if offer.review %}
-            <div class="text-sm text-slate-600 border-t border-gray-100 pt-3 mt-3">
+            <div class="text-sm text-charcoal-600 border-t border-charcoal-100 pt-3 mt-3">
               <div class="flex items-center gap-1 text-amber-400">
                 {% for i in "12345" %}
                   {% if forloop.counter <= offer.review.rating %}★{% else %}☆{% endif %}
                 {% endfor %}
-                <span class="text-slate-400 ml-1">{{ offer.review.rating }}</span>
+                <span class="text-charcoal-400 ml-1">{{ offer.review.rating }}</span>
               </div>
               {% if offer.review.comment %}
-                <p class="text-slate-600 mt-1">{{ offer.review.comment }}</p>
+                <p class="text-charcoal-600 mt-1">{{ offer.review.comment }}</p>
               {% endif %}
             </div>
           {% else %}
-            <a href="{% url 'reviews:submit' offer.pk %}" class="text-sm bg-slate-800 text-white font-medium rounded-lg px-4 py-2 hover:bg-slate-900 transition inline-block">
+            <a href="{% url 'reviews:submit' offer.pk %}" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition inline-block">
               Baholash
             </a>
           {% endif %}
         {% endif %}
       </div>
     {% empty %}
-      <p class="text-sm text-slate-400">Hozircha arizalar yo'q.</p>
+      <p class="text-sm text-charcoal-400">Hozircha arizalar yo'q.</p>
     {% endfor %}
   </div>
 </div>

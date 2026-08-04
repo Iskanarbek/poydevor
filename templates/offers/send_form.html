@@ -4,8 +4,8 @@
 
 {% block content %}
 <div class="max-w-xl mx-auto">
-  <h1 class="text-2xl font-semibold text-slate-900 mb-2">{{ architect }}ga ariza yuborish</h1>
-  <p class="text-sm text-slate-500 mb-6">
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">{{ architect }}ga ariza yuborish</h1>
+  <p class="text-sm text-charcoal-500 mb-6">
     Arxitektor qabul qilgandan so'ng aloqa ma'lumotlari (telefon, telegram) ikkala tomon uchun ham ko'rinadi.
   </p>
 
@@ -14,22 +14,22 @@
   {% endif %}
 
   {% if applications %}
-    <form method="post" class="border border-gray-200 rounded-xl p-6">
+    <form method="post" class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
       {% csrf_token %}
-      <label class="block text-sm text-slate-500 mb-2">Qaysi e'lon uchun ariza yuborasiz?</label>
-      <select name="application" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 mb-4">
+      <label class="block text-sm text-charcoal-500 mb-2">Qaysi e'lon uchun ariza yuborasiz?</label>
+      <select name="application" class="w-full rounded-lg border border-charcoal-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay-400 mb-4">
         {% for application in applications %}
           <option value="{{ application.pk }}">{{ application.location }} — {{ application.rooms_count }} xona</option>
         {% endfor %}
       </select>
-      <button type="submit" class="w-full bg-slate-800 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-slate-900 transition">
+      <button type="submit" class="w-full bg-clay-600 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-clay-700 transition">
         Ariza yuborish
       </button>
     </form>
   {% else %}
-    <div class="border border-gray-200 rounded-xl p-6 text-sm text-slate-600">
+    <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6 text-sm text-charcoal-600">
       Sizda ochiq e'lonlar yo'q.
-      <a href="{% url 'applications:post' %}" class="text-slate-800 font-medium underline">Yangi e'lon joylashtirish</a>
+      <a href="{% url 'applications:post' %}" class="text-clay-700 font-medium underline">Yangi e'lon joylashtirish</a>
     </div>
   {% endif %}
 </div>
