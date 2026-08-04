@@ -119,3 +119,30 @@ class ArchitectRoleGateTests(TestCase):
         response = self.client.get(reverse("architects:dashboard"))
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, reverse("dashboard"))
+
+
+class ProjectCreateViewTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            phone="+998901112233", password="x",
+            first_name="Nodir", last_name="Yusupov", role=User.Role.ARCHITECT,
+        )
+        self.profile = ArchitectProfile.objects.create(user=self.user, bio="x")
+        self.style = Style.objects.create(name="Zamonaviy")
+        self.client.force_login(self.user)
+
+    def test_create_without_order_field_succeeds_and_auto_assigns_order(self):
+        response = self.client.post(reverse("architects:project_create"), {
+            "title": "Birinchi loyiha", "description": "desc", "style": self.style.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(PortfolioProject.objects.filter(title="Birinchi loyiha").exists())
+        first_project = PortfolioProject.objects.get(title="Birinchi loyiha")
+        self.assertEqual(first_project.order, 1)
+
+        response = self.client.post(reverse("architects:project_create"), {
+            "title": "Ikkinchi loyiha", "description": "desc", "style": self.style.id,
+        })
+        self.assertEqual(response.status_code, 302)
+        second_project = PortfolioProject.objects.get(title="Ikkinchi loyiha")
+        self.assertGreater(second_project.order, first_project.order)

@@ -1,6 +1,7 @@
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Max
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.models import Application
@@ -79,6 +80,7 @@ def project_create(request):
         if form.is_valid():
             project = form.save(commit=False)
             project.architect = profile
+            project.order = (profile.projects.aggregate(Max("order"))["order__max"] or 0) + 1
             project.save()
             return redirect("architects:dashboard")
     else:

@@ -28,7 +28,7 @@ class ArchitectOnboardingForm(ArchitectProfileForm):
 class PortfolioProjectForm(forms.ModelForm):
     class Meta:
         model = PortfolioProject
-        fields = ["title", "description", "style", "order"]
+        fields = ["title", "description", "style"]
 
 
 class PortfolioImageForm(forms.ModelForm):
