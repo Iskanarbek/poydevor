@@ -29,6 +29,27 @@ class SignupViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "band")  # "band" = "taken" in Uzbek error copy
 
+    def test_signup_rejects_weak_password(self):
+        response = self.client.post(reverse("accounts:signup"), {
+            "first_name": "Aziz", "last_name": "Karimov",
+            "phone": "+998901112233", "password": "12345678",
+            "role": User.Role.USER,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), 0)
+        self.assertTrue(response.context["form"].errors.get("password"))
+
+    def test_signup_requires_first_and_last_name(self):
+        response = self.client.post(reverse("accounts:signup"), {
+            "first_name": "", "last_name": "",
+            "phone": "+998901112233", "password": "testpass123",
+            "role": User.Role.USER,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(User.objects.count(), 0)
+        self.assertTrue(response.context["form"].errors.get("first_name"))
+        self.assertTrue(response.context["form"].errors.get("last_name"))
+
 
 class LoginViewTests(TestCase):
     def setUp(self):
