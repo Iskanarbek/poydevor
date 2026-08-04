@@ -13,6 +13,7 @@ from architects.forms import (
 )
 from architects.models import ArchitectProfile, Style
 from offers.models import Offer
+from offers.services import MAX_ACTIVE_OFFERS_PER_APPLICATION
 from wallet.models import Wallet
 
 
@@ -57,6 +58,9 @@ def dashboard(request):
     open_applications = Application.objects.filter(status=Application.Status.OPEN).annotate(
         pending_offers_count=Count("offers", filter=Q(offers__status=Offer.Status.PENDING)),
     )
+    # Broader than the DB's partial unique constraint (which only blocks a second
+    # PENDING offer): an accepted offer is included here too so the "already
+    # applied" UI state also covers applications this architect has already won.
     already_applied_application_ids = set(
         Offer.objects.filter(
             architect=profile,
@@ -68,6 +72,8 @@ def dashboard(request):
         "profile": profile,
         "open_applications": open_applications,
         "already_applied_application_ids": already_applied_application_ids,
+        "max_active_offers": MAX_ACTIVE_OFFERS_PER_APPLICATION,
+        "offer_slot_range": range(1, MAX_ACTIVE_OFFERS_PER_APPLICATION + 1),
     })
 
 
