@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'accounts',
     'architects',
     'applications',
+    'wallet',
 ]
 
 MIDDLEWARE = [
