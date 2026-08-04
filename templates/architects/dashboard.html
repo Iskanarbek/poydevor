@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Boshqaruv paneli — Poydevor{% endblock %}
+
+{% block content %}
+<div x-data="{tab: 'portfolio'}">
+  <div class="flex gap-2 border-b border-gray-200 mb-8">
+    <button
+      @click="tab = 'portfolio'"
+      :class="tab === 'portfolio' ? 'border-slate-800 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      class="px-4 py-3 text-sm font-medium border-b-2 transition"
+    >Portfolio</button>
+    <button
+      @click="tab = 'arizalar'"
+      :class="tab === 'arizalar' ? 'border-slate-800 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      class="px-4 py-3 text-sm font-medium border-b-2 transition"
+    >Arizalar</button>
+    <button
+      @click="tab = 'elonlar'"
+      :class="tab === 'elonlar' ? 'border-slate-800 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      class="px-4 py-3 text-sm font-medium border-b-2 transition"
+    >Ochiq e'lonlar</button>
+  </div>
+
+  <div x-show="tab === 'portfolio'">
+    <div class="flex items-start justify-between mb-6">
+      <div class="flex items-center gap-4">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="{{ profile }}" class="w-16 h-16 rounded-full object-cover">
+        {% else %}
+          <span class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+              <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12Zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9Z"/>
+            </svg>
+          </span>
+        {% endif %}
+        <div>
+          <h1 class="text-xl font-semibold text-slate-900">{{ profile }}</h1>
+          <p class="text-sm text-slate-500">{{ profile.bio|truncatewords:20 }}</p>
+        </div>
+      </div>
+      <a href="{% url 'architects:portfolio_edit' %}" class="text-sm text-slate-800 font-medium border border-slate-800 rounded-lg px-4 py-2 hover:bg-slate-800 hover:text-white transition whitespace-nowrap">
+        Profilni tahrirlash
+      </a>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-slate-900">Portfolio loyihalari</h2>
+      <a href="{% url 'architects:project_create' %}" class="text-sm text-slate-800 font-medium border border-slate-800 rounded-lg px-4 py-2 hover:bg-slate-800 hover:text-white transition">
+        Loyiha qo'shish
+      </a>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      {% for project in profile.projects.all %}
+        <div class="border border-gray-200 rounded-xl p-4">
+          <h3 class="font-medium text-slate-900">{{ project.title }}</h3>
+          {% if project.style %}<p class="text-xs text-slate-500 mb-1">{{ project.style }}</p>{% endif %}
+          <p class="text-sm text-slate-600 mb-3">{{ project.description|truncatewords:15 }}</p>
+          <p class="text-xs text-slate-400 mb-3">{{ project.images.count }} ta rasm</p>
+          <a href="{% url 'architects:project_image_add' project.id %}" class="text-sm text-slate-800 font-medium hover:underline">
+            Rasm qo'shish
+          </a>
+        </div>
+      {% empty %}
+        <p class="text-sm text-slate-400">Hali portfolio loyihalari qo'shilmagan.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div x-show="tab === 'arizalar'">
+    {% comment %}filled in Chunk 4{% endcomment %}
+    <p class="text-sm text-slate-400">Bu bo'lim tez orada ishga tushadi.</p>
+  </div>
+
+  <div x-show="tab === 'elonlar'">
+    {% comment %}filled in Chunk 5{% endcomment %}
+    <p class="text-sm text-slate-400">Bu bo'lim tez orada ishga tushadi.</p>
+  </div>
+</div>
+{% endblock %}

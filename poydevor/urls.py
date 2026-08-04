@@ -25,6 +25,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('boshqaruv/', dashboard_redirect, name='dashboard'),
     path('', include('accounts.urls')),
+    path('', include('architects.urls')),
 ]
 
 if settings.DEBUG:
