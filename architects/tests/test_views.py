@@ -5,7 +5,10 @@ from django.db import connection
 from django.urls import reverse
 
 from accounts.models import User
+from applications.models import Application
 from architects.models import ArchitectProfile, PortfolioImage, PortfolioProject, Skill, Style
+from offers.models import Offer
+from wallet.models import Wallet
 
 
 class OnboardingViewTests(TestCase):
@@ -180,3 +183,82 @@ class ProjectImageAddViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         second_image = self.project.images.exclude(id=first_image.id).get()
         self.assertGreater(second_image.order, first_image.order)
+
+
+class DashboardOpenApplicationsSlotIndicatorTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            phone="+998904445566", password="x", first_name="Aziz", last_name="K", role=User.Role.USER,
+        )
+        self.user = User.objects.create_user(
+            phone="+998901112255", password="x",
+            first_name="Nodir", last_name="Yusupov", role=User.Role.ARCHITECT,
+        )
+        self.profile = ArchitectProfile.objects.create(user=self.user, bio="x")
+        Wallet.objects.create(architect=self.profile, balance=100)
+        self.client.force_login(self.user)
+
+    def _make_application(self):
+        return Application.objects.create(owner=self.owner, rooms_count=3, location="Toshkent")
+
+    def _other_architect(self, phone):
+        other_user = User.objects.create_user(
+            phone=phone, password="x", first_name="Boshqa", last_name="Arxitektor", role=User.Role.ARCHITECT,
+        )
+        other_profile = ArchitectProfile.objects.create(user=other_user, bio="y")
+        Wallet.objects.create(architect=other_profile, balance=100)
+        return other_profile
+
+    def test_zero_pending_offers_shows_0_of_3(self):
+        application = self._make_application()
+        response = self.client.get(reverse("architects:dashboard"))
+        self.assertEqual(response.status_code, 200)
+        ctx_app = response.context["open_applications"].get(pk=application.pk)
+        self.assertEqual(ctx_app.pending_offers_count, 0)
+        self.assertContains(response, "0/3")
+
+    def test_one_pending_offer_shows_1_of_3(self):
+        application = self._make_application()
+        architect_2 = self._other_architect("+998902223311")
+        Offer.objects.create(application=application, architect=architect_2, source=Offer.Source.USER_INVITED)
+        response = self.client.get(reverse("architects:dashboard"))
+        ctx_app = response.context["open_applications"].get(pk=application.pk)
+        self.assertEqual(ctx_app.pending_offers_count, 1)
+        self.assertContains(response, "1/3")
+
+    def test_two_pending_offers_shows_2_of_3(self):
+        application = self._make_application()
+        architect_2 = self._other_architect("+998902223312")
+        architect_3 = self._other_architect("+998902223313")
+        Offer.objects.create(application=application, architect=architect_2, source=Offer.Source.USER_INVITED)
+        Offer.objects.create(application=application, architect=architect_3, source=Offer.Source.USER_INVITED)
+        response = self.client.get(reverse("architects:dashboard"))
+        ctx_app = response.context["open_applications"].get(pk=application.pk)
+        self.assertEqual(ctx_app.pending_offers_count, 2)
+        self.assertContains(response, "2/3")
+
+    def test_three_pending_offers_shows_3_of_3_and_disables_cta(self):
+        application = self._make_application()
+        architect_2 = self._other_architect("+998902223314")
+        architect_3 = self._other_architect("+998902223315")
+        architect_4 = self._other_architect("+998902223316")
+        Offer.objects.create(application=application, architect=architect_2, source=Offer.Source.USER_INVITED)
+        Offer.objects.create(application=application, architect=architect_3, source=Offer.Source.USER_INVITED)
+        Offer.objects.create(application=application, architect=architect_4, source=Offer.Source.USER_INVITED)
+        response = self.client.get(reverse("architects:dashboard"))
+        ctx_app = response.context["open_applications"].get(pk=application.pk)
+        self.assertEqual(ctx_app.pending_offers_count, 3)
+        self.assertContains(response, "3/3")
+        apply_url = reverse("offers:architect_apply", args=[application.pk])
+        self.assertNotContains(response, f'href="{apply_url}"')
+        self.assertContains(response, "Barcha joylar band")
+
+    def test_architect_with_existing_pending_offer_sees_already_applied_state(self):
+        application = self._make_application()
+        Offer.objects.create(
+            application=application, architect=self.profile, source=Offer.Source.ARCHITECT_APPLIED,
+        )
+        response = self.client.get(reverse("architects:dashboard"))
+        apply_url = reverse("offers:architect_apply", args=[application.pk])
+        self.assertNotContains(response, f'href="{apply_url}"')
+        self.assertContains(response, "Siz allaqachon ariza yubordingiz")

@@ -1,7 +1,7 @@
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Max
+from django.db.models import Count, Max, Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.models import Application
@@ -12,6 +12,7 @@ from architects.forms import (
     PortfolioProjectForm,
 )
 from architects.models import ArchitectProfile, Style
+from offers.models import Offer
 from wallet.models import Wallet
 
 
@@ -53,9 +54,20 @@ def onboarding(request):
 @architect_required
 def dashboard(request):
     profile = get_object_or_404(ArchitectProfile, user=request.user)
-    open_applications = Application.objects.filter(status=Application.Status.OPEN)
+    open_applications = Application.objects.filter(status=Application.Status.OPEN).annotate(
+        pending_offers_count=Count("offers", filter=Q(offers__status=Offer.Status.PENDING)),
+    )
+    already_applied_application_ids = set(
+        Offer.objects.filter(
+            architect=profile,
+            application__status=Application.Status.OPEN,
+            status__in=[Offer.Status.PENDING, Offer.Status.ACCEPTED],
+        ).values_list("application_id", flat=True)
+    )
     return render(request, "architects/dashboard.html", {
-        "profile": profile, "open_applications": open_applications,
+        "profile": profile,
+        "open_applications": open_applications,
+        "already_applied_application_ids": already_applied_application_ids,
     })
 
 

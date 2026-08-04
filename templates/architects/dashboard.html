@@ -128,9 +128,29 @@
             {% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Maydon noma'lum{% endif %}
           </p>
           {% if application.budget %}<p class="text-sm text-charcoal-500 mb-3">Byudjet: {{ application.budget }}</p>{% endif %}
-          <a href="{% url 'offers:architect_apply' application.pk %}" class="inline-block text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">
-            Qatnashish (20 tanga)
-          </a>
+
+          <div class="flex items-center gap-2 mb-3">
+            <span class="flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full {% if application.pending_offers_count >= 1 %}bg-clay-600{% else %}border border-clay-300 bg-transparent{% endif %}"></span>
+              <span class="w-2.5 h-2.5 rounded-full {% if application.pending_offers_count >= 2 %}bg-clay-600{% else %}border border-clay-300 bg-transparent{% endif %}"></span>
+              <span class="w-2.5 h-2.5 rounded-full {% if application.pending_offers_count >= 3 %}bg-clay-600{% else %}border border-clay-300 bg-transparent{% endif %}"></span>
+            </span>
+            <span class="text-xs text-charcoal-500">{{ application.pending_offers_count }}/3 joy band</span>
+          </div>
+
+          {% if application.pk in already_applied_application_ids %}
+            <span class="inline-block text-sm bg-charcoal-100 text-charcoal-400 font-medium rounded-lg px-4 py-2 cursor-not-allowed">
+              Siz allaqachon ariza yubordingiz
+            </span>
+          {% elif application.pending_offers_count >= 3 %}
+            <span class="inline-block text-sm bg-charcoal-100 text-charcoal-400 font-medium rounded-lg px-4 py-2 cursor-not-allowed">
+              Barcha joylar band
+            </span>
+          {% else %}
+            <a href="{% url 'offers:architect_apply' application.pk %}" class="inline-block text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">
+              Qatnashish (20 tanga)
+            </a>
+          {% endif %}
         </div>
       {% empty %}
         <p class="text-sm text-charcoal-500">Hozircha ochiq e'lonlar yo'q.</p>
