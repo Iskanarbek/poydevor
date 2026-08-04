@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.test import TestCase
 
 from accounts.models import User
@@ -35,5 +37,24 @@ class SubmitReviewTests(TestCase):
         submit_review(offer1, self.owner, rating=4, comment="Yaxshi")
         offer2 = self._completed_offer()
         submit_review(offer2, self.owner, rating=2, comment="O'rtacha")
+        self.architect.refresh_from_db()
+        self.assertEqual(self.architect.rating, 3)
+
+    def test_submit_review_locks_architect_row_before_recomputing_rating(self):
+        """Guards against the lost-update race: two near-simultaneous submissions for
+        different offers of the same architect must serialize on the ArchitectProfile
+        row (via select_for_update) before recomputing the average, so neither
+        transaction's aggregate misses the other's just-inserted review."""
+        offer1 = self._completed_offer()
+        offer2 = self._completed_offer()
+
+        with patch(
+            "reviews.services.ArchitectProfile.objects.select_for_update",
+            wraps=ArchitectProfile.objects.select_for_update,
+        ) as mock_select_for_update:
+            submit_review(offer1, self.owner, rating=4, comment="Yaxshi")
+            submit_review(offer2, self.owner, rating=2, comment="O'rtacha")
+
+        self.assertEqual(mock_select_for_update.call_count, 2)
         self.architect.refresh_from_db()
         self.assertEqual(self.architect.rating, 3)

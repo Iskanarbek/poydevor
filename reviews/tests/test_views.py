@@ -5,6 +5,7 @@ from accounts.models import User
 from applications.models import Application
 from architects.models import ArchitectProfile
 from offers.models import Offer
+from reviews.models import Review
 
 
 class SubmitReviewViewTests(TestCase):
@@ -28,4 +29,7 @@ class SubmitReviewViewTests(TestCase):
             "rating": 5, "comment": "Zo'r ish!",
         })
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(hasattr(self.offer, "review") or self.offer.review is not None)
+        review = Review.objects.get(offer=self.offer)
+        self.assertEqual(review.rating, 5)
+        self.assertEqual(review.comment, "Zo'r ish!")
+        self.assertEqual(review.architect, self.architect)
