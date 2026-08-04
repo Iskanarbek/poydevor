@@ -101,7 +101,7 @@
                 {% for i in "12345" %}
                   {% if forloop.counter <= offer.review.rating %}★{% else %}☆{% endif %}
                 {% endfor %}
-                <span class="text-charcoal-400 ml-1">{{ offer.review.rating }}</span>
+                <span class="text-charcoal-500 ml-1">{{ offer.review.rating }}</span>
               </div>
               {% if offer.review.comment %}
                 <p class="text-charcoal-600 mt-1">{{ offer.review.comment }}</p>
@@ -115,7 +115,7 @@
         {% endif %}
       </div>
     {% empty %}
-      <p class="text-sm text-charcoal-400">Hozircha arizalar yo'q.</p>
+      <p class="text-sm text-charcoal-500">Hozircha arizalar yo'q.</p>
     {% endfor %}
   </div>
 </div>

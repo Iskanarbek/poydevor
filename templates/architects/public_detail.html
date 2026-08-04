@@ -8,7 +8,7 @@
     {% if profile.avatar %}
       <img src="{{ profile.avatar.url }}" alt="{{ profile }}" class="w-20 h-20 rounded-full object-cover">
     {% else %}
-      <span class="w-20 h-20 rounded-full bg-charcoal-100 flex items-center justify-center text-charcoal-400">
+      <span class="w-20 h-20 rounded-full bg-charcoal-100 flex items-center justify-center text-charcoal-500">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-10 h-10">
           <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12Zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9Z"/>
         </svg>
@@ -20,7 +20,7 @@
         {% for i in "12345" %}
           {% if forloop.counter <= profile.rating %}★{% else %}☆{% endif %}
         {% endfor %}
-        <span class="text-charcoal-400 ml-1">{{ profile.rating }}</span>
+        <span class="text-charcoal-500 ml-1">{{ profile.rating }}</span>
       </div>
       <p class="text-sm text-charcoal-500">{{ profile.completed_projects_count }} loyiha yakunlangan</p>
     </div>
@@ -35,7 +35,7 @@
         Ariza yuborish
       </a>
     {% endif %}
-    <p class="text-xs text-charcoal-400 mt-2 max-w-[220px]">
+    <p class="text-xs text-charcoal-500 mt-2 max-w-[220px]">
       Arxitektor qabul qilgandan so'ng aloqa ma'lumotlari ko'rinadi
     </p>
   </div>
@@ -99,7 +99,7 @@
       </div>
     </div>
   {% empty %}
-    <p class="text-sm text-charcoal-400">Ushbu uslubda loyihalar topilmadi.</p>
+    <p class="text-sm text-charcoal-500">Ushbu uslubda loyihalar topilmadi.</p>
   {% endfor %}
 </div>
 
@@ -120,7 +120,7 @@
       {% endif %}
     </div>
   {% empty %}
-    <p class="text-sm text-charcoal-400">Hozircha sharhlar yo'q.</p>
+    <p class="text-sm text-charcoal-500">Hozircha sharhlar yo'q.</p>
   {% endfor %}
 </div>
 {% endblock %}

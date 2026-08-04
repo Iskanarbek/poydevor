@@ -43,7 +43,7 @@
             <span class="ml-1">{{ checkbox.choice_label }}</span>
           </label>
         {% empty %}
-          <p class="text-sm text-charcoal-400">Uslublar hali qo'shilmagan.</p>
+          <p class="text-sm text-charcoal-500">Uslublar hali qo'shilmagan.</p>
         {% endfor %}
       </div>
       {% if form.styles.errors %}<p class="mt-1 text-sm text-red-600">{{ form.styles.errors|striptags }}</p>{% endif %}
@@ -58,7 +58,7 @@
             <span class="ml-1">{{ checkbox.choice_label }}</span>
           </label>
         {% empty %}
-          <p class="text-sm text-charcoal-400">Ko'nikmalar hali qo'shilmagan.</p>
+          <p class="text-sm text-charcoal-500">Ko'nikmalar hali qo'shilmagan.</p>
         {% endfor %}
       </div>
       {% if form.skills.errors %}<p class="mt-1 text-sm text-red-600">{{ form.skills.errors|striptags }}</p>{% endif %}
