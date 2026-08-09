@@ -1,6 +1,5 @@
 .worktrees/
 venv/
-db.sqlite3
-media/
 __pycache__/
 *.pyc
+.DS_Store
