@@ -19,12 +19,13 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from poydevor.views import dashboard_redirect, home
+from poydevor.views import dashboard_redirect, home, internal_setup
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home, name='home'),
     path('boshqaruv/', dashboard_redirect, name='dashboard'),
+    path('internal/setup/', internal_setup, name='internal_setup'),
     path('', include('accounts.urls')),
     path('', include('architects.urls')),
     path('', include('applications.urls')),
