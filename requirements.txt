@@ -1,4 +1,13 @@
 asgiref==3.12.1
+certifi==2026.7.22
+charset-normalizer==3.4.9
+dj-database-url==3.1.2
 Django==5.2.16
+idna==3.18
 pillow==12.3.0
+psycopg2-binary==2.9.12
+requests==2.34.2
 sqlparse==0.5.5
+tqdm==4.70.0
+urllib3==2.7.0
+vercel_blob==0.4.2

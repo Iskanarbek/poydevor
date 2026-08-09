@@ -96,12 +96,26 @@ WSGI_APPLICATION = 'poydevor.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Vercel's filesystem is read-only at runtime, so SQLite (a local file)
+# can't be written to there — it only works for local development. In
+# production, connect a real Postgres database (e.g. via Vercel's Neon
+# integration) and its connection string arrives as DATABASE_URL.
+_database_url = os.environ.get("DATABASE_URL") or os.environ.get("POSTGRES_URL")
+if _database_url:
+    import dj_database_url
+
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=_database_url, conn_max_age=600, ssl_require=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -144,6 +158,15 @@ STATIC_URL = 'static/'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# New uploads go to Vercel Blob when a token is configured (real, persistent
+# storage — Vercel's own runtime filesystem can't be written to). Falls back
+# to local FileSystemStorage for development, where nothing needs to change.
+if os.environ.get("BLOB_READ_WRITE_TOKEN"):
+    STORAGES = {
+        "default": {"BACKEND": "poydevor.storage_backends.VercelBlobStorage"},
+        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

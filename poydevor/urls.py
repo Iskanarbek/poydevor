@@ -33,5 +33,11 @@ urlpatterns = [
     path('', include('reviews.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Django normally only serves /media/ this way when DEBUG=True (this view
+# isn't optimized for real production traffic). It's kept on unconditionally
+# here because the committed media/ directory (the seeded demo photos) still
+# needs to be readable in production, and Vercel's read-only filesystem means
+# there's no separate process serving those files another way. New uploads
+# don't hit this path at all when BLOB_READ_WRITE_TOKEN is set (see
+# settings.py) — they go straight to Vercel Blob instead.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
