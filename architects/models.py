@@ -26,7 +26,7 @@ class ArchitectProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="architect_profile")
     bio = models.TextField()
     telegram_username = models.CharField(max_length=50, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, null=True, max_length=500)
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
     completed_projects_count = models.PositiveIntegerField(default=0)
     styles = models.ManyToManyField(Style, related_name="architects", blank=True)
@@ -53,7 +53,10 @@ class PortfolioProject(models.Model):
 
 class PortfolioImage(models.Model):
     project = models.ForeignKey(PortfolioProject, on_delete=models.CASCADE, related_name="images")
-    image = models.ImageField(upload_to="portfolio/")
+    # max_length raised from Django's 100-char default: when Vercel Blob
+    # storage is active (see poydevor/storage_backends.py), the "name"
+    # stored here is the entire Blob CDN URL, which is well over 100 chars.
+    image = models.ImageField(upload_to="portfolio/", max_length=500)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

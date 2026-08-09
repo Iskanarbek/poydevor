@@ -16,7 +16,10 @@ class Application(models.Model):
     location = models.CharField(max_length=100)
     interior_style = models.ForeignKey(Style, on_delete=models.SET_NULL, null=True, blank=True, related_name="applications")
     budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    plan_pdf = models.FileField(upload_to="plans/", null=True, blank=True)
+    # max_length raised from Django's 100-char default to fit full Vercel
+    # Blob CDN URLs when that storage backend is active (see
+    # poydevor/storage_backends.py).
+    plan_pdf = models.FileField(upload_to="plans/", null=True, blank=True, max_length=500)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)
 
