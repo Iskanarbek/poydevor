@@ -16,7 +16,7 @@ class ArchitectWalletContextProcessorTests(TestCase):
         Wallet.objects.create(architect=profile, balance=980)
 
         self.client.login(phone="+998901112233", password="testpass123")
-        response = self.client.get(reverse("architects:dashboard"))
+        response = self.client.get(reverse("architects:freelancer_dashboard"))
 
         self.assertIn("architect_wallet", response.context)
         self.assertEqual(response.context["architect_wallet"].balance, 980)
@@ -30,7 +30,7 @@ class ArchitectWalletContextProcessorTests(TestCase):
         ArchitectProfile.objects.create(user=user, bio="Bio")
 
         self.client.login(phone="+998901112234", password="testpass123")
-        response = self.client.get(reverse("architects:dashboard"))
+        response = self.client.get(reverse("architects:freelancer_dashboard"))
 
         self.assertNotIn("architect_wallet", response.context)
 

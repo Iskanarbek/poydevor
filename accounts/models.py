@@ -13,6 +13,12 @@ class User(AbstractUser):
 
     phone = models.CharField(max_length=20, unique=True)
     role = models.CharField(max_length=10, choices=Role.choices)
+    # Set together with is_active=False when an admin freezes this account
+    # (accounts/services.py :: freeze_account). A frozen user can't log in —
+    # PhoneBackend and ModelBackend both refuse an inactive user — but the
+    # row and all their data stay exactly as they were.
+    frozen_at = models.DateTimeField(null=True, blank=True)
+    frozen_reason = models.CharField(max_length=255, blank=True)
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = ["first_name", "last_name", "role"]

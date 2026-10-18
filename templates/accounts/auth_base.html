@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block main %}
+{% get_media_prefix as MEDIA %}
+<main class="flex-1 grid lg:grid-cols-2">
+  <aside class="relative isolate hidden lg:block overflow-hidden bg-charcoal-900 text-white">
+    <img src="{{ MEDIA }}site/auth.jpg" alt="" class="absolute inset-0 -z-20 h-full w-full object-cover kenburns">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-t from-charcoal-900/90 via-charcoal-900/35 to-charcoal-900/20"></div>
+    <div class="absolute bottom-0 inset-x-0 p-12 max-w-xl">
+      <div class="reveal h-px w-14 bg-clay-400 mb-6" style="--d:.2s"></div>
+      <p class="reveal font-serif text-3xl leading-snug" style="--d:.3s">Yaxshi uy — mustahkam poydevordan boshlanadi.</p>
+      <p class="reveal mt-3 text-sm text-white/70" style="--d:.45s">Poydevor mijozlarni tasdiqlangan arxitektorlar va studiyalar bilan tanishtiradi.</p>
+    </div>
+  </aside>
+
+  <section class="flex items-center justify-center px-6 py-14 bg-cream-50 blueprint-light">
+    <div class="reveal w-full max-w-md rounded-3xl border border-charcoal-100 bg-white/95 shadow-[0_30px_60px_-30px_rgba(31,27,24,.35)] px-8 sm:px-10 py-10">
+      {% block auth_content %}{% endblock %}
+    </div>
+  </section>
+</main>
+{% endblock %}

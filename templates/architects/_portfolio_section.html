@@ -1,0 +1,62 @@
+{# The portfolio: progress towards the required minimum, then the projects. Needs: profile, progress, projects. #}
+{% if profile.portfolio_ok or progress.complete %}
+  {# Portfolio done (or excused): nothing to demand, so no notice at all. #}
+{% else %}
+  <div class="mb-6 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-5 text-amber-900">
+    <p class="flex items-center gap-2 font-semibold">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19zM12 10v4M12 17h.01"/></svg>
+      Portfolioni to'ldiring
+    </p>
+    <p class="mt-2 text-sm">
+      Kamida <b>{{ progress.need_projects }} ta loyiha</b> qo'shing. Har bir loyihada kamida bitta rasm bo'lishi kerak.
+      Bu bajarilmaguncha <b>loyihalaringiz hech kimga ko'rinmaydi</b>, siz e'lonlarda qatnasha olmaysiz va takliflarni qabul qila olmaysiz.
+    </p>
+    <div class="mt-4 flex items-center justify-between text-sm font-medium">
+      <span>{{ progress.ready }} / {{ progress.need_projects }} loyiha tayyor</span>
+      <span>yana {{ progress.missing }} ta kerak</span>
+    </div>
+    <div class="mt-1.5 h-2.5 overflow-hidden rounded-full bg-white">
+      <div class="h-full rounded-full bg-clay-500 transition-all duration-700" style="width: {{ progress.percent }}%"></div>
+    </div>
+    <a href="{% url 'architects:project_create' %}" class="btn-clay mt-4">Loyiha qo'shish <svg class="icon"><use href="#i-arrow"/></svg></a>
+  </div>
+{% endif %}
+
+{% if profile.awaiting_verification %}
+  <div class="mb-6 rounded-2xl border border-sky-300 bg-sky-50 px-5 py-5 text-sky-900">
+    <p class="flex items-center gap-2 font-semibold">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 7v5l3.5 2"/><circle cx="12" cy="12" r="9"/></svg>
+      Portfolio tayyor — tekshiruvda
+    </p>
+    <p class="mt-2 text-sm">
+      Rahmat! Portfolioingiz to'liq. <b>48 soat ichida</b> administrator uni ko'rib chiqadi va tasdiqlaydi.
+      Tasdiqlangandan so'ng e'lonlarda qatnasha olasiz va takliflarni qabul qila olasiz.
+    </p>
+  </div>
+{% elif profile.portfolio_verification == 'rejected' %}
+  <div class="mb-6 rounded-2xl border border-red-300 bg-red-50 px-5 py-5 text-red-900">
+    <p class="flex items-center gap-2 font-semibold">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      Portfolio rad etildi
+    </p>
+    <p class="mt-2 text-sm">
+      {% if profile.verification_note %}{{ profile.verification_note }}{% else %}Administrator portfolioingizni tasdiqlamadi.{% endif %}
+      Loyihalaringizni yangilang — qayta ko'rib chiqish uchun avtomatik yuboriladi.
+    </p>
+  </div>
+{% endif %}
+
+<div class="flex items-center justify-between mb-4">
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900">Portfolio loyihalari <span class="text-charcoal-400 font-normal">({{ progress.total }})</span></h2>
+  <a href="{% url 'architects:project_create' %}" class="text-sm text-clay-700 font-medium border border-clay-600 rounded-lg px-4 py-2 hover:bg-clay-600 hover:text-white transition">
+    Loyiha qo'shish
+  </a>
+</div>
+
+<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {% for project in projects %}
+    {% include "architects/_project_card.html" with project=project own=True %}
+  {% empty %}
+    <p class="text-sm text-charcoal-500 sm:col-span-2 lg:col-span-3">Hali loyihalar qo'shilmagan. «Loyiha qo'shish» tugmasidan boshlang.</p>
+  {% endfor %}
+</div>

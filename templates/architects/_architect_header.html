@@ -1,0 +1,51 @@
+{# The architect's profile block: photo, name, rating, skills and a short description. Needs: profile, project_count. Optional: is_owner, show_apply (an "Ariza yuborish" button), all_url (a button to their other projects). #}
+<section class="reveal overflow-hidden rounded-3xl border border-charcoal-200 bg-white shadow-sm">
+  <div class="h-2 bg-gradient-to-r from-charcoal-900 via-charcoal-700 to-clay-600"></div>
+  <div class="flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-start lg:justify-between">
+    <div class="flex min-w-0 gap-4 sm:gap-5">
+      {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="{{ profile.display_name }}" class="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-cream-50 shadow-md sm:h-24 sm:w-24">
+      {% else %}
+        <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-charcoal-100 text-charcoal-400 ring-4 ring-cream-50 sm:h-24 sm:w-24">
+          <svg class="icon !h-10 !w-10"><use href="#i-user"/></svg>
+        </span>
+      {% endif %}
+      <div class="min-w-0">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 class="font-serif text-2xl font-semibold leading-tight text-charcoal-900">
+            {% if all_url %}<a href="{{ all_url }}" class="transition hover:text-clay-700">{{ profile.display_name }}</a>{% else %}{{ profile.display_name }}{% endif %}
+          </h2>
+          <span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ profile.get_kind_display }}</span>
+        </div>
+        <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-charcoal-500">
+          <span class="flex items-center gap-1 text-amber-400">
+            {% for i in "12345" %}{% if forloop.counter <= profile.rating %}★{% else %}☆{% endif %}{% endfor %}
+            <span class="ml-1 font-medium text-charcoal-700">{{ profile.rating }}</span>
+          </span>
+          <span class="flex items-center gap-1.5"><svg class="icon !h-4 !w-4"><use href="#i-layers"/></svg>{{ project_count }} ta loyiha</span>
+        </div>
+        {% if profile.skills.all %}
+          <div class="mt-3 flex flex-wrap gap-1.5">
+            {% for skill in profile.skills.all %}
+              <span class="rounded-full bg-charcoal-100 px-3 py-1 text-xs font-medium text-charcoal-700">{{ skill.name }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% if profile.bio %}
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-600 {% if all_url %}line-clamp-3{% endif %}">{{ profile.bio }}</p>
+        {% elif is_owner %}
+          <p class="mt-3 text-sm text-charcoal-400">Tavsif yo'q — <a href="{% url 'architects:portfolio_edit' %}" class="text-clay-700 hover:underline">o'zingiz haqingizda yozing</a>.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col lg:items-stretch">
+      {% if all_url %}<a href="{{ all_url }}" class="btn-ghost">Boshqa loyihalari ({{ project_count }})</a>{% endif %}
+      {% if is_owner %}
+        <a href="{% url 'architects:portfolio_edit' %}" class="btn-ghost">Profilni tahrirlash</a>
+      {% elif show_apply %}
+        <a href="{% if user.is_authenticated %}{% url 'offers:send' profile.id %}{% else %}{% url 'accounts:login' %}{% endif %}" class="btn-clay">Ariza yuborish <svg class="icon"><use href="#i-arrow"/></svg></a>
+      {% endif %}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Admin panel — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">Admin panel</h1>
+  <p class="text-sm text-charcoal-500 mb-8">Xush kelibsiz, {{ request.user.first_name }}.</p>
+
+  <div class="grid gap-5 sm:grid-cols-3">
+    <a href="{% url 'staff_architects_list' %}" class="lift rounded-3xl border border-charcoal-200 bg-white shadow-sm p-6 block">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-3">Arxitektorlar</p>
+      <p class="text-3xl font-serif font-semibold text-charcoal-900">{{ counts.total_architects }}</p>
+      <p class="mt-2 text-sm text-charcoal-600">jami ro'yxatdan o'tgan</p>
+      {% if counts.pending_verification %}
+        <p class="mt-3 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+          {{ counts.pending_verification }} ta portfolio tekshiruv kutmoqda
+        </p>
+      {% endif %}
+      {% if counts.pending_registration %}
+        <p class="mt-2 inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-sky-100 text-sky-800">
+          {{ counts.pending_registration }} ta ro'yxat kutmoqda
+        </p>
+      {% endif %}
+    </a>
+
+    <a href="{% url 'revenue_dashboard' %}" class="lift rounded-3xl border border-charcoal-200 bg-white shadow-sm p-6 block">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-3">Daromad</p>
+      <p class="text-3xl font-serif font-semibold text-charcoal-900">→</p>
+      <p class="mt-2 text-sm text-charcoal-600">kun / hafta / oy / yil bo'yicha to'lovlar</p>
+    </a>
+
+    <a href="{% url 'admin:index' %}" class="lift rounded-3xl border border-charcoal-200 bg-white shadow-sm p-6 block">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-3">To'liq Django admin</p>
+      <p class="text-3xl font-serif font-semibold text-charcoal-900">→</p>
+      <p class="mt-2 text-sm text-charcoal-600">chuqurroq, texnik tahrirlash uchun</p>
+    </a>
+  </div>
+</div>
+{% endblock %}

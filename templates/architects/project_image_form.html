@@ -1,34 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Rasm qo'shish — Poydevor{% endblock %}
+{% block title %}Rasm qo'shish — {{ project.title }} — Poydevor{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
-  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">"{{ project.title }}" loyihasiga rasm qo'shish</h1>
-  <p class="text-sm text-charcoal-500 mb-8">Rasmlar tartib raqami bo'yicha karuselda ko'rsatiladi.</p>
+<div class="max-w-2xl mx-auto">
+  <a href="{% url 'architects:my_project' project.pk %}" class="reveal inline-flex items-center gap-1.5 text-sm text-charcoal-500 hover:text-charcoal-800 transition">
+    <svg class="icon"><use href="#i-back"/></svg> {{ project.title }}
+  </a>
+  <h1 class="reveal mt-3 mb-1 font-serif text-2xl font-semibold text-charcoal-900">Rasm qo'shish</h1>
+  <p class="reveal mb-5 text-sm text-charcoal-500">Yangi rasmlar mavjudlarining keyiniga qo'shiladi; birinchi rasm o'zgarmaydi.</p>
 
-  {% if form.non_field_errors %}
-    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
-      {{ form.non_field_errors }}
-    </div>
-  {% endif %}
-
-  <form method="post" enctype="multipart/form-data" class="space-y-5">
+  <form method="post" enctype="multipart/form-data" class="reveal space-y-4 rounded-3xl border border-charcoal-100 bg-white p-5 sm:p-7 shadow-sm" style="--d:.08s">
     {% csrf_token %}
-
-    <div>
-      <label for="{{ form.image.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.image.label }}</label>
-      {{ form.image }}
-      {% if form.image.errors %}<p class="mt-1 text-sm text-red-600">{{ form.image.errors|striptags }}</p>{% endif %}
+    <div data-form-errors></div>
+    <div data-field="images">
+      {% include "architects/_portfolio_uploader.html" with field=form.images min_files=1 max_side=2000 compact=True noun="rasm" %}
+      {% if form.images.errors %}<p data-error class="mt-1 text-sm text-red-600">{{ form.images.errors|striptags }}</p>{% endif %}
     </div>
-
-    <button type="submit" class="w-full rounded-lg bg-clay-600 text-white font-medium py-3 hover:bg-clay-700 transition">
-      Rasmni qo'shish
-    </button>
+    <button type="submit" class="btn-clay w-full !py-3">Rasmlarni yuklash <svg class="icon"><use href="#i-arrow"/></svg></button>
   </form>
-
-  <p class="mt-6 text-center text-sm text-charcoal-500">
-    <a href="{% url 'architects:dashboard' %}" class="text-clay-700 font-medium hover:underline">Boshqaruv paneliga qaytish</a>
-  </p>
 </div>
 {% endblock %}

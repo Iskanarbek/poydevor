@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Arxitektorlar — Admin panel{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-8">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-6">
+    <h1 class="font-serif text-2xl font-semibold text-charcoal-900">Arxitektorlar</h1>
+    <a href="{% url 'staff_home' %}" class="btn-ghost">← Admin panelga</a>
+  </div>
+
+  <form method="get" class="mb-6 grid gap-3 sm:grid-cols-4">
+    <input type="text" name="q" value="{{ q }}" placeholder="Ism yoki telefon raqami bo'yicha qidirish..." class="sm:col-span-2">
+    <select name="kind">
+      <option value="">Barcha turlar</option>
+      {% for value, label in kinds %}
+        <option value="{{ value }}" {% if value == kind %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="verification">
+      <option value="">Portfolio holati: barchasi</option>
+      {% for value, label in verifications %}
+        <option value="{{ value }}" {% if value == verification %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="account" class="sm:col-span-1">
+      <option value="">Hisob: barchasi</option>
+      <option value="active" {% if account == 'active' %}selected{% endif %}>Faol</option>
+      <option value="frozen" {% if account == 'frozen' %}selected{% endif %}>Muzlatilgan</option>
+    </select>
+    <button type="submit" class="btn-clay sm:col-span-1">Qidirish</button>
+  </form>
+
+  <div class="overflow-x-auto rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-cream-100 text-left text-xs uppercase tracking-wide text-charcoal-500">
+        <tr>
+          <th class="px-4 py-3">Ism</th>
+          <th class="px-4 py-3">Telefon</th>
+          <th class="px-4 py-3">Turi</th>
+          <th class="px-4 py-3">Loyihalar</th>
+          <th class="px-4 py-3">Portfolio</th>
+          <th class="px-4 py-3">Hisob</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-charcoal-100">
+        {% for a in architects %}
+          <tr>
+            <td class="px-4 py-3 font-medium text-charcoal-900">{{ a.display_name }}</td>
+            <td class="px-4 py-3 text-charcoal-600">{{ a.user.phone }}</td>
+            <td class="px-4 py-3 text-charcoal-600">{{ a.get_kind_display }}</td>
+            <td class="px-4 py-3 text-charcoal-600">{{ a.project_count }}</td>
+            <td class="px-4 py-3">
+              {% if a.portfolio_verification == 'verified' %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">Tasdiqlangan</span>
+              {% elif a.portfolio_verification == 'pending' %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">Kutmoqda</span>
+              {% elif a.portfolio_verification == 'rejected' %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700">Rad etilgan</span>
+              {% else %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-charcoal-100 text-charcoal-600">To'liq emas</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if a.user.is_active %}
+                <span class="text-xs font-medium text-green-700">● Faol</span>
+              {% else %}
+                <span class="text-xs font-medium text-red-700">● Muzlatilgan</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="{% url 'staff_architect_detail' a.pk %}" class="text-clay-700 font-medium hover:underline">Ko'rish →</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="px-4 py-6 text-center text-charcoal-500">Hech narsa topilmadi.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

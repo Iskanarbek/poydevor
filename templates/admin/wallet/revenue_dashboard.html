@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Daromad paneli — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto py-8">
+  <div class="flex items-center justify-between flex-wrap gap-3 mb-8">
+    <div>
+      <h1 class="font-serif text-2xl font-semibold text-charcoal-900">Daromad paneli</h1>
+      <p class="text-sm text-charcoal-500">Payme/Click orqali to'langan va hamyonga qo'shilgan tangalar asosida.</p>
+    </div>
+    <a href="{% url 'staff_home' %}" class="btn-ghost">← Admin panelga</a>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-10">
+    <div class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-2">Bugun</p>
+      <p class="text-2xl font-serif font-semibold text-charcoal-900">{{ summary.today.revenue|floatformat:"0g" }} so'm</p>
+      <p class="text-xs text-charcoal-500 mt-1">{{ summary.today.orders }} ta to'lov · {{ summary.today.coins }} tanga</p>
+    </div>
+    <div class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-2">Shu hafta</p>
+      <p class="text-2xl font-serif font-semibold text-charcoal-900">{{ summary.week.revenue|floatformat:"0g" }} so'm</p>
+      <p class="text-xs text-charcoal-500 mt-1">{{ summary.week.orders }} ta to'lov · {{ summary.week.coins }} tanga</p>
+    </div>
+    <div class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-2">Shu oy</p>
+      <p class="text-2xl font-serif font-semibold text-charcoal-900">{{ summary.month.revenue|floatformat:"0g" }} so'm</p>
+      <p class="text-xs text-charcoal-500 mt-1">{{ summary.month.orders }} ta to'lov · {{ summary.month.coins }} tanga</p>
+    </div>
+    <div class="rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5">
+      <p class="text-xs font-medium uppercase tracking-wide text-charcoal-500 mb-2">Shu yil</p>
+      <p class="text-2xl font-serif font-semibold text-charcoal-900">{{ summary.year.revenue|floatformat:"0g" }} so'm</p>
+      <p class="text-xs text-charcoal-500 mt-1">{{ summary.year.orders }} ta to'lov · {{ summary.year.coins }} tanga</p>
+    </div>
+    <div class="rounded-2xl border border-clay-300 bg-clay-50 shadow-sm p-5">
+      <p class="text-xs font-medium uppercase tracking-wide text-clay-700 mb-2">Jami (hammasi)</p>
+      <p class="text-2xl font-serif font-semibold text-charcoal-900">{{ summary.all_time.revenue|floatformat:"0g" }} so'm</p>
+      <p class="text-xs text-charcoal-500 mt-1">{{ summary.all_time.orders }} ta to'lov · {{ summary.all_time.coins }} tanga</p>
+    </div>
+  </div>
+
+  <div class="grid gap-8 lg:grid-cols-2">
+    <div>
+      <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Kunlar bo'yicha (so'nggi 14 kun)</h2>
+      <div class="overflow-hidden rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+        <table class="min-w-full text-sm">
+          <thead class="bg-cream-100 text-left text-xs uppercase tracking-wide text-charcoal-500">
+            <tr><th class="px-4 py-2.5">Sana</th><th class="px-4 py-2.5">To'lovlar</th><th class="px-4 py-2.5">Daromad</th></tr>
+          </thead>
+          <tbody class="divide-y divide-charcoal-100">
+            {% for row in daily %}
+              <tr><td class="px-4 py-2.5">{{ row.day|date:"d.m.Y" }}</td><td class="px-4 py-2.5">{{ row.orders }}</td><td class="px-4 py-2.5 font-medium">{{ row.revenue|floatformat:"0g" }} so'm</td></tr>
+            {% empty %}
+              <tr><td colspan="3" class="px-4 py-6 text-center text-charcoal-500">Hali to'lov yo'q.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Oylar bo'yicha (so'nggi 12 oy)</h2>
+      <div class="overflow-hidden rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+        <table class="min-w-full text-sm">
+          <thead class="bg-cream-100 text-left text-xs uppercase tracking-wide text-charcoal-500">
+            <tr><th class="px-4 py-2.5">Oy</th><th class="px-4 py-2.5">To'lovlar</th><th class="px-4 py-2.5">Daromad</th></tr>
+          </thead>
+          <tbody class="divide-y divide-charcoal-100">
+            {% for row in monthly %}
+              <tr><td class="px-4 py-2.5">{{ row.month|date:"F Y" }}</td><td class="px-4 py-2.5">{{ row.orders }}</td><td class="px-4 py-2.5 font-medium">{{ row.revenue|floatformat:"0g" }} so'm</td></tr>
+            {% empty %}
+              <tr><td colspan="3" class="px-4 py-6 text-center text-charcoal-500">Hali to'lov yo'q.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-10">
+    <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">So'nggi to'lovlar</h2>
+    <div class="overflow-x-auto rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+      <table class="min-w-full text-sm">
+        <thead class="bg-cream-100 text-left text-xs uppercase tracking-wide text-charcoal-500">
+          <tr><th class="px-4 py-2.5">Sana</th><th class="px-4 py-2.5">Arxitektor</th><th class="px-4 py-2.5">Usul</th><th class="px-4 py-2.5">Tanga</th><th class="px-4 py-2.5">Summa</th></tr>
+        </thead>
+        <tbody class="divide-y divide-charcoal-100">
+          {% for order in recent %}
+            <tr>
+              <td class="px-4 py-2.5">{{ order.paid_at|date:"d.m.Y H:i" }}</td>
+              <td class="px-4 py-2.5">{{ order.wallet.architect }}</td>
+              <td class="px-4 py-2.5">{{ order.get_provider_display }}</td>
+              <td class="px-4 py-2.5">{{ order.coins }}</td>
+              <td class="px-4 py-2.5 font-medium">{{ order.amount_uzs|floatformat:"0g" }} so'm</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="px-4 py-6 text-center text-charcoal-500">Hali to'lov yo'q.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

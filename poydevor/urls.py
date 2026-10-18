@@ -19,13 +19,33 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
-from poydevor.views import dashboard_redirect, home, internal_setup
+from poydevor import staff_panel
+from poydevor.views import dashboard_redirect, home, internal_expire_orders, internal_setup
+from wallet.admin_views import revenue_dashboard
 
 urlpatterns = [
+    # Our own staff panel — separate from Django's built-in /admin/ (kept
+    # below for low-level data fixes, but staff use this one day to day).
+    path('admin-panel/kirish/', staff_panel.staff_login, name='staff_login'),
+    path('admin-panel/', staff_panel.staff_home, name='staff_home'),
+    path('admin-panel/arxitektorlar/', staff_panel.architects_list, name='staff_architects_list'),
+    path('admin-panel/arxitektorlar/<int:pk>/', staff_panel.architect_detail, name='staff_architect_detail'),
+    path('admin-panel/arxitektorlar/<int:pk>/tasdiqlash/', staff_panel.architect_verify, name='staff_architect_verify'),
+    path('admin-panel/arxitektorlar/<int:pk>/rad-etish/', staff_panel.architect_reject, name='staff_architect_reject'),
+    path(
+        'admin-panel/arxitektorlar/<int:pk>/royxat-tasdiqlash/',
+        staff_panel.architect_approve_registration, name='staff_architect_approve_registration',
+    ),
+    path(
+        'admin-panel/arxitektorlar/<int:pk>/royxat-rad-etish/',
+        staff_panel.architect_reject_registration, name='staff_architect_reject_registration',
+    ),
+    path('admin-panel/daromad/', revenue_dashboard, name='revenue_dashboard'),
     path('admin/', admin.site.urls),
     path('', home, name='home'),
     path('boshqaruv/', dashboard_redirect, name='dashboard'),
     path('internal/setup/', internal_setup, name='internal_setup'),
+    path('internal/expire-orders/', internal_expire_orders, name='internal_expire_orders'),
     path('', include('accounts.urls')),
     path('', include('architects.urls')),
     path('', include('applications.urls')),

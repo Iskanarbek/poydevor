@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Loyihani tahrirlash — Poydevor{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+  <a href="{% url 'architects:my_project' project.pk %}" class="reveal inline-flex items-center gap-1.5 text-sm text-charcoal-500 transition hover:text-charcoal-800">
+    <svg class="icon"><use href="#i-back"/></svg> {{ project.title }}
+  </a>
+  <h1 class="reveal mb-5 mt-3 font-serif text-2xl font-semibold text-charcoal-900">Loyihani tahrirlash</h1>
+
+  <form method="post" enctype="multipart/form-data" class="reveal space-y-4 rounded-3xl border border-charcoal-100 bg-white p-5 shadow-sm sm:p-7" style="--d:.08s">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label for="{{ form.title.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.title.label }} <span class="text-clay-600">*</span></label>
+        {{ form.title }}
+        {% if form.title.errors %}<p class="mt-1 text-sm text-red-600">{{ form.title.errors|striptags }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.style.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.style.label }} <span class="text-clay-600">*</span></label>
+        {{ form.style }}
+        {% if form.style.errors %}<p class="mt-1 text-sm text-red-600">{{ form.style.errors|striptags }}</p>{% endif %}
+      </div>
+    </div>
+    <div>
+      <label for="{{ form.description.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.description.label }}</label>
+      {{ form.description }}
+      {% if form.description.errors %}<p class="mt-1 text-sm text-red-600">{{ form.description.errors|striptags }}</p>{% endif %}
+    </div>
+    <div>
+      <label for="{{ form.attachment.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.attachment.label }} <span class="text-clay-600">*</span></label>
+      {% if project.attachment %}
+        <p class="mb-2 flex items-center gap-2 text-sm text-charcoal-600"><svg class="icon text-clay-600"><use href="#i-doc"/></svg>Hozirgi fayl: <a href="{{ project.attachment.url }}" target="_blank" rel="noopener" class="text-clay-700 hover:underline">{{ project.attachment_name }}</a></p>
+        <p class="mb-1 text-xs text-charcoal-400">Almashtirish uchun yangi fayl tanlang, aks holda eskisi qoladi.</p>
+      {% endif %}
+      {{ form.attachment }}
+      {% if form.attachment.errors %}<p class="mt-1 text-sm text-red-600">{{ form.attachment.errors|striptags }}</p>{% endif %}
+    </div>
+    <button type="submit" class="btn-clay w-full !py-3">Saqlash <svg class="icon"><use href="#i-check"/></svg></button>
+  </form>
+
+  <section class="reveal mt-6 rounded-3xl border border-charcoal-100 bg-white p-5 shadow-sm sm:p-7" style="--d:.12s">
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <h2 class="font-serif text-lg font-semibold text-charcoal-900">Rasmlar <span class="font-normal text-charcoal-400">({{ images|length }})</span></h2>
+      <a href="{% url 'architects:project_image_add' project.pk %}" class="btn-ghost !py-2">Rasm qo'shish</a>
+    </div>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {% for image in images %}
+        <form method="post" action="{% url 'architects:project_photo_delete' project.pk image.pk %}" onsubmit="return confirm('Bu rasm o\'chirilsinmi?')" class="group relative overflow-hidden rounded-xl border border-charcoal-200">
+          {% csrf_token %}
+          <img src="{{ image.image.url }}" alt="" class="aspect-[4/3] w-full object-cover">
+          {% if forloop.first %}<span class="absolute left-2 top-2 rounded-full bg-charcoal-900/75 px-2 py-0.5 text-[11px] font-medium text-white">Birinchi</span>{% endif %}
+          <button type="submit" title="O'chirish" class="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-red-600 shadow transition hover:bg-red-600 hover:text-white">✕</button>
+        </form>
+      {% endfor %}
+    </div>
+  </section>
+
+  <p class="mt-6 text-center"><a href="{% url 'architects:project_delete' project.pk %}" class="text-sm text-red-600 hover:underline">Loyihani o'chirish</a></p>
+</div>
+{% endblock %}

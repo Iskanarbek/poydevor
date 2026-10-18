@@ -1,0 +1,22 @@
+<div class="flex items-start justify-between flex-wrap gap-4 mb-6">
+  <div class="flex items-center gap-4">
+    {% if profile.avatar %}
+      <img src="{{ profile.avatar.url }}" alt="{{ profile }}" class="w-16 h-16 rounded-full object-cover">
+    {% else %}
+      <span class="w-16 h-16 rounded-full bg-charcoal-100 flex items-center justify-center text-charcoal-500">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8">
+          <path d="M12 12c2.7 0 4.9-2.2 4.9-4.9S14.7 2.2 12 2.2 7.1 4.4 7.1 7.1 9.3 12 12 12Zm0 2.4c-3.3 0-9.8 1.6-9.8 4.9v2.5h19.6v-2.5c0-3.3-6.5-4.9-9.8-4.9Z"/>
+        </svg>
+      </span>
+    {% endif %}
+    <div>
+      <h2 class="font-serif text-xl font-semibold text-charcoal-900">{{ profile }}</h2>
+      <p class="text-sm text-charcoal-500">{% if profile.bio %}{{ profile.bio|truncatewords:20 }}{% else %}O'zingiz haqingizda qisqacha yozing.{% endif %}</p>
+    </div>
+  </div>
+  <a href="{% url 'architects:portfolio_edit' %}" class="text-sm text-clay-700 font-medium border border-clay-600 rounded-lg px-4 py-2 hover:bg-clay-600 hover:text-white transition whitespace-nowrap">
+    Profilni tahrirlash
+  </a>
+</div>
+
+{% include "architects/_portfolio_section.html" %}

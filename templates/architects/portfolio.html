@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Portfolio yaratish — Poydevor{% endblock %}
+
+{% block content %}
+<section class="reveal relative overflow-hidden rounded-3xl bg-charcoal-900 text-white px-6 sm:px-10 py-8 mb-6">
+  <div class="absolute inset-0 blueprint opacity-70"></div>
+  <div class="relative">
+    <p class="text-[11px] tracking-[.22em] uppercase text-clay-300 mb-2">{{ profile.get_kind_display }}</p>
+    <h1 class="font-serif text-3xl font-semibold">Portfolio yarating</h1>
+    <p class="mt-2 text-sm text-white/65 max-w-2xl">Loyihalaringizni qo'shing va portfolioni to'ldiring.</p>
+    <a href="{% url 'architects:register_status' %}" class="mt-4 inline-flex items-center gap-1.5 text-sm text-white/70 hover:text-white transition">
+      <svg class="icon"><use href="#i-back"/></svg> Ariza holatiga qaytish
+    </a>
+  </div>
+</section>
+
+<div class="reveal" style="--d:.1s">
+  {% include "architects/_portfolio_section.html" %}
+</div>
+{% endblock %}

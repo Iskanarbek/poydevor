@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Poydevor — arxitektorlar va mijozlar maydoni{% endblock %}
+
+{% block main %}
+{% get_media_prefix as MEDIA %}
+<main class="flex-1">
+  {# ---------- Hero ---------- #}
+  <section class="relative isolate overflow-hidden bg-charcoal-900 text-white">
+    <img src="{{ MEDIA }}site/hero.jpg" alt="" class="absolute inset-0 -z-20 h-full w-full object-cover kenburns" fetchpriority="high">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-charcoal-900/70 via-charcoal-900/50 to-charcoal-900/90"></div>
+    <div class="absolute inset-0 -z-10 blueprint opacity-60 [mask-image:linear-gradient(to_bottom,transparent,black_35%,transparent)]"></div>
+
+    <div class="max-w-6xl mx-auto px-6 py-20 sm:py-28 lg:py-32 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div class="lg:col-span-7">
+        <p class="reveal inline-flex items-center gap-2 text-[11px] tracking-[.22em] uppercase text-clay-200 border border-white/20 rounded-full px-3.5 py-1.5 mb-6" style="--d:.05s">
+          <svg class="icon"><use href="#i-layers"/></svg> Arxitektura platformasi
+        </p>
+        <h1 class="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.08] tracking-tight" style="--d:.15s">
+          Orzuingizdagi uyni<br>
+          <em class="text-clay-300 not-italic font-medium">poydevoridan</em> boshlang
+        </h1>
+        <p class="reveal mt-6 max-w-xl text-base sm:text-lg text-white/75 leading-relaxed" style="--d:.3s">
+          Mijozlarni ishonchli arxitektorlar va studiyalar bilan tanishtiradigan maydon: e'lon joylang,
+          portfoliolarni ko'ring va eng mos mutaxassisni tanlang.
+        </p>
+        <ul class="reveal mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/80" style="--d:.45s">
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-shield"/></svg> Har bir arxitektor tasdiqdan o'tadi</li>
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-layers"/></svg> Portfolio asosida tanlov</li>
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-lock"/></svg> Aloqa qabul qilingach ochiladi</li>
+        </ul>
+      </div>
+
+      <div class="lg:col-span-5 grid gap-4">
+        <a href="{% url 'accounts:signup' %}" class="reveal glass group rounded-2xl p-6 flex items-center gap-5 lift" style="--d:.35s">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white group-hover:bg-clay-500 transition">
+            <svg class="icon !w-7 !h-7"><use href="#i-user"/></svg>
+          </span>
+          <span class="flex-1">
+            <span class="block font-serif text-xl font-semibold">Mijoz sifatida</span>
+            <span class="block text-sm text-white/70 mt-0.5">Loyiha yarating, sifatli arxitektorlarni toping va buyurtma bering.</span>
+          </span>
+          <svg class="icon text-white/60 transition-transform group-hover:translate-x-1"><use href="#i-arrow"/></svg>
+        </a>
+        <a href="{% url 'architects:select_type' %}" class="reveal glass group rounded-2xl p-6 flex items-center gap-5 lift" style="--d:.5s">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-clay-500 text-white transition">
+            <svg class="icon !w-7 !h-7"><use href="#i-building"/></svg>
+          </span>
+          <span class="flex-1">
+            <span class="block font-serif text-xl font-semibold">Arxitektor sifatida</span>
+            <span class="block text-sm text-white/70 mt-0.5">Kompaniya yoki frilanser bo'lib daromad oling, portfoliongizni taqdim eting.</span>
+          </span>
+          <svg class="icon text-white/60 transition-transform group-hover:translate-x-1"><use href="#i-arrow"/></svg>
+        </a>
+        <p class="reveal text-sm text-white/60 px-1" style="--d:.65s">
+          Hisobingiz bormi? <a href="{% url 'accounts:login' %}" class="text-white font-medium underline decoration-clay-300 underline-offset-4 hover:text-clay-200">Kirish</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {# ---------- How it works ---------- #}
+  <section class="max-w-6xl mx-auto px-6 py-20 grid lg:grid-cols-12 gap-12 items-center">
+    <div class="lg:col-span-5">
+      <p class="text-[11px] tracking-[.22em] uppercase text-clay-600 mb-3">Qanday ishlaydi</p>
+      <h2 class="font-serif text-3xl sm:text-4xl font-semibold text-charcoal-900 leading-tight mb-8">Uch qadamda loyihangiz uchun to'g'ri odamni toping</h2>
+      <ol class="space-y-7">
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">1</span>
+          <div><h3 class="font-medium text-charcoal-900">E'lon joylang</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Maydon, xonalar, uslub va byudjetni yozing, uy rasmini yuklang.</p></div>
+        </li>
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">2</span>
+          <div><h3 class="font-medium text-charcoal-900">Takliflarni oling</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Tasdiqlangan arxitektorlar e'loningizni ko'rib qatnashadi. Har e'longa ko'pi bilan 3 ta arxitektor.</p></div>
+        </li>
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">3</span>
+          <div><h3 class="font-medium text-charcoal-900">Eng mosini tanlang</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Portfoliolarni solishtiring va qabul qiling — shundan so'ng aloqa ma'lumotlari ochiladi.</p></div>
+        </li>
+      </ol>
+      <div class="mt-9 flex flex-wrap gap-3">
+        <a href="{% url 'accounts:signup' %}" class="btn-clay">E'lon joylash <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a href="{% url 'architects:list' %}" class="btn-ghost">Arxitektorlarni ko'rish</a>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7">
+      <div class="relative rounded-3xl bg-charcoal-900 p-6 sm:p-10 overflow-hidden text-clay-200">
+        <div class="absolute inset-0 blueprint"></div>
+        <svg viewBox="0 0 480 300" class="draw relative w-full h-auto floaty" aria-hidden="true">
+          <g>
+            <path pathLength="1" style="--i:0" d="M20 268 H460"/>
+            <path pathLength="1" style="--i:1" d="M60 268 V138 L240 42 L420 138 V268"/>
+            <path pathLength="1" style="--i:2" d="M40 140 L240 30 L440 140"/>
+            <path pathLength="1" style="--i:3" d="M100 268 V196 H176 V268"/>
+            <path pathLength="1" style="--i:4" d="M100 196 L138 168 L176 196"/>
+            <rect pathLength="1" style="--i:5" x="226" y="170" width="70" height="56"/>
+            <path pathLength="1" style="--i:6" d="M226 198 H296 M261 170 V226"/>
+            <rect pathLength="1" style="--i:7" x="330" y="170" width="56" height="98"/>
+            <circle pathLength="1" style="--i:8" cx="240" cy="98" r="22"/>
+            <path pathLength="1" style="--i:9" d="M240 76 V120 M218 98 H262"/>
+            <path pathLength="1" style="--i:10" d="M20 292 H460 M20 286 V298 M460 286 V298 M240 286 V298"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

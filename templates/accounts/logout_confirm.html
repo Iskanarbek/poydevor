@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Chiqishni tasdiqlang — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto py-10">
+  <div class="reveal relative overflow-hidden rounded-3xl border border-charcoal-100 bg-white p-9 text-center shadow-[0_30px_60px_-30px_rgba(31,27,24,.3)]">
+    <div class="absolute inset-0 blueprint-light opacity-70 [mask-image:radial-gradient(circle_at_50%_0%,black,transparent_70%)]"></div>
+    <div class="relative">
+      <span class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-clay-50 text-clay-600">
+        <svg class="icon !w-8 !h-8"><use href="#i-lock"/></svg>
+      </span>
+      <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">Hisobdan chiqasizmi?</h1>
+      <p class="text-sm text-charcoal-500 mb-1">{{ user.first_name }} {{ user.last_name }}</p>
+      <p class="text-sm text-charcoal-500 mb-8">Qayta kirish uchun telefon raqamingiz kerak bo'ladi.</p>
+
+      <form method="post" class="grid gap-3">
+        {% csrf_token %}
+        <button type="submit" class="btn-clay w-full !py-3">Ha, chiqish</button>
+        <a href="{% url 'dashboard' %}" class="btn-ghost w-full !py-3">Bekor qilish</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

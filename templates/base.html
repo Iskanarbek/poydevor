@@ -52,21 +52,144 @@
     }
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <script>
+    // Photo slider used on the architect and project cards.
+    document.addEventListener('alpine:init', function () {
+      Alpine.data('carousel', function () {
+        return {
+          i: 0, n: 0, anim: true, busy: false, hovering: false, timer: null, x0: null,
+          init: function () {
+            var track = this.$refs.track;
+            this.n = track.children.length;
+            if (this.n < 2) return;
+            // A copy of the first photo at the end lets the last slide glide on to the first
+            // without rewinding through every photo.
+            track.appendChild(track.children[0].cloneNode(true));
+            var self = this;
+            this.timer = setInterval(function () {
+              if (!self.hovering && !document.hidden && !window.__lightboxOpen) self.next();
+            }, 7000 + Math.random() * 2500);
+          },
+          destroy: function () { clearInterval(this.timer); },
+          unlock: function () { var self = this; setTimeout(function () { self.busy = false; }, 950); },
+          next: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true; this.i += 1;
+            var self = this;
+            setTimeout(function () {
+              if (self.i >= self.n) {
+                self.anim = false; self.i = 0;
+                requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.busy = false; }); });
+              } else { self.busy = false; }
+            }, 950);
+          },
+          prev: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true;
+            var self = this;
+            if (this.i === 0) {
+              this.anim = false; this.i = this.n;
+              requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.i = self.n - 1; self.unlock(); }); });
+            } else { this.i -= 1; this.unlock(); }
+          },
+          go: function (k) {
+            if (this.busy || k === this.i % this.n) return;
+            this.busy = true; this.i = k; this.unlock();
+          },
+          swipe: function (e) {
+            if (this.x0 === null) return;
+            var dx = e.changedTouches[0].clientX - this.x0; this.x0 = null;
+            if (Math.abs(dx) > 40) { dx < 0 ? this.next() : this.prev(); }
+          },
+          open: function (e) {
+            // Clicking a photo opens it full size, starting at the photo being shown. Where the
+            // card also knows every other photo (architect cards), the viewer lets you browse them all.
+            if (e.target.closest('button')) return;
+            if (this.$el.dataset.href) { window.location.href = this.$el.dataset.href; return; }   // cards lead to their page
+            var imgs = this.$refs.track.querySelectorAll('img'), urls = [];
+            for (var k = 0; k < this.n; k++) urls.push(imgs[k].src);
+            var index = this.i % this.n;
+            var full = (this.$el.dataset.full || '').split('|').filter(Boolean).map(function (u) { return new URL(u, window.location.href).href; });
+            if (full.length > urls.length) {
+              var at = full.indexOf(urls[index]);
+              urls = full; index = at >= 0 ? at : 0;
+            }
+            window.dispatchEvent(new CustomEvent('open-lightbox', {
+              detail: { images: urls, index: index, title: this.$el.dataset.title || '' }
+            }));
+          }
+        };
+      });
+
+      // Full-size photo viewer (opened from any slider). It never advances by itself.
+      Alpine.data('lightbox', function () {
+        return {
+          open: false, urls: [], title: '', i: 0, n: 0, anim: true, busy: false, x0: null,
+          get slides() { return this.n > 1 ? this.urls.concat([this.urls[0]]) : this.urls; },
+          show: function (d) {
+            var self = this;
+            this.urls = d.images; this.n = d.images.length; this.title = d.title || '';
+            this.i = d.index || 0; this.busy = false; this.anim = false; this.open = true;
+            window.__lightboxOpen = true; document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; }); });
+          },
+          close: function () { this.open = false; window.__lightboxOpen = false; document.body.style.overflow = ''; },
+          unlock: function () { var self = this; setTimeout(function () { self.busy = false; }, 600); },
+          next: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true; this.i += 1;
+            var self = this;
+            setTimeout(function () {
+              if (self.i >= self.n) {
+                self.anim = false; self.i = 0;
+                requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.busy = false; }); });
+              } else { self.busy = false; }
+            }, 600);
+          },
+          prev: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true;
+            var self = this;
+            if (this.i === 0) {
+              this.anim = false; this.i = this.n;
+              requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.i = self.n - 1; self.unlock(); }); });
+            } else { this.i -= 1; this.unlock(); }
+          },
+          go: function (k) { if (this.busy || k === this.i % this.n) return; this.busy = true; this.i = k; this.unlock(); },
+          key: function (e) {
+            if (!this.open) return;
+            if (e.key === 'Escape') this.close();
+            else if (e.key === 'ArrowRight') this.next();
+            else if (e.key === 'ArrowLeft') this.prev();
+          },
+          swipe: function (e) {
+            if (this.x0 === null) return;
+            var dx = e.changedTouches[0].clientX - this.x0; this.x0 = null;
+            if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); }
+          }
+        };
+      });
+    });
+  </script>
+  <style>[x-cloak] { display: none !important; }</style>
   <style>
-    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+    :root { --ease: cubic-bezier(.22, 1, .36, 1); }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 
     input[type="text"], input[type="password"], input[type="tel"], input[type="number"],
-    input[type="email"], input[type="file"], select, textarea {
+    input[type="email"], input[type="date"], input[type="file"], select, textarea {
       width: 100%;
       border: 1px solid #D3CBC2;
-      border-radius: 0.6rem;
-      padding: 0.6rem 0.9rem;
+      border-radius: 0.7rem;
+      padding: 0.65rem 0.95rem;
       font-size: 0.95rem;
       background-color: #fff;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     input[type="text"]:focus, input[type="password"]:focus, input[type="tel"]:focus,
-    input[type="number"]:focus, input[type="email"]:focus, select:focus, textarea:focus {
+    input[type="number"]:focus, input[type="email"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
       outline: none;
       border-color: #B5562A;
       box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.15);
@@ -79,49 +202,153 @@
       border-color: #B5562A;
       box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.25);
     }
+
+    /* Buttons */
+    .btn-clay, .btn-clay-outline, .btn-ghost, .btn-dark, .btn-disabled {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      font-weight: 500; font-size: .9rem; border-radius: .7rem; padding: .65rem 1.15rem;
+      transition: background-color .2s, color .2s, border-color .2s, transform .2s var(--ease), box-shadow .2s;
+      cursor: pointer;
+    }
+    .btn-clay { background: #B5562A; color: #fff; box-shadow: 0 8px 20px -10px rgba(181, 86, 42, .7); }
+    .btn-clay:hover { background: #954523; transform: translateY(-1px); }
+    .btn-clay-outline { color: #954523; border: 1px solid #B5562A; }
+    .btn-clay-outline:hover { background: #B5562A; color: #fff; }
+    .btn-ghost { color: #3A322B; border: 1px solid #D3CBC2; background: #fff; }
+    .btn-ghost:hover { border-color: #8C7F72; }
+    .btn-dark { background: #1F1B18; color: #fff; }
+    .btn-dark:hover { background: #3A322B; transform: translateY(-1px); }
+    .btn-disabled { background: #E8E3DE; color: #8C7F72; cursor: not-allowed; box-shadow: none; }
+
+    /* Motion */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+    @keyframes kenburns {
+      0%   { transform: scale(1) translate3d(0, 0, 0); }
+      100% { transform: scale(1.22) translate3d(-2.2%, -1.6%, 0); }
+    }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes ping-soft { 0% { box-shadow: 0 0 0 0 rgba(193, 98, 45, .45); } 100% { box-shadow: 0 0 0 14px rgba(193, 98, 45, 0); } }
+    .reveal { opacity: 0; animation: fadeUp .85s var(--ease) forwards; animation-delay: var(--d, 0s); }
+    .kenburns { animation: kenburns 24s ease-in-out infinite alternate; will-change: transform; transform-origin: 55% 45%; }
+    .floaty { animation: floaty 6s ease-in-out infinite; }
+    .pulse-ring { animation: ping-soft 2.2s ease-out infinite; }
+    .lift { transition: transform .4s var(--ease), box-shadow .4s var(--ease), border-color .25s; }
+    .lift:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -22px rgba(31, 27, 24, .38); }
+
+    /* Blueprint line art draws itself once scrolled into view (see script below) */
+    .draw * { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+              stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.6s var(--ease) forwards;
+              animation-delay: calc(var(--i, 0) * .18s); animation-play-state: paused; }
+    .draw.in * { animation-play-state: running; }
+
+    /* Backgrounds */
+    .blueprint {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .07) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+    .blueprint-light {
+      background-image:
+        linear-gradient(rgba(58, 50, 43, .06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(58, 50, 43, .06) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+    .glass { background: rgba(255, 255, 255, .1); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+             border: 1px solid rgba(255, 255, 255, .22); }
+    /* Photo slider: slides sit in a row and the row glides sideways. */
+    .slide-track { transition: transform .9s cubic-bezier(.65, 0, .35, 1); will-change: transform; }
+    .slide-track.no-anim { transition: none; }
+    .lb-track { transition: transform .55s cubic-bezier(.65, 0, .35, 1); will-change: transform; }
+    .lb-track.no-anim { transition: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .icon { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; }
+      .draw * { stroke-dashoffset: 0; }
+    }
   </style>
 </head>
 <body class="bg-cream-50 text-charcoal-900 min-h-screen flex flex-col">
-  <nav class="border-b border-charcoal-100 bg-cream-50/90 backdrop-blur px-6 py-4 flex justify-between items-center sticky top-0 z-10">
-    <a href="{% url 'home' %}" class="flex items-center gap-2 group">
-      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
-        <path d="M16 3 L29 12 V15 L16 6 L3 15 V12 Z" fill="#B5562A"/>
-        <rect x="6" y="15" width="20" height="12" rx="1.5" fill="#1F1B18"/>
-        <rect x="9.5" y="19" width="4.5" height="8" fill="#FBF7F2"/>
-        <rect x="18" y="19" width="4.5" height="4.5" fill="#FBF7F2"/>
-      </svg>
-      <span class="text-xl font-serif font-semibold tracking-tight text-charcoal-900 group-hover:text-clay-700 transition">Poydevor</span>
-    </a>
-    <div class="flex gap-4 text-sm items-center">
-      <a href="{% url 'architects:project_gallery' %}" class="text-charcoal-600 hover:text-charcoal-900">Barcha loyihalar</a>
-      {% if user.is_authenticated %}
+  {% include "_icons.html" %}
+  <nav x-data="{ open: false }" class="border-b border-charcoal-100 bg-cream-50/85 backdrop-blur-md sticky top-0 z-30">
+    <div class="px-6 py-3.5 flex justify-between items-center">
+      <a href="{% url 'home' %}" class="flex items-center gap-2 group">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0 transition-transform duration-500 group-hover:-rotate-6">
+          <path d="M16 3 L29 12 V15 L16 6 L3 15 V12 Z" fill="#B5562A"/>
+          <rect x="6" y="15" width="20" height="12" rx="1.5" fill="#1F1B18"/>
+          <rect x="9.5" y="19" width="4.5" height="8" fill="#FBF7F2"/>
+          <rect x="18" y="19" width="4.5" height="4.5" fill="#FBF7F2"/>
+        </svg>
+        <span class="text-xl font-serif font-semibold tracking-tight text-charcoal-900 group-hover:text-clay-700 transition">Poydevor</span>
+      </a>
+      <div class="flex items-center gap-3">
         {% if architect_wallet %}
-          <a href="{% url 'wallet:dashboard' %}" class="flex items-center gap-1.5 rounded-full bg-clay-50 border border-clay-200 text-clay-700 font-medium px-3 py-1.5 hover:bg-clay-100 transition">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
-              <path d="M9.5 9.8c0-1 .9-1.8 2.5-1.8s2.5.7 2.5 1.6c0 2.2-5 1.3-5 3.6 0 .9 1 1.6 2.5 1.6s2.5-.8 2.5-1.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-              <path d="M12 6.5v11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+          <a href="{% url 'wallet:dashboard' %}" class="flex items-center gap-1.5 rounded-full bg-clay-50 border border-clay-200 text-clay-700 text-sm font-medium px-3 py-1.5 hover:bg-clay-100 transition">
+            <svg class="icon"><use href="#i-coin"/></svg>
             {{ architect_wallet.balance }} tanga
           </a>
         {% endif %}
-        {% if user.role == 'user' %}
-          <a href="{% url 'applications:dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Mening buyurtmalarim</a>
-        {% else %}
-          <a href="{% url 'dashboard' %}" class="text-charcoal-600 hover:text-charcoal-900">Boshqaruv paneli</a>
-        {% endif %}
-        <a href="{% url 'accounts:logout' %}" class="text-charcoal-600 hover:text-charcoal-900">Chiqish</a>
-      {% else %}
-        <a href="{% url 'accounts:login' %}" class="text-charcoal-600 hover:text-charcoal-900">Kirish</a>
-        <a href="{% url 'accounts:signup' %}" class="text-clay-700 font-medium border border-clay-600 rounded-lg px-4 py-2 hover:bg-clay-600 hover:text-white transition">Ro'yxatdan o'tish</a>
-      {% endif %}
+        <div class="hidden md:flex gap-5 text-sm items-center">
+          {% include "_nav_links.html" %}
+        </div>
+        <button type="button" @click="open = !open" class="md:hidden p-2 -mr-2 text-charcoal-700" aria-label="Menyu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path x-show="!open" d="M4 7h16M4 12h16M4 17h16"/><path x-show="open" d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div x-show="open" x-cloak x-transition class="md:hidden border-t border-charcoal-100 px-6 py-4 flex flex-col gap-4 text-sm">
+      {% include "_nav_links.html" with mobile=True %}
     </div>
   </nav>
+  {% include "_lightbox.html" %}
+  {% block main %}
   <main class="flex-1 max-w-6xl mx-auto w-full px-6 py-10">
+    {% for message in messages %}
+      <div class="mb-6 rounded-lg border px-4 py-3 text-sm {% if message.tags == 'error' %}bg-red-50 border-red-200 text-red-700{% elif message.tags == 'success' %}bg-green-50 border-green-200 text-green-700{% else %}bg-amber-50 border-amber-200 text-amber-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
     {% block content %}{% endblock %}
   </main>
-  <footer class="border-t border-charcoal-100 px-6 py-6 text-center text-xs text-charcoal-500">
-    &copy; {% now "Y" %} Poydevor. Barcha huquqlar himoyalangan.
+  {% endblock %}
+  <footer class="border-t border-charcoal-100 px-6 py-8 text-xs text-charcoal-500">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <span class="font-serif text-sm text-charcoal-700">Poydevor <span class="text-charcoal-400">&middot; arxitektorlar va mijozlar maydoni</span></span>
+      <span>&copy; {% now "Y" %} Poydevor. Barcha huquqlar himoyalangan.</span>
+    </div>
   </footer>
+  <script>
+    (function () {
+      // Blueprint drawings start when they scroll into view.
+      var drawings = document.querySelectorAll('.draw');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.25 });
+        drawings.forEach(function (d) { io.observe(d); });
+      } else { drawings.forEach(function (d) { d.classList.add('in'); }); }
+
+      // Numbers that count up to their value.
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelectorAll('[data-count]').forEach(function (el) {
+        var target = parseInt(el.getAttribute('data-count'), 10);
+        if (isNaN(target) || reduce || target === 0) { el.textContent = isNaN(target) ? el.textContent : target; return; }
+        var start = null;
+        function step(t) {
+          if (start === null) start = t;
+          var p = Math.min((t - start) / 900, 1);
+          el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
+    })();
+  </script>
 </body>
 </html>

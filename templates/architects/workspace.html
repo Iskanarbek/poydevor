@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} — Poydevor{% endblock %}
+
+{% block content %}
+<section class="reveal relative overflow-hidden rounded-3xl bg-charcoal-900 text-white px-6 sm:px-10 py-8 sm:py-10 mb-6">
+  <div class="absolute inset-0 blueprint opacity-70"></div>
+  <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-clay-500/25 blur-3xl"></div>
+  <div class="relative flex flex-wrap items-end justify-between gap-6">
+    <div>
+      <p class="inline-flex items-center gap-2 text-[11px] tracking-[.22em] uppercase text-clay-300 mb-3">
+        <svg class="icon"><use href="#{% if profile.kind == 'studio_owner' %}i-building{% else %}i-user{% endif %}"/></svg>
+        {{ profile.get_kind_display }}
+      </p>
+      <h1 class="font-serif text-3xl sm:text-4xl font-semibold leading-tight">{{ title }}</h1>
+    </div>
+    {% if wallet %}
+      <a href="?tab=store" class="group flex items-center gap-4 rounded-2xl glass px-5 py-3.5 hover:bg-white/15 transition">
+        <span class="flex h-11 w-11 items-center justify-center rounded-full bg-clay-500 text-white {% if wallet.balance < offer_cost %}pulse-ring{% endif %}">
+          <svg class="icon !w-6 !h-6"><use href="#i-coin"/></svg>
+        </span>
+        <span>
+          <span class="block text-2xl font-semibold leading-none"><span data-count="{{ wallet.balance }}">{{ wallet.balance }}</span> <span class="text-sm font-normal text-white/65">tanga</span></span>
+          <span class="block text-xs text-white/60 mt-1.5">
+            {% if projects_left %}{{ projects_left }} ta loyihaga yetadi{% else %}Loyiha uchun yetarli emas{% endif %}
+          </span>
+        </span>
+      </a>
+    {% endif %}
+  </div>
+</section>
+
+<div class="reveal mb-8 -mx-1 overflow-x-auto no-scrollbar" style="--d:.1s">
+  <div class="inline-flex min-w-full gap-1 rounded-2xl border border-charcoal-100 bg-white p-1.5 shadow-sm">
+    {% for key, label in tabs %}
+      <a href="?tab={{ key }}"{% if key == tab %} data-active-tab{% endif %}
+         class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition {% if key == tab %}bg-charcoal-900 text-white shadow{% else %}text-charcoal-500 hover:bg-cream-100 hover:text-charcoal-900{% endif %}">
+        <span class="{% if key == tab %}text-clay-300{% else %}text-charcoal-300{% endif %} mr-1">{{ forloop.counter }}.</span>{{ label }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if portfolio_locked and tab != 'room' %}
+  <a href="?tab=room" class="reveal mb-6 flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900 transition hover:bg-amber-100" style="--d:.14s">
+    <svg class="icon mt-0.5 shrink-0" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19zM12 10v4M12 17h.01"/></svg>
+    <span><b>Portfolio to'ldirilmagan.</b> Loyihalaringiz hech kimga ko'rinmaydi va e'lonlarda qatnasha olmaysiz. Portfolioni to'ldirish uchun bosing &rarr;</span>
+  </a>
+{% endif %}
+
+<div class="reveal" style="--d:.18s">
+  {% include tab_template %}
+</div>
+
+<script>
+  (function () {
+    var active = document.querySelector('[data-active-tab]');
+    if (!active) return;
+    var scroller = active.parentElement.parentElement;
+    if (scroller.scrollWidth > scroller.clientWidth) { scroller.scrollLeft = Math.max(active.offsetLeft - 16, 0); }
+  })();
+</script>
+{% endblock %}

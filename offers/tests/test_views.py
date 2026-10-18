@@ -53,7 +53,7 @@ class ArchitectApplyTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Offer.objects.filter(application=self.application, architect=self.architect).exists())
         self.architect.wallet.refresh_from_db()
-        self.assertEqual(self.architect.wallet.balance, 80)
+        self.assertEqual(self.architect.wallet.balance, 90)
 
 
 class ArchitectRespondTests(TestCase):
@@ -145,3 +145,85 @@ class OfferAcceptRaceTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.offer_2.refresh_from_db()
         self.assertEqual(self.offer_2.status, Offer.Status.PENDING)
+
+
+class ArchitectProjectDetailTests(TestCase):
+    """The market card -> detail page -> take-the-project flow."""
+
+    def setUp(self):
+        from architects.models import Style
+        self.owner = User.objects.create_user(
+            phone="+998901111111", first_name="Aziz", last_name="K", role=User.Role.USER,
+        )
+        self.application = Application.objects.create(
+            owner=self.owner, size_m2=180, rooms_count=5, location="Toshkent, Chilonzor",
+            interior_style=Style.objects.create(name="Xay-tek"), budget=250_000_000,
+            description="Ikki qavatli hi-tech uy loyihasi va interyer dizayni kerak.",
+        )
+        architect_user = User.objects.create_user(
+            phone="+998902222222", first_name="Nodir", last_name="Y", role=User.Role.ARCHITECT,
+        )
+        self.architect = ArchitectProfile.objects.create(user=architect_user, bio="x")
+        self.wallet = Wallet.objects.create(architect=self.architect, balance=20)
+        self.client.force_login(architect_user)
+        self.url = reverse("offers:architect_apply", args=[self.application.pk])
+
+    def test_market_card_shows_what_an_architect_needs_to_assess_the_project(self):
+        response = self.client.get("/freelancer/dashboard/?tab=market")
+        for expected in ("Toshkent, Chilonzor", "180 m²", "5 xona", "Xay-tek", "250", "hi-tech uy loyihasi", "Ko'rish"):
+            self.assertContains(response, expected)
+        self.assertNotContains(response, "Tez orada")
+
+    def test_detail_page_shows_full_information_and_take_button(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, "Ikki qavatli hi-tech uy loyihasi")
+        self.assertContains(response, "Qatnashish — 10 tanga")
+        self.assertEqual((response.context["can_afford"], response.context["balance_after"]), (True, 10))
+        # The client's contact details stay hidden until the offer is accepted.
+        self.assertNotContains(response, self.owner.phone)
+
+    def test_taking_the_project_spends_ten_coins(self):
+        self.client.post(self.url)
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, 10)
+        self.assertTrue(Offer.objects.filter(application=self.application, architect=self.architect).exists())
+
+    def test_two_projects_fit_the_starting_coins_and_a_third_is_blocked(self):
+        second = Application.objects.create(owner=self.owner, rooms_count=3, location="Samarqand")
+        third = Application.objects.create(owner=self.owner, rooms_count=2, location="Buxoro")
+        self.client.post(self.url)
+        self.client.post(reverse("offers:architect_apply", args=[second.pk]))
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, 0)
+
+        page = self.client.get(reverse("offers:architect_apply", args=[third.pk]))
+        self.assertContains(page, "Tangalar yetarli emas")
+        self.assertNotContains(page, "Qatnashish — 10 tanga")
+        self.assertFalse(page.context["can_afford"])
+
+        # Even a forged POST can't take it without coins.
+        forged = self.client.post(reverse("offers:architect_apply", args=[third.pk]))
+        self.assertContains(forged, "Tangalar yetarli emas")
+        self.assertFalse(Offer.objects.filter(application=third).exists())
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, 0)
+
+    def test_already_applied_and_full_states(self):
+        self.client.post(self.url)
+        page = self.client.get(self.url)
+        self.assertContains(page, "ariza yuborgansiz")
+        self.assertNotContains(page, "Qatnashish — 10 tanga")
+
+        other = Application.objects.create(owner=self.owner, rooms_count=3, location="Namangan")
+        for i in range(3):
+            u = User.objects.create_user(phone=f"+99890333000{i}", first_name="X", last_name="Y", role=User.Role.ARCHITECT)
+            p = ArchitectProfile.objects.create(user=u, bio="x")
+            Offer.objects.create(application=other, architect=p, source=Offer.Source.USER_INVITED)
+        full = self.client.get(reverse("offers:architect_apply", args=[other.pk]))
+        self.assertContains(full, "Barcha joylar band")
+        self.assertTrue(full.context["is_full"])
+
+    def test_pending_architect_cannot_open_the_detail_page(self):
+        self.architect.approval_status = ArchitectProfile.ApprovalStatus.PENDING
+        self.architect.save()
+        self.assertEqual(self.client.get(self.url).status_code, 404)

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Arxitektor sifatida kirish — Poydevor{% endblock %}
+
+{% block main %}
+{% get_media_prefix as MEDIA %}
+<main class="flex-1">
+  <section class="relative isolate overflow-hidden bg-charcoal-900 text-white">
+    <img src="{{ MEDIA }}site/band.jpg" alt="" class="absolute inset-0 -z-20 h-full w-full object-cover kenburns">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-charcoal-900/60 to-charcoal-900/85"></div>
+    <div class="max-w-5xl mx-auto px-6 pt-16 pb-32 text-center">
+      <p class="reveal text-[11px] tracking-[.22em] uppercase text-clay-200 mb-4">Arxitektorlar uchun</p>
+      <h1 class="reveal font-serif text-3xl sm:text-5xl font-semibold leading-tight" style="--d:.1s">Arxitektor sifatida kirish variantlari</h1>
+      <p class="reveal mt-4 text-white/70" style="--d:.2s">O'zingizga mos variantni tanlang.</p>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-6 -mt-20 pb-20">
+    <div class="grid gap-5 md:grid-cols-3">
+      {% include "architects/_type_card.html" with n=1 href_name="architects:register_studio" icon="i-building" title="Studiyani ro'yxatdan o'tkazish" text="Yangi arxitektura studiyasi hisobini ochish va boshqarish." delay=".25s" %}
+      {% include "architects/_type_card.html" with n=2 href_name="architects:register_employee" icon="i-users" title="Studiya nomidan ro'yxatdan o'tish" text="Mavjud studiyaga xodim yoki mutaxassis bo'lib qo'shilish." delay=".35s" %}
+      {% include "architects/_type_card.html" with n=3 href_name="architects:register_freelancer" icon="i-user" title="Individual arxitektor (Freelancer)" text="Mustaqil ravishda yakka tartibda ish olib borish." delay=".45s" %}
+    </div>
+
+    <p class="mt-10 text-center text-sm text-charcoal-500">
+      Hisobingiz bormi?
+      <a href="{% url 'accounts:login' %}" class="text-clay-700 font-medium hover:underline">Kirish</a>
+    </p>
+  </section>
+</main>
+{% endblock %}

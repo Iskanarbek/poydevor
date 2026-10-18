@@ -1,41 +1,29 @@
-{% extends "base.html" %}
+{% extends "accounts/auth_base.html" %}
 
 {% block title %}Kirish — Poydevor{% endblock %}
 
-{% block content %}
-<div class="max-w-sm mx-auto rounded-2xl border border-charcoal-100 shadow-sm px-8 py-10">
-  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1 text-center">Kirish</h1>
-  <p class="text-sm text-charcoal-500 mb-8 text-center">Hisobingizga kiring.</p>
+{% block auth_content %}
+<h1 class="font-serif text-3xl font-semibold text-charcoal-900 mb-1">Xush kelibsiz</h1>
+<p class="text-sm text-charcoal-500 mb-8">Kirish uchun telefon raqamingizni kiriting.</p>
 
-  {% if form.non_field_errors %}
-    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
-      {{ form.non_field_errors }}
-    </div>
-  {% endif %}
+{% if form.non_field_errors %}
+  <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
 
-  <form method="post" class="space-y-5">
-    {% csrf_token %}
+<form method="post" class="space-y-5">
+  {% csrf_token %}
+  <div>
+    <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1.5">{{ form.phone.label }}</label>
+    {{ form.phone }}
+    {% if form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.phone.errors|striptags }}</p>{% endif %}
+  </div>
+  <button type="submit" class="btn-clay w-full !py-3">Kirish <svg class="icon"><use href="#i-arrow"/></svg></button>
+</form>
 
-    <div>
-      <label for="{{ form.phone.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.phone.label }}</label>
-      {{ form.phone }}
-      {% if form.phone.errors %}<p class="mt-1 text-sm text-red-600">{{ form.phone.errors|striptags }}</p>{% endif %}
-    </div>
-
-    <div>
-      <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.password.label }}</label>
-      {{ form.password }}
-      {% if form.password.errors %}<p class="mt-1 text-sm text-red-600">{{ form.password.errors|striptags }}</p>{% endif %}
-    </div>
-
-    <button type="submit" class="w-full rounded-lg bg-clay-600 text-white font-medium py-3 hover:bg-clay-700 transition">
-      Kirish
-    </button>
-  </form>
-
-  <p class="mt-6 text-center text-sm text-charcoal-500">
-    Hisobingiz yo'qmi?
-    <a href="{% url 'accounts:signup' %}" class="text-clay-700 font-medium hover:underline">Ro'yxatdan o'tish</a>
-  </p>
-</div>
+<p class="mt-8 text-center text-sm text-charcoal-500">
+  Hisobingiz yo'qmi?
+  <a href="{% url 'accounts:welcome' %}" class="text-clay-700 font-medium hover:underline">Ro'yxatdan o'tish</a>
+</p>
 {% endblock %}

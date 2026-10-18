@@ -1,0 +1,91 @@
+{# Studio owner's monitoring table: every accepted order, who it's assigned to,
+   the deadline, and whether it's overdue — plus a quick who's-free board. #}
+
+<div class="mb-10">
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Buyurtmalar</h2>
+  <div class="overflow-x-auto rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+    <table class="min-w-full text-sm">
+      <thead class="bg-cream-100 text-left text-xs uppercase tracking-wide text-charcoal-500">
+        <tr>
+          <th class="px-4 py-3">Loyiha</th>
+          <th class="px-4 py-3">Xodim</th>
+          <th class="px-4 py-3">Muddat</th>
+          <th class="px-4 py-3">Holat</th>
+          <th class="px-4 py-3">Amal</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-charcoal-100">
+        {% for a in assignments %}
+          <tr class="{% if a.is_overdue %}bg-red-50{% endif %}">
+            <td class="px-4 py-3">
+              <p class="font-medium text-charcoal-900">{{ a.offer.application.location }} — {{ a.offer.application.rooms_count }} xona</p>
+              <p class="text-xs text-charcoal-500">Mijoz: {{ a.offer.application.owner.phone }}</p>
+            </td>
+            <td class="px-4 py-3 text-charcoal-700">
+              {{ a.worker|default:"—" }}
+            </td>
+            <td class="px-4 py-3">
+              {% if a.deadline %}
+                <span class="{% if a.is_overdue %}text-red-600 font-semibold{% else %}text-charcoal-700{% endif %}">{{ a.deadline }}</span>
+              {% else %}
+                <span class="text-charcoal-400">belgilanmagan</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if a.is_overdue %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-red-100 text-red-700">Muddati o'tgan</span>
+              {% elif a.status == 'open' %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">Hammaga ochiq</span>
+              {% elif a.status == 'assigned' %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">Jarayonda</span>
+              {% else %}
+                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">Bajarildi</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              {% if a.status != 'done' %}
+                <form method="post" action="{% url 'architects:assignment_assign' a.pk %}" class="flex flex-wrap items-center gap-2">
+                  {% csrf_token %}
+                  <select name="worker" class="rounded-lg border border-charcoal-200 text-xs px-2 py-1.5">
+                    <option value="">{% if a.worker %}Boshqasiga berish…{% else %}Xodim tanlang…{% endif %}</option>
+                    {% for e in employees %}
+                      <option value="{{ e.pk }}" {% if a.worker_id == e.pk %}selected{% endif %}>{{ e }}</option>
+                    {% endfor %}
+                  </select>
+                  <input type="date" name="deadline" value="{{ a.deadline|date:'Y-m-d' }}" class="rounded-lg border border-charcoal-200 text-xs px-2 py-1.5">
+                  <button type="submit" class="text-xs bg-clay-600 text-white font-medium rounded-lg px-3 py-1.5 hover:bg-clay-700 transition">Saqlash</button>
+                </form>
+              {% else %}
+                <span class="text-xs text-charcoal-400">—</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="px-4 py-6 text-center text-charcoal-500">Hali qabul qilingan buyurtmalar yo'q.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Xodimlar holati</h2>
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for row in worker_board %}
+      <div class="border rounded-2xl bg-white shadow-sm p-4 {% if row.overdue %}border-red-300{% elif row.available %}border-green-200{% else %}border-charcoal-200{% endif %}">
+        <p class="font-medium text-charcoal-900">{{ row.employee }}</p>
+        {% if row.available %}
+          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-green-100 text-green-700">Bo'sh — keyingi ishga tayyor</p>
+        {% elif row.overdue %}
+          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-red-100 text-red-700">Muddatni o'tkazib yubordi</p>
+          <p class="mt-2 text-xs text-charcoal-500">{{ row.current.offer.application.location }}</p>
+        {% else %}
+          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">Band</p>
+          <p class="mt-2 text-xs text-charcoal-500">{{ row.current.offer.application.location }}{% if row.current.deadline %} · muddat: {{ row.current.deadline }}{% endif %}</p>
+        {% endif %}
+      </div>
+    {% empty %}
+      <p class="text-sm text-charcoal-500 sm:col-span-2 lg:col-span-3">Studiyada hali tasdiqlangan xodimlar yo'q.</p>
+    {% endfor %}
+  </div>
+</div>

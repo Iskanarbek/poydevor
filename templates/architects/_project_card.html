@@ -1,0 +1,19 @@
+{# A project card: photos, title and type (and optionally who made it). Needs: project. Optional: show_architect, own (link to the architect's own view of it). #}
+{% if own %}{% url 'architects:my_project' project.pk as detail_url %}{% else %}{% url 'architects:project_detail' project.pk as detail_url %}{% endif %}
+<article class="lift group block overflow-hidden rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+  {% include "architects/_carousel.html" with images=project.images.all alt=project.title href=detail_url %}
+  <a href="{{ detail_url }}" class="block p-4">
+    <h3 class="font-serif text-lg font-semibold leading-snug text-charcoal-900">{{ project.title }}</h3>
+    {% if project.style %}<p class="text-[15px] font-medium text-charcoal-700">{{ project.style }}</p>{% endif %}
+    {% if own and not project.images.all %}<p class="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">Rasm yo'q — kamida bitta rasm qo'shing</p>{% endif %}
+    {% if show_architect %}
+      <div class="mt-2 flex items-center justify-between gap-3 text-sm">
+        <span class="truncate text-charcoal-700">{{ project.architect.display_name }}</span>
+        <span class="flex shrink-0 items-center gap-1 text-amber-400">
+          {% for i in "12345" %}{% if forloop.counter <= project.architect.rating %}★{% else %}☆{% endif %}{% endfor %}
+          <span class="ml-0.5 text-charcoal-500">{{ project.architect.rating }}</span>
+        </span>
+      </div>
+    {% endif %}
+  </a>
+</article>

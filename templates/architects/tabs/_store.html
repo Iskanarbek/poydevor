@@ -1,0 +1,73 @@
+<div class="mb-8 flex flex-wrap items-center gap-x-8 gap-y-3 rounded-2xl border border-charcoal-100 bg-white px-6 py-4 text-sm text-charcoal-600 shadow-sm">
+  <span class="flex items-center gap-2"><svg class="icon text-clay-600"><use href="#i-coin"/></svg> 1 tanga = <b class="text-charcoal-900">{{ coin_price_uzs|floatformat:"0g" }} so'm</b></span>
+  <span class="flex items-center gap-2"><svg class="icon text-clay-600"><use href="#i-layers"/></svg> Bitta loyihada qatnashish <b class="text-charcoal-900">{{ offer_cost }} tanga</b></span>
+  <span class="flex items-center gap-2"><svg class="icon text-clay-600"><use href="#i-spark"/></svg> Joriy balans <b class="text-charcoal-900">{{ wallet.balance }} tanga</b></span>
+</div>
+
+<div class="mb-10">
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Tanga sotib olish</h2>
+
+  {% if not providers %}
+    <div class="mb-5 flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm px-4 py-3.5">
+      <svg class="icon mt-0.5"><use href="#i-lock"/></svg>
+      <span>To'lov tizimi hali ulanmagan, shuning uchun hozircha yangi tanga sotib olib bo'lmaydi.
+        Ro'yxatdan o'tishda berilgan tangalar tugamaguncha loyihalarda qatnashishda davom eting.</span>
+    </div>
+  {% endif %}
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {% for package in packages %}
+      <div class="lift rounded-2xl border border-charcoal-200 bg-white shadow-sm p-5 text-center">
+        <p class="text-2xl font-semibold text-charcoal-900 mb-1">{{ package.coins }} <span class="text-sm font-normal text-charcoal-500">tanga</span></p>
+        <p class="text-sm text-charcoal-700 mb-1">{{ package.price_uzs|floatformat:"0g" }} so'm</p>
+        <p class="text-xs text-charcoal-500 mb-4">{{ package.projects }} ta loyiha uchun</p>
+        {% if providers %}
+          <div class="space-y-2">
+            {% for provider in providers %}
+              <form method="post" action="{% url 'wallet:buy' %}">
+                {% csrf_token %}
+                <input type="hidden" name="coins" value="{{ package.coins }}">
+                <input type="hidden" name="provider" value="{{ provider.key }}">
+                <button type="submit" class="btn-clay w-full !py-2.5 !text-sm">
+                  {{ provider.label }} orqali to'lash
+                </button>
+              </form>
+            {% endfor %}
+          </div>
+        {% else %}
+          <span class="btn-disabled w-full !py-2.5 !text-sm">Sotib olish</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Tranzaksiyalar tarixi</h2>
+  {% if transactions %}
+    <div class="overflow-x-auto rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-cream-100 text-charcoal-500">
+          <tr>
+            <th class="px-4 py-3 font-medium">Sana</th>
+            <th class="px-4 py-3 font-medium">Sabab</th>
+            <th class="px-4 py-3 font-medium text-right">Miqdor</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-charcoal-100">
+          {% for tx in transactions %}
+            <tr>
+              <td class="px-4 py-3 text-charcoal-600">{{ tx.created_at|date:"d.m.Y H:i" }}</td>
+              <td class="px-4 py-3 text-charcoal-600">{{ tx.get_reason_display }}</td>
+              <td class="px-4 py-3 text-right font-medium {% if tx.amount > 0 %}text-green-700{% else %}text-red-600{% endif %}">
+                {% if tx.amount > 0 %}+{% endif %}{{ tx.amount }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-sm text-charcoal-500">Hali tranzaksiyalar yo'q.</p>
+  {% endif %}
+</div>

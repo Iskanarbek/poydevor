@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Loyihani o'chirish — Poydevor{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-md py-8">
+  <div class="reveal rounded-3xl border border-charcoal-100 bg-white p-8 shadow-[0_30px_60px_-30px_rgba(31,27,24,.3)]">
+    <span class="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600"><svg class="icon !h-7 !w-7"><use href="#i-layers"/></svg></span>
+    <h1 class="mb-1 font-serif text-2xl font-semibold text-charcoal-900">Loyiha o'chirilsinmi?</h1>
+    <p class="mb-5 text-charcoal-600">«{{ project.title }}»</p>
+    <ul class="mb-7 space-y-2 rounded-xl bg-cream-50 px-5 py-4 text-sm text-charcoal-700">
+      <li>Loyihaning barcha rasmlari va fayli o'chadi.</li>
+      <li>Bu amalni bekor qilib bo'lmaydi.</li>
+      {% if drops_below %}<li class="font-medium text-amber-800">Portfolioda {{ need_projects }} tadan kam loyiha qoladi — to'ldirmaguncha profilingiz hammaga ko'rinmaydi.</li>{% endif %}
+    </ul>
+    <form method="post" class="grid gap-3 sm:grid-cols-2">
+      {% csrf_token %}
+      <a href="{% url 'architects:my_project' project.pk %}" class="btn-ghost !py-3">Bekor qilish</a>
+      <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-red-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-700">Ha, o'chirish</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

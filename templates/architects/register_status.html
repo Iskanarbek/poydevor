@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Ariza holati — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-8">
+  {% if profile.approval_status == 'pending' %}
+    <div class="reveal relative overflow-hidden rounded-3xl border border-green-200 bg-white p-10 text-center shadow-[0_30px_60px_-30px_rgba(31,27,24,.3)]">
+      <div class="absolute inset-0 blueprint-light opacity-70 [mask-image:radial-gradient(circle_at_50%_0%,black,transparent_70%)]"></div>
+      <div class="relative">
+        <span class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-50 text-green-600 pulse-ring">
+          <svg viewBox="0 0 24 24" class="draw h-10 w-10 in" aria-hidden="true"><path pathLength="1" d="m5 12.5 4.5 4.5L19 7.5" style="stroke-width:2.4"/></svg>
+        </span>
+        <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-3">Tabriklayman! Sizning arizangiz muvaffaqiyatli topshirildi.</h1>
+        {% if profile.kind == 'studio_employee' %}
+          <p class="text-charcoal-600">
+            {{ profile.studio|default:"Studiya" }} egasi arizangizni ko'rib chiqadi. Qaror qabul qilingach, shu
+            telefon raqami bilan kirib, natijani ko'rishingiz mumkin.
+          </p>
+        {% else %}
+          <p class="text-charcoal-600">Arizangiz ko'rib chiqilmoqda.</p>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="reveal rounded-3xl border border-red-200 bg-white p-10 text-center shadow-sm">
+      <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-3">Afsuski, arizangiz rad etildi.</h1>
+      <p class="text-charcoal-600">Savollaringiz bo'lsa, biz bilan bog'laning.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

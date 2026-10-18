@@ -13,6 +13,18 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+import django
+from django.core.exceptions import ImproperlyConfigured
+
+# This project is built for the Django in requirements.txt. Running it on an older
+# Django (for example your Mac's system Python) does not fail loudly: things like
+# multi-file uploads quietly break. So refuse to start instead.
+if django.VERSION < (5, 2):
+    raise ImproperlyConfigured(
+        f"Poydevor needs Django 5.2 (see requirements.txt) but this Python has Django {django.get_version()}. "
+        "Start it with the project's own Python:  venv/bin/python manage.py runserver"
+    )
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -21,25 +33,51 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# Falls back to the original dev key locally; set DJANGO_SECRET_KEY in the
-# deployment environment (e.g. Vercel project settings) to override it.
+# Falls back to a dev-only key so `runserver` works out of the box; set
+# DJANGO_SECRET_KEY in whatever environment actually runs this in production
+# (any host — this isn't tied to Vercel or any other provider).
 SECRET_KEY = os.environ.get(
     "DJANGO_SECRET_KEY",
     "django-insecure-lhqa#$&1jo#7efhhi(wy=c5p02fy(-thpj=45s0&v%m(#d6j5(",
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Vercel sets VERCEL=1 automatically in its build/runtime environment, so
-# deployments there are DEBUG=False without any extra configuration, while
-# local `manage.py runserver` keeps the convenient DEBUG=True default.
-# Set DJANGO_DEBUG=True/False explicitly to override either default.
-_debug_env = os.environ.get("DJANGO_DEBUG")
-if _debug_env is not None:
-    DEBUG = _debug_env == "True"
-else:
-    DEBUG = os.environ.get("VERCEL") != "1"
+# Defaults to False (safe) everywhere. Local development explicitly opts into
+# DEBUG via DJANGO_DEBUG=True (see local_env.sh) — nothing here assumes which
+# host this runs on, so a fresh deployment is never accidentally left with
+# DEBUG on just because no one set it.
+DEBUG = os.environ.get("DJANGO_DEBUG", "").strip().lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "poydevor.vercel.app", ".vercel.app"]
+# Host/domain this site answers to. Always includes localhost for `runserver`
+# and manage.py's own tests; add every real domain via DJANGO_ALLOWED_HOSTS
+# (comma-separated) wherever this is actually deployed, e.g.:
+#   DJANGO_ALLOWED_HOSTS=poydevor.uz,www.poydevor.uz
+_extra_hosts = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", *_extra_hosts]
+
+# Needed for POST forms (login, registration, offers, …) to pass Django's CSRF
+# check once the site is served over HTTPS behind a domain — set to the same
+# domains as above but with the scheme, e.g.:
+#   DJANGO_CSRF_TRUSTED_ORIGINS=https://poydevor.uz,https://www.poydevor.uz
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+
+# Most shared/VPS hosting puts nginx or Apache in front of the app and talks
+# to it over plain HTTP, forwarding the original scheme in this header. Without
+# this, Django can't tell the request was really HTTPS and things like the
+# CSRF check and "secure" cookies misbehave. Harmless locally (header is absent).
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Cookie/redirect hardening Django's own deploy checklist (`manage.py check
+# --deploy`) asks for — but only once the site is actually reachable over
+# HTTPS. Left opt-in (DJANGO_HTTPS=true) rather than tied to DEBUG=False, so a
+# first deploy that isn't HTTPS yet never silently locks everyone out of login
+# (a "secure" cookie is simply never sent back over plain HTTP).
+_https = os.environ.get("DJANGO_HTTPS", "").strip().lower() in ("1", "true", "yes")
+SESSION_COOKIE_SECURE = _https
+CSRF_COOKIE_SECURE = _https
+SECURE_SSL_REDIRECT = _https
 
 
 # Application definition
@@ -61,6 +99,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves STATIC_URL files itself (CSS/JS/admin assets) even with DEBUG=False,
+    # so no separate nginx static-files config is required to get a working site.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -153,20 +194,31 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+# Where `manage.py collectstatic` gathers every static file to serve from —
+# required for WhiteNoise (and for DEBUG=False in general). Run once as part
+# of deploying anywhere:  venv/bin/python manage.py collectstatic --noinput
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (user uploads)
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# New uploads go to Vercel Blob when a token is configured (real, persistent
-# storage — Vercel's own runtime filesystem can't be written to). Falls back
-# to local FileSystemStorage for development, where nothing needs to change.
+# Upload storage: plain local disk by default — correct for a normal server
+# with a persistent filesystem (a VPS, shared hosting, etc.), since uploads
+# just live under MEDIA_ROOT like any ordinary Django site.
+#
+# The one exception is Vercel: its runtime filesystem is read-only, so uploads
+# saved there would silently vanish. When BLOB_READ_WRITE_TOKEN is present
+# (only ever set on a Vercel deployment) uploads go to Vercel Blob instead.
+# Unset anywhere else — including this Russian host — and this block does
+# nothing; local disk storage is used, exactly like local development.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 if os.environ.get("BLOB_READ_WRITE_TOKEN"):
-    STORAGES = {
-        "default": {"BACKEND": "poydevor.storage_backends.VercelBlobStorage"},
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
-    }
+    STORAGES["default"] = {"BACKEND": "poydevor.storage_backends.VercelBlobStorage"}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -174,7 +226,75 @@ if os.environ.get("BLOB_READ_WRITE_TOKEN"):
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Auth
+#
+# Ordinary users sign in with their phone number alone (PhoneBackend);
+# staff/superusers keep phone + password through Django's ModelBackend so the
+# admin stays protected.
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'accounts.backends.PhoneBackend',
+]
 
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'accounts:login'
+LOGOUT_REDIRECT_URL = 'accounts:welcome'
+
+
+# Coins
+# 100 000 UZS buys 10 coins (10 000 UZS per coin) and applying to one project
+# costs 10 coins. Every approved studio/freelancer starts with enough coins for
+# two projects.
+
+COIN_PRICE_UZS = 10_000
+OFFER_COST_COINS = 10
+SIGNUP_BONUS_COINS = 2 * OFFER_COST_COINS
+COIN_PACKAGES = [10, 20, 50, 100]
+
+# Portfolio an architect must build after signing up: at least this many projects,
+# each with at least this many photos (a project's first photo is its cover). Until then
+# their profile and projects are hidden from everyone and they can't apply to orders or
+# accept offers.
+PORTFOLIO_REQUIREMENTS = {
+    "freelancer": {"projects": 5, "images": 1},
+    "studio": {"projects": 10, "images": 1},
+}
+PORTFOLIO_MAX_FILE_MB = 50
+
+
+# Payments (Payme + Click)
+#
+# Every value comes from the environment and every one is optional. A provider
+# whose credentials are missing is simply switched off: it is hidden from the
+# "buy coins" page and its webhook answers with a proper "not authorized"
+# response. Nothing here can crash the site when left empty.
+
+def _env(name: str) -> str:
+    return os.environ.get(name, "").strip()
+
+
+PAYME = {
+    "MERCHANT_ID": _env("PAYME_MERCHANT_ID"),
+    "KEY": _env("PAYME_KEY"),
+    # True sends customers to Payme's sandbox checkout (test.paycom.uz).
+    "TEST_MODE": _env("PAYME_TEST_MODE").lower() in ("1", "true", "yes"),
+}
+
+CLICK = {
+    "SERVICE_ID": _env("CLICK_SERVICE_ID"),
+    "MERCHANT_ID": _env("CLICK_MERCHANT_ID"),
+    "SECRET_KEY": _env("CLICK_SECRET_KEY"),
+}
+
+
+# Orders (e'lonlar)
+# An open order nobody was accepted on is deleted after this many days unless its
+# owner confirms they are still searching (see applications/services.py).
+ORDER_LIFETIME_DAYS = 31
+ORDER_WARNING_DAYS = 7
+# The "Hali ham izlayapman" button stays locked until this many days after the order
+# was posted or last confirmed; pressing it then restarts the ORDER_LIFETIME_DAYS countdown.
+ORDER_RENEW_AFTER_DAYS = 15
+
+# Secret for the daily clean-up endpoint (/internal/expire-orders/); unset = endpoint disabled.
+CRON_SECRET = _env("CRON_SECRET")

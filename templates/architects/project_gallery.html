@@ -28,33 +28,7 @@
 
 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for project in projects %}
-    <a href="{% url 'architects:detail' project.architect.id %}#project-{{ project.pk }}" class="block border border-charcoal-200 bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition">
-      <div class="aspect-video bg-charcoal-100 relative">
-        {% with first_image=project.images.all|first %}
-          {% if first_image %}
-            <img src="{{ first_image.image.url }}" class="absolute inset-0 w-full h-full object-cover" alt="{{ project.title }}">
-          {% else %}
-            <span class="absolute inset-0 flex items-center justify-center text-charcoal-300">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-12 h-12">
-                <path d="M3 21V8l9-6 9 6v13h-6v-7H9v7H3Z"/>
-              </svg>
-            </span>
-          {% endif %}
-        {% endwith %}
-      </div>
-      <div class="p-4">
-        <h2 class="font-serif font-medium text-charcoal-900">{{ project.title }}</h2>
-        {% if project.style %}<p class="text-xs text-charcoal-500 mb-2">{{ project.style }}</p>{% endif %}
-        <div class="flex items-center gap-2 text-sm">
-          <span class="text-charcoal-700">{{ project.architect }}</span>
-          <div class="flex items-center gap-0.5 text-amber-400">
-            {% for i in "12345" %}
-              {% if forloop.counter <= project.architect.rating %}★{% else %}☆{% endif %}
-            {% endfor %}
-          </div>
-        </div>
-      </div>
-    </a>
+    {% include "architects/_project_card.html" with project=project show_architect=True %}
   {% empty %}
     <p class="text-sm text-charcoal-500">Hozircha loyihalar topilmadi.</p>
   {% endfor %}

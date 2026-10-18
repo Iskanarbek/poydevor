@@ -1,62 +1,80 @@
 from django import forms
 from django.contrib.auth import authenticate
-from django.contrib.auth import password_validation
 
 from accounts.models import User
+from accounts.phone import InvalidPhoneError, normalize_phone
 
 
-class SignupForm(forms.ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput, min_length=8, label="Parol")
+class PhoneField(forms.CharField):
+    """A phone number normalised to ``+998XXXXXXXXX``."""
 
-    class Meta:
-        model = User
-        fields = ["first_name", "last_name", "phone", "role"]
-        widgets = {"role": forms.RadioSelect}
-        labels = {
-            "first_name": "Ism", "last_name": "Familiya",
-            "phone": "Telefon raqami",
-        }
+    def __init__(self, **kwargs):
+        kwargs.setdefault("label", "Telefon raqami")
+        kwargs.setdefault("max_length", 32)
+        kwargs.setdefault("widget", forms.TextInput(attrs={
+            "type": "tel", "placeholder": "+998 90 123 45 67", "autocomplete": "tel",
+        }))
+        super().__init__(**kwargs)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["first_name"].required = True
-        self.fields["last_name"].required = True
+    def clean(self, value):
+        value = super().clean(value)
+        try:
+            return normalize_phone(value)
+        except InvalidPhoneError as error:
+            raise forms.ValidationError(str(error))
 
-    def clean_phone(self):
-        phone = self.cleaned_data["phone"]
+
+class NewPhoneField(PhoneField):
+    """A phone number that no existing account uses yet."""
+
+    def clean(self, value):
+        phone = super().clean(value)
         if User.objects.filter(phone=phone).exists():
-            raise forms.ValidationError("Bu telefon raqami band, boshqasini kiriting.")
+            raise forms.ValidationError("Bu telefon raqami allaqachon ro'yxatdan o'tgan. Kirish sahifasidan foydalaning.")
         return phone
 
-    def clean_password(self):
-        password = self.cleaned_data["password"]
-        user = User(
-            first_name=self.data.get("first_name", ""),
-            last_name=self.data.get("last_name", ""),
-            phone=self.data.get("phone", ""),
-        )
-        try:
-            password_validation.validate_password(password, user=user)
-        except forms.ValidationError as error:
-            raise forms.ValidationError(error.messages)
-        return password
 
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.set_password(self.cleaned_data["password"])
-        if commit:
-            user.save()
+class SignupForm(forms.Form):
+    """Client ("Mijoz") sign-up: name and phone number, no password."""
+
+    first_name = forms.CharField(label="Ism", max_length=150)
+    last_name = forms.CharField(label="Familiya", max_length=150)
+    phone = NewPhoneField()
+
+    def save(self) -> User:
+        user = User(
+            first_name=self.cleaned_data["first_name"].strip(),
+            last_name=self.cleaned_data["last_name"].strip(),
+            phone=self.cleaned_data["phone"],
+            role=User.Role.USER,
+        )
+        user.set_unusable_password()
+        user.save()
         return user
 
 
 class LoginForm(forms.Form):
-    phone = forms.CharField(label="Telefon raqami")
-    password = forms.CharField(widget=forms.PasswordInput, label="Parol")
+    phone = forms.CharField(
+        label="Telefon raqami", max_length=32,
+        widget=forms.TextInput(attrs={"type": "tel", "placeholder": "+998 90 123 45 67", "autocomplete": "tel"}),
+    )
 
     def clean(self):
         cleaned = super().clean()
-        user = authenticate(phone=cleaned.get("phone"), password=cleaned.get("password"))
-        if user is None:
-            raise forms.ValidationError("Telefon raqami yoki parol noto'g'ri.")
-        cleaned["user"] = user
-        return cleaned
+        raw = (cleaned.get("phone") or "").strip()
+        if not raw:
+            return cleaned
+        # Accounts created before phone numbers were normalised may hold the
+        # number exactly as the person typed it, so try that as well.
+        candidates = []
+        try:
+            candidates.append(normalize_phone(raw))
+        except InvalidPhoneError:
+            pass
+        candidates.append(raw)
+        for phone in candidates:
+            user = authenticate(phone=phone)
+            if user is not None:
+                cleaned["user"] = user
+                return cleaned
+        raise forms.ValidationError("Bu telefon raqami bilan hisob topilmadi.")

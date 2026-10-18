@@ -14,13 +14,30 @@
     </span>
   </div>
 
+  <a href="{% url 'applications:delete' application.pk %}" class="mb-6 inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 hover:underline">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> E'lonni o'chirish
+  </a>
+
   {% if application.status == 'open' %}
-    <form method="post" action="{% url 'applications:delete' application.pk %}" class="mb-6" onsubmit="return confirm('E\'lonni o\'chirmoqchimisiz?');">
-      {% csrf_token %}
-      <button type="submit" class="text-sm text-red-600 hover:text-red-700 hover:underline">
-        E'lonni o'chirish
-      </button>
-    </form>
+    <div class="mb-6 rounded-2xl border px-5 py-4 text-sm {% if application.expiring_soon %}border-red-200 bg-red-50 text-red-800{% else %}border-amber-200 bg-amber-50 text-amber-900{% endif %}">
+      <p class="font-semibold flex items-center gap-1.5">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        {% if application.days_left == 0 %}E'lon bugun avtomatik o'chiriladi!{% else %}E'lon {{ application.days_left }} kundan keyin avtomatik o'chiriladi{% endif %}
+      </p>
+      <p class="mt-1">
+        Agar {{ lifetime_days }} kun ichida «Hali ham izlayapman» tugmasini bosib tasdiqlamasangiz, e'loningiz avtomatik o'chiriladi.
+        Tasdiqlasangiz, muddat yangidan {{ lifetime_days }} kun bo'ladi.
+      </p>
+      <form method="post" action="{% url 'applications:renew' application.pk %}" class="mt-3">
+        {% csrf_token %}
+        {% if application.can_renew %}
+          <button type="submit" class="btn-clay !py-2 !text-sm">Hali ham izlayapman</button>
+        {% else %}
+          <button type="button" disabled class="btn-disabled !py-2 !text-sm">Hali ham izlayapman</button>
+          <p class="mt-2 text-xs opacity-80">Tugma {{ application.days_until_renew }} kundan keyin bosiladigan bo'ladi.</p>
+        {% endif %}
+      </form>
+    </div>
   {% endif %}
 
   <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
@@ -37,12 +54,21 @@
     <dd class="text-charcoal-900">{{ application.interior_style|default:"Belgilanmagan" }}</dd>
 
     <dt class="text-charcoal-500">Byudjet</dt>
-    <dd class="text-charcoal-900">{% if application.budget %}{{ application.budget }}{% else %}Belgilanmagan{% endif %}</dd>
+    <dd class="text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</dd>
 
-    <dt class="text-charcoal-500">Uy rejasi (PDF)</dt>
+    {% if application.description %}
+      <dt class="text-charcoal-500">Nima qilish kerak</dt>
+      <dd class="text-charcoal-900 whitespace-pre-line">{{ application.description }}</dd>
+    {% endif %}
+
+    <dt class="text-charcoal-500">Uy rasmi</dt>
     <dd class="text-charcoal-900">
       {% if application.plan_pdf %}
-        <a href="{{ application.plan_pdf.url }}" class="text-charcoal-700 underline">Yuklab olish</a>
+        {% if application.plan_is_image %}
+          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener"><img src="{{ application.plan_pdf.url }}" alt="Uy rasmi" class="max-h-40 rounded-lg border border-charcoal-200 object-cover"></a>
+        {% else %}
+          <a href="{{ application.plan_pdf.url }}" class="text-charcoal-700 underline">Yuklab olish</a>
+        {% endif %}
       {% else %}
         Yuklanmagan
       {% endif %}
@@ -51,21 +77,57 @@
 
   <h2 class="font-serif text-lg font-semibold text-charcoal-900 mt-10 mb-4">Arizalar</h2>
   <div class="space-y-4">
-    {% for offer in application.offers.all %}
-      <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-5">
-        <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
-          <a href="{% url 'architects:detail' offer.architect.id %}" class="font-medium text-charcoal-900 hover:underline">
-            {{ offer.architect }}
-          </a>
-          <span class="text-xs font-medium px-2.5 py-1 rounded-full
-            {% if offer.status == 'pending' %}bg-amber-50 text-amber-700
-            {% elif offer.status == 'accepted' %}bg-green-50 text-green-700
-            {% elif offer.status == 'completed' %}bg-charcoal-100 text-charcoal-600
-            {% else %}bg-red-50 text-red-700{% endif %}">
-            {{ offer.get_status_display }}
-          </span>
-        </div>
+    {% for offer in offers %}
+      {% with architect=offer.architect %}
+      <div class="lift overflow-hidden rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+        <a href="{% url 'architects:detail' architect.id %}" class="group block p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div class="flex min-w-0 gap-4">
+              {% if architect.avatar %}
+                <img src="{{ architect.avatar.url }}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-cream-50 shadow">
+              {% else %}
+                <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-charcoal-100 text-charcoal-400"><svg class="icon !h-7 !w-7"><use href="#i-user"/></svg></span>
+              {% endif %}
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <h3 class="font-serif text-xl font-semibold text-charcoal-900 transition group-hover:text-clay-700">{{ architect.display_name }}</h3>
+                  <span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ architect.get_kind_display }}</span>
+                </div>
+                <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-charcoal-500">
+                  <span class="flex items-center gap-1 text-amber-400">
+                    {% for i in "12345" %}{% if forloop.counter <= architect.rating %}★{% else %}☆{% endif %}{% endfor %}
+                    <span class="ml-1 font-medium text-charcoal-700">{{ architect.rating }}</span>
+                  </span>
+                  <span>{{ architect.visible_projects|length }} ta loyiha</span>
+                </div>
+                {% if architect.skills.all %}
+                  <div class="mt-2.5 flex flex-wrap gap-1.5">
+                    {% for skill in architect.skills.all %}<span class="rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ skill.name }}</span>{% endfor %}
+                  </div>
+                {% endif %}
+                {% if architect.bio %}<p class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-charcoal-600">{{ architect.bio }}</p>{% endif %}
+              </div>
+            </div>
+            <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium
+              {% if offer.status == 'pending' %}bg-amber-50 text-amber-700
+              {% elif offer.status == 'accepted' %}bg-green-50 text-green-700
+              {% elif offer.status == 'completed' %}bg-charcoal-100 text-charcoal-600
+              {% else %}bg-red-50 text-red-700{% endif %}">{{ offer.get_status_display }}</span>
+          </div>
 
+          {% with covers=architect.carousel_images %}
+            {% if covers %}
+              <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {% for image in covers|slice:":4" %}
+                  <img src="{{ image.image.url }}" alt="" loading="lazy" class="aspect-[4/3] w-full rounded-lg object-cover">
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+          <p class="mt-3 flex items-center gap-1 text-sm font-medium text-clay-700">Portfolioni to'liq ko'rish <svg class="icon"><use href="#i-arrow"/></svg></p>
+        </a>
+
+        <div class="border-t border-charcoal-100 px-5 py-4 sm:px-6">
         {% if offer.status == 'accepted' or offer.status == 'completed' %}
           <div class="text-sm text-charcoal-600 mb-3">
             <p>Telefon: {{ offer.architect.user.phone }}</p>
@@ -122,7 +184,9 @@
             </a>
           {% endif %}
         {% endif %}
+        </div>
       </div>
+      {% endwith %}
     {% empty %}
       <p class="text-sm text-charcoal-500">Hozircha arizalar yo'q.</p>
     {% endfor %}

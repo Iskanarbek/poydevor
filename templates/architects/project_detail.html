@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} — Poydevor{% endblock %}
+
+{% block content %}
+<a href="{{ back_url }}" class="reveal mb-5 inline-flex items-center gap-1.5 text-sm text-charcoal-500 transition hover:text-charcoal-800">
+  <svg class="icon"><use href="#i-back"/></svg> {% if is_owner %}Portfolio{% else %}Barcha loyihalar{% endif %}
+</a>
+
+{% include "architects/_architect_header.html" with show_apply=True %}
+
+<div class="mt-6 grid gap-6 lg:grid-cols-2">
+  <section class="reveal flex flex-col rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm sm:p-8" style="--d:.06s">
+    {% if project.style %}<p class="mb-2 text-[11px] font-medium uppercase tracking-[.2em] text-clay-600">{{ project.style }}</p>{% endif %}
+    <h1 class="font-serif text-2xl font-semibold leading-tight text-charcoal-900 sm:text-3xl">{{ project.title }}</h1>
+    {% if project.description %}
+      <p class="mt-4 leading-relaxed text-charcoal-700 whitespace-pre-line">{{ project.description }}</p>
+    {% else %}
+      <p class="mt-4 text-sm text-charcoal-400">Tavsif kiritilmagan.</p>
+    {% endif %}
+    {% if project.attachment %}
+      <a href="{{ project.attachment.url }}" target="_blank" rel="noopener" class="group flex items-center gap-4 mt-6 rounded-2xl border border-clay-200 bg-clay-50 px-5 py-4 shadow-sm transition hover:border-clay-500 hover:bg-clay-600">
+        <span class="flex h-14 w-12 shrink-0 flex-col items-center justify-center rounded-lg bg-white text-clay-600 ring-1 ring-clay-200">
+          <svg class="icon !h-6 !w-6"><use href="#i-doc"/></svg>
+          <span class="text-[9px] font-bold uppercase tracking-wider">{{ project.attachment_ext }}</span>
+        </span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-[11px] font-medium uppercase tracking-[.2em] text-clay-600 group-hover:text-clay-100">Loyiha fayli</span>
+          <span class="block truncate font-medium text-charcoal-900 group-hover:text-white">{{ project.attachment_name }}</span>
+        </span>
+        <span class="flex shrink-0 items-center gap-1.5 text-sm font-medium text-clay-700 group-hover:text-white">Faylni ochish <svg class="icon"><use href="#i-arrow"/></svg></span>
+      </a>
+    {% elif is_owner %}
+      <a href="{% url 'architects:project_edit' project.pk %}" class="mt-6 block rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-900">Fayl yuklanmagan — faylni qo'shing</a>
+    {% endif %}
+    {% if is_owner %}
+      <div class="mt-auto flex flex-wrap gap-2 pt-6">
+        <a href="{% url 'architects:project_edit' project.pk %}" class="btn-ghost">Tahrirlash</a>
+        <a href="{% url 'architects:project_image_add' project.pk %}" class="btn-ghost">Rasm qo'shish</a>
+        <a href="{% url 'architects:project_delete' project.pk %}" class="inline-flex items-center justify-center rounded-lg border border-red-200 bg-white px-5 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50">O'chirish</a>
+      </div>
+    {% endif %}
+  </section>
+
+  <div class="reveal" style="--d:.1s">
+    <div class="overflow-hidden rounded-2xl border border-charcoal-200 bg-white shadow-sm">
+      {% include "architects/_carousel.html" with images=images alt=project.title %}
+    </div>
+  </div>
+</div>
+
+{% if others %}
+  <section class="mt-14">
+    <h2 class="mb-5 font-serif text-xl font-semibold text-charcoal-900">{% if is_owner %}Boshqa loyihalaringiz{% else %}{{ profile.display_name }}ning boshqa loyihalari{% endif %}</h2>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {% for other in others %}
+        {% include "architects/_project_card.html" with project=other own=is_owner %}
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

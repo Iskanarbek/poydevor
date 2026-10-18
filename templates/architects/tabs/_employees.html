@@ -1,0 +1,45 @@
+<div class="mb-10">
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Qo'shilish so'rovlari</h2>
+  <div class="space-y-3">
+    {% for employee in pending_employees %}
+      <div class="flex flex-wrap items-center justify-between gap-3 border border-amber-200 bg-amber-50/50 rounded-2xl p-4">
+        <div>
+          <p class="font-medium text-charcoal-900">{{ employee.user.first_name }} {{ employee.user.last_name }}</p>
+          <p class="text-sm text-charcoal-500">{{ employee.user.phone }} · {{ employee.user.email }}{% if employee.birth_year %} · {{ employee.birth_year }}-yil{% endif %}</p>
+        </div>
+        <div class="flex gap-2">
+          <form method="post" action="{% url 'architects:employee_decision' employee.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="decision" value="accept">
+            <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">Qabul qilish</button>
+          </form>
+          <form method="post" action="{% url 'architects:employee_decision' employee.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="decision" value="reject">
+            <button type="submit" class="text-sm border border-charcoal-300 text-charcoal-700 font-medium rounded-lg px-4 py-2 hover:border-charcoal-400 transition">Rad etish</button>
+          </form>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-sm text-charcoal-500">Yangi so'rovlar yo'q.</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Xodimlar</h2>
+  <div class="grid gap-4 sm:grid-cols-2">
+    {% for employee in employees %}
+      <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-4">
+        <p class="font-medium text-charcoal-900">{{ employee.user.first_name }} {{ employee.user.last_name }}</p>
+        <p class="text-sm text-charcoal-500">{{ employee.user.phone }}</p>
+        <p class="text-sm text-charcoal-500">{{ employee.user.email }}</p>
+        <a href="{% url 'architects:employee_remove' employee.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> Ishdan bo'shatish
+        </a>
+      </div>
+    {% empty %}
+      <p class="text-sm text-charcoal-500">Studiyada hali xodimlar yo'q.</p>
+    {% endfor %}
+  </div>
+</div>

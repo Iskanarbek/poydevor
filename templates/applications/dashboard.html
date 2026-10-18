@@ -10,6 +10,15 @@
   </a>
 </div>
 
+{% if recently_expired %}
+  <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+    <p class="font-semibold">Ba'zi e'lonlaringiz avtomatik o'chirildi</p>
+    <p class="mt-1">{{ lifetime_days }} kun ichida arxitektor tanlanmagani va tasdiqlanmagani uchun quyidagilar o'chirildi:
+      {% for a in recently_expired %}<b>{{ a.location }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}.
+      Kerak bo'lsa, yangi e'lon joylashtiring.</p>
+  </div>
+{% endif %}
+
 {% if applications %}
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% for application in applications %}
@@ -20,6 +29,7 @@
             <span class="text-xs font-medium px-2.5 py-1 rounded-full
               {% if application.status == 'open' %}bg-green-50 text-green-700
               {% elif application.status == 'in_progress' %}bg-amber-50 text-amber-700
+              {% elif application.status == 'cancelled' %}bg-red-50 text-red-700
               {% else %}bg-charcoal-100 text-charcoal-600{% endif %}">
               {{ application.get_status_display }}
             </span>
@@ -27,13 +37,23 @@
           <p class="text-sm text-charcoal-500">{{ application.rooms_count }} xona</p>
         </a>
         {% if application.status == 'open' %}
-          <form method="post" action="{% url 'applications:delete' application.pk %}" class="mt-3" onsubmit="return confirm('E\'lonni o\'chirmoqchimisiz?');">
-            {% csrf_token %}
-            <button type="submit" class="text-xs text-red-600 hover:text-red-700 hover:underline">
-              O'chirish
-            </button>
-          </form>
+          <div class="mt-3 rounded-lg px-3 py-2 text-xs {% if application.expiring_soon %}bg-red-50 text-red-700{% else %}bg-cream-100 text-charcoal-600{% endif %}">
+            <p class="flex items-center gap-1.5 font-medium">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              {% if application.days_left == 0 %}Bugun o'chiriladi{% else %}{{ application.days_left }} kundan keyin avtomatik o'chiriladi{% endif %}
+            </p>
+            {% if application.can_renew %}
+              <form method="post" action="{% url 'applications:renew' application.pk %}" class="mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="back" value="dashboard">
+                <button type="submit" class="rounded-md px-3 py-1.5 text-xs font-medium text-white transition {% if application.expiring_soon %}bg-red-600 hover:bg-red-700{% else %}bg-clay-600 hover:bg-clay-700{% endif %}">Hali ham izlayapman</button>
+              </form>
+            {% endif %}
+          </div>
         {% endif %}
+        <a href="{% url 'applications:delete' application.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> O'chirish
+        </a>
       </div>
     {% endfor %}
   </div>

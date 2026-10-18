@@ -1,0 +1,51 @@
+{# Full-size photo viewer. Opened by a slider photo via the `open-lightbox` event. #}
+<div x-data="lightbox()" x-show="open" x-cloak x-transition.opacity.duration.250ms
+     @open-lightbox.window="show($event.detail)" @keydown.window="key($event)"
+     class="fixed inset-0 z-[100] flex flex-col bg-charcoal-900/95 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-label="Rasmni kattalashtirib ko'rish">
+  <div class="flex items-center justify-between gap-4 px-5 py-4 text-white">
+    <div class="min-w-0">
+      <p class="font-serif text-lg truncate" x-text="title"></p>
+      <p class="text-xs text-white/60" x-show="n > 1" x-text="((i % n) + 1) + ' / ' + n"></p>
+    </div>
+    <button type="button" @click="close()" aria-label="Yopish"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="relative min-h-0 flex-1" @touchstart.passive="x0 = $event.touches[0].clientX" @touchend="swipe($event)">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="lb-track flex h-full" :class="anim ? '' : 'no-anim'" :style="'transform: translateX(-' + (i * 100) + '%)'">
+        <template x-for="(u, k) in slides" :key="k">
+          <div class="flex h-full w-full shrink-0 items-center justify-center px-4 sm:px-20 pb-2" @click.self="close()">
+            <img :src="u" alt="" draggable="false" class="max-h-full max-w-full select-none rounded-lg object-contain shadow-2xl">
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <template x-if="n > 1">
+      <div>
+        <button type="button" @click="prev()" aria-label="Oldingi rasm"
+                class="absolute left-3 sm:left-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/30 hover:scale-105">
+          <svg class="icon !w-6 !h-6"><use href="#i-chev-l"/></svg>
+        </button>
+        <button type="button" @click="next()" aria-label="Keyingi rasm"
+                class="absolute right-3 sm:right-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/30 hover:scale-105">
+          <svg class="icon !w-6 !h-6"><use href="#i-chev-r"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <div x-show="n > 1" class="flex justify-center gap-2 overflow-x-auto px-4 py-3">
+    <template x-for="(u, k) in urls" :key="k">
+      <button type="button" @click="go(k)" :aria-label="'Rasm ' + (k + 1)"
+              class="h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition"
+              :class="(i % n) === k ? 'border-white opacity-100' : 'border-transparent opacity-50 hover:opacity-90'">
+        <img :src="u" alt="" class="h-full w-full object-cover" draggable="false">
+      </button>
+    </template>
+  </div>
+</div>

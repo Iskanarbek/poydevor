@@ -1,0 +1,225 @@
+{# Photo uploader. Needs: field (the hidden multi-file input), min_files. Optional: max_side (px, default 1600), compact, noun ("rasm"). #}
+<div x-data="uploader({{ min_files }}, {{ max_side|default:1600 }}, '{{ noun|default:"fayl" }}')" class="space-y-3">
+  {{ field }}
+  <input type="file" x-ref="picker" multiple accept="{{ field.field.widget.attrs.accept }}" class="hidden" @change="onPick($event)">
+
+  {# Drop zone #}
+  <div @click="pick()" @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false" @drop.prevent="onDrop($event)"
+       :class="dragging ? 'border-clay-500 bg-clay-50' : 'border-charcoal-200 bg-cream-50 hover:border-clay-400 hover:bg-clay-50/50'"
+       class="cursor-pointer rounded-xl border-2 border-dashed transition duration-200 {% if compact %}flex items-center gap-3 px-4 py-3{% else %}px-6 py-8 text-center{% endif %}">
+    <span class="{% if compact %}h-10 w-10{% else %}mx-auto mb-3 h-14 w-14{% endif %} flex shrink-0 items-center justify-center rounded-full bg-white text-clay-600 shadow-sm">
+      <svg class="icon {% if not compact %}!w-7 !h-7{% endif %}" viewBox="0 0 24 24"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+    </span>
+    <div class="{% if compact %}min-w-0 flex-1 text-left{% endif %}">
+      <p class="font-medium text-charcoal-900 {% if compact %}text-sm{% endif %}">{{ noun|default:"fayl"|capfirst }}larni bu yerga tashlang yoki tanlang</p>
+      {% if not compact %}<p class="mt-1 text-sm text-charcoal-500">Bir vaqtning o'zida istalgancha tanlashingiz mumkin. Tugmani qayta bossangiz, yangilari qo'shiladi.</p>{% endif %}
+    </div>
+    <button type="button" @click.stop="pick()" class="btn-clay {% if compact %}!px-3.5 !py-2 !text-sm shrink-0{% else %}mt-4{% endif %}">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      <span x-text="items.length ? 'Yana qo\'shish' : 'Qo\'shish'"></span>
+    </button>
+  </div>
+
+  {# Counter + progress towards the minimum #}
+  <div x-show="items.length || tooFew" x-cloak class="space-y-2">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+      <span class="font-medium" :class="remaining === 0 ? 'text-green-700' : 'text-charcoal-800'">
+        <span x-text="items.length"></span> ta <span x-text="noun"></span> tanlandi
+        <span class="font-normal" :class="remaining === 0 ? 'text-green-700' : 'text-charcoal-500'"
+              x-text="remaining === 0 ? '✓' : '— yana ' + remaining + ' ta kerak'"></span>
+      </span>
+      <span class="flex items-center gap-3 text-xs text-charcoal-500">
+        <span x-text="totalMb + ' MB'"></span>
+        <button type="button" @click="clear()" class="text-charcoal-500 underline hover:text-red-600">Hammasini o'chirish</button>
+      </span>
+    </div>
+    <div class="h-2 overflow-hidden rounded-full bg-charcoal-100">
+      <div class="h-full rounded-full transition-all duration-500" :class="remaining === 0 ? 'bg-green-500' : 'bg-clay-500'" :style="'width:' + percent + '%'"></div>
+    </div>
+    <p x-show="tooFew && remaining > 0" x-cloak class="text-sm text-red-600">Ariza yuborish uchun kamida <span x-text="min"></span> ta fayl kerak.</p>
+    <p x-show="working > 0" x-cloak class="text-xs text-charcoal-500">Rasmlar yuborish uchun tayyorlanmoqda…<span x-show="wantsSubmit"> Tayyor bo'lgach ariza avtomatik yuboriladi.</span></p>
+  </div>
+
+  <div x-show="uploading" x-cloak class="space-y-1.5 rounded-xl border border-clay-200 bg-clay-50 px-4 py-3">
+    <div class="flex items-center justify-between text-sm font-medium text-clay-800">
+      <span x-text="progress < 100 ? 'Fayllar yuklanmoqda…' : 'Ariza tekshirilmoqda…'"></span><span x-text="progress + '%'"></span>
+    </div>
+    <div class="h-2 overflow-hidden rounded-full bg-white"><div class="h-full rounded-full bg-clay-500 transition-all duration-300" :style="'width:' + progress + '%'"></div></div>
+  </div>
+  <p x-show="formError" x-cloak x-text="formError" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"></p>
+
+  <p x-show="notice" x-cloak x-text="notice" class="text-sm text-red-600"></p>
+
+  {# Thumbnails #}
+  <div x-show="items.length" x-cloak class="grid {% if compact %}grid-cols-4 gap-2 sm:grid-cols-6{% else %}grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5{% endif %}">
+    <template x-for="(it, k) in items" :key="it.id">
+      <div class="group relative aspect-square overflow-hidden rounded-xl border border-charcoal-200 bg-charcoal-100" :title="it.file.name">
+        <template x-if="it.thumb"><img :src="it.thumb" alt="" class="h-full w-full object-cover" draggable="false"></template>
+        <template x-if="!it.thumb">
+          <div class="flex h-full w-full flex-col items-center justify-center gap-1 px-2 text-center text-charcoal-500">
+            <svg class="icon !w-6 !h-6" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>
+            <span class="text-xs font-semibold" x-text="it.ext"></span>
+            <span class="w-full truncate text-[10px]" x-text="it.file.name"></span>
+          </div>
+        </template>
+        <div x-show="it.busy" class="absolute inset-0 flex items-center justify-center bg-white/60"><span class="h-5 w-5 animate-spin rounded-full border-2 border-clay-500 border-t-transparent"></span></div>
+        <span class="absolute bottom-1 left-1 rounded-md bg-charcoal-900/70 px-1.5 py-0.5 text-[10px] font-medium text-white" x-text="k === 0 ? 'Birinchi' : k + 1"></span>
+        <button type="button" @click="remove(it)" aria-label="O'chirish"
+                class="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-charcoal-900/70 text-white opacity-100 transition hover:bg-red-600 sm:opacity-0 sm:group-hover:opacity-100">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('alpine:init', function () {
+    var OK = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.heic', '.pdf', '.mp4', '.mov', '.webm'];
+    var MAX = 50 * 1024 * 1024;
+    var counter = 0;
+
+    // Big photos are shrunk in the browser (to at most maxSide px, JPEG) so many of them upload quickly.
+    // Anything that can't be shrunk, or wouldn't get smaller, is sent as it is.
+    function shrink(file, maxSide) {
+      var showable = /^image\/(jpeg|png|webp|gif)$/.test(file.type);
+      var keep = function () { return { file: file, thumb: showable ? URL.createObjectURL(file) : null }; };
+      if (!/^image\/(jpeg|png|webp)$/.test(file.type) || !window.createImageBitmap) return Promise.resolve(keep());
+      return createImageBitmap(file).then(function (bmp) {
+        var scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+        var w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+        var canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); ctx.drawImage(bmp, 0, 0, w, h);
+        if (bmp.close) bmp.close();
+        return new Promise(function (resolve) {
+          canvas.toBlob(function (blob) {
+            if (!blob || blob.size >= file.size) { resolve(keep()); return; }
+            var name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+            resolve({ file: new File([blob], name, { type: 'image/jpeg', lastModified: file.lastModified }), thumb: URL.createObjectURL(blob) });
+          }, 'image/jpeg', 0.82);
+        });
+      }).catch(keep);
+    }
+
+    Alpine.data('uploader', function (min, maxSide, noun) {
+      return {
+        min: min, noun: noun || 'fayl', maxSide: maxSide || 1600, items: [], notice: '', dragging: false, working: 0, wantsSubmit: false, tooFew: false,
+        uploading: false, progress: 0, formError: '',
+        get remaining() { return Math.max(0, this.min - this.items.length); },
+        get percent() { return this.min ? Math.min(100, Math.round(this.items.length / this.min * 100)) : 100; },
+        get totalMb() { return (this.items.reduce(function (sum, it) { return sum + it.file.size; }, 0) / 1048576).toFixed(1); },
+        init: function () {
+          var self = this, form = this.$el.closest('form');
+          // The form is sent in the background (no page reload), so the chosen files stay put
+          // when the server reports a problem such as a phone number that is already registered.
+          form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (self.uploading) return;
+            self.formError = '';
+            if (self.items.length < self.min) {
+              self.tooFew = true;
+              self.$el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (self.working > 0) {
+              self.wantsSubmit = true;
+            } else {
+              self.send(form);
+            }
+          });
+        },
+        send: function (form) {
+          var self = this, button = form.querySelector('button[type=submit]');
+          this.uploading = true; this.progress = 0; if (button) button.disabled = true;
+          var done = function () { self.uploading = false; if (button) button.disabled = false; };
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', form.action || window.location.href);
+          xhr.upload.onprogress = function (e) { if (e.lengthComputable) self.progress = Math.min(99, Math.round(e.loaded / e.total * 100)); };
+          xhr.onload = function () {
+            done();
+            var landed = xhr.responseURL ? new URL(xhr.responseURL).pathname : window.location.pathname;
+            if (xhr.status === 200 && landed !== window.location.pathname) { window.location.href = xhr.responseURL; return; }  // registered: on to the status page
+            if (xhr.status === 200) { self.showErrors(form, xhr.responseText); return; }
+            self.formError = xhr.status === 403
+              ? 'Sahifa muddati tugagan. Sahifani yangilab, qayta urinib ko\'ring.'
+              : 'Xatolik yuz berdi (' + xhr.status + '). Fayllaringiz saqlanib turibdi, qayta urinib ko\'ring.';
+          };
+          xhr.onerror = function () { done(); self.formError = 'Internet aloqasi uzildi. Fayllaringiz saqlanib turibdi, qayta urinib ko\'ring.'; };
+          xhr.send(new FormData(form));
+        },
+        showErrors: function (form, html) {
+          // Copy the server's messages into the page as it is, so nothing the person typed or chose is lost.
+          var fresh = new DOMParser().parseFromString(html, 'text/html');
+          form.querySelectorAll('[data-error]').forEach(function (el) { el.remove(); });
+          form.querySelectorAll('[data-field]').forEach(function (box) {
+            var match = fresh.querySelector('[data-field="' + box.getAttribute('data-field') + '"]');
+            if (match) match.querySelectorAll('[data-error]').forEach(function (err) { box.appendChild(document.importNode(err, true)); });
+          });
+          var live = document.querySelector('[data-form-errors]'), next = fresh.querySelector('[data-form-errors]');
+          if (live && next) live.innerHTML = next.innerHTML;
+          var first = form.querySelector('[data-error]') || live;
+          if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        },
+        pick: function () { this.$refs.picker.click(); },
+        onPick: function (e) { this.add(Array.prototype.slice.call(e.target.files)); e.target.value = ''; },
+        onDrop: function (e) { this.dragging = false; this.add(Array.prototype.slice.call(e.dataTransfer.files)); },
+        add: function (list) {
+          var self = this, fresh = [], rejected = [];
+          this.notice = ''; this.tooFew = false;
+          list.forEach(function (f) {
+            var ext = '.' + f.name.split('.').pop().toLowerCase();
+            var key = f.name + '|' + f.size + '|' + f.lastModified;
+            if (OK.indexOf(ext) < 0) { rejected.push(f.name + ' (fayl turi mos emas)'); return; }
+            if (f.size > MAX) { rejected.push(f.name + ' (50 MB dan katta)'); return; }
+            if (self.items.some(function (it) { return it.key === key; })) return;
+            self.items.push({ id: ++counter, key: key, file: f, thumb: null, ext: ext.slice(1).toUpperCase(),
+                              busy: /^image\/(jpeg|png|webp)$/.test(f.type) });
+            fresh.push(self.items[self.items.length - 1]);   // the reactive copy
+          });
+          if (rejected.length) {
+            this.notice = 'Qabul qilinmadi: ' + rejected.slice(0, 3).join(', ') +
+                          (rejected.length > 3 ? ' va yana ' + (rejected.length - 3) + ' ta' : '') + '.';
+          }
+          this.sync();
+          this.process(fresh);
+        },
+        process: async function (fresh) {
+          for (var k = 0; k < fresh.length; k++) {
+            var it = fresh[k];
+            this.working++;
+            if (it.busy) {
+              var res = await shrink(it.file, this.maxSide);
+              if (this.items.indexOf(it) >= 0) { it.file = res.file; it.thumb = res.thumb; }
+              it.busy = false;
+            } else if (/^image\//.test(it.file.type) && /^image\/(gif)$/.test(it.file.type)) {
+              it.thumb = URL.createObjectURL(it.file);
+            }
+            this.working--;
+            this.sync();
+            await new Promise(function (r) { setTimeout(r, 0); });
+          }
+          if (this.working === 0 && this.wantsSubmit && this.items.length >= this.min) {
+            this.wantsSubmit = false;
+            this.send(this.$el.closest('form'));
+          }
+        },
+        sync: function () {
+          try {
+            var dt = new DataTransfer();
+            this.items.forEach(function (it) { dt.items.add(it.file); });
+            this.$refs.real.files = dt.files;
+          } catch (err) {
+            this.notice = 'Brauzeringiz bir nechta faylni qo\'shishni qo\'llab-quvvatlamaydi. Yangiroq brauzerdan foydalaning.';
+          }
+        },
+        remove: function (it) {
+          if (it.thumb) URL.revokeObjectURL(it.thumb);
+          this.items = this.items.filter(function (x) { return x !== it; });
+          this.notice = ''; this.sync();
+        },
+        clear: function () {
+          this.items.forEach(function (it) { if (it.thumb) URL.revokeObjectURL(it.thumb); });
+          this.items = []; this.notice = ''; this.sync();
+        }
+      };
+    });
+  });
+</script>

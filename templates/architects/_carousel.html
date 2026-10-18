@@ -1,0 +1,49 @@
+{# Photo slider. Needs: images (PortfolioImage list), alt. Optional: href (clicking the photo goes there; without it the photo opens full size in the viewer), full_images (every photo, to browse in the viewer). #}
+<div class="relative aspect-video overflow-hidden bg-charcoal-100 group {% if images %}{% if href %}cursor-pointer{% else %}cursor-zoom-in{% endif %}{% endif %}"
+     {% if images %}
+     x-data="carousel()" data-title="{{ alt }}" data-href="{{ href|default:'' }}"
+     {% if full_images %}data-full="{% for image in full_images %}{{ image.image.url }}{% if not forloop.last %}|{% endif %}{% endfor %}"{% endif %}
+     @mouseenter="hovering = true" @mouseleave="hovering = false"
+     @touchstart.passive="x0 = $event.touches[0].clientX" @touchend="swipe($event)"
+     @click="open($event)"
+     {% endif %}>
+  {% if images %}
+    <div x-ref="track" class="slide-track flex h-full" :class="anim ? '' : 'no-anim'" :style="'transform: translateX(-' + (i * 100) + '%)'">
+      {% for image in images %}
+        <img src="{{ image.image.url }}" alt="{{ alt }}" draggable="false" {% if not forloop.first %}loading="lazy"{% endif %}
+             class="h-full w-full shrink-0 object-cover select-none">
+      {% endfor %}
+    </div>
+
+    {% if full_images and full_images|length > images|length %}
+      <span class="pointer-events-none absolute right-2.5 top-2.5 z-10 inline-flex items-center gap-1 rounded-full bg-charcoal-900/70 px-2.5 py-1 text-xs font-medium text-white backdrop-blur">
+        <svg class="icon !w-3.5 !h-3.5" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-8 8"/></svg>
+        {{ full_images|length }} ta rasm
+      </span>
+    {% endif %}
+
+    <template x-if="n > 1">
+      <div>
+        <button type="button" @click.stop="prev()" aria-label="Oldingi rasm"
+                class="absolute left-2.5 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal-800 shadow-md backdrop-blur transition duration-300 hover:bg-white hover:scale-105 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
+          <svg class="icon !w-5 !h-5"><use href="#i-chev-l"/></svg>
+        </button>
+        <button type="button" @click.stop="next()" aria-label="Keyingi rasm"
+                class="absolute right-2.5 top-1/2 z-10 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-charcoal-800 shadow-md backdrop-blur transition duration-300 hover:bg-white hover:scale-105 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100">
+          <svg class="icon !w-5 !h-5"><use href="#i-chev-r"/></svg>
+        </button>
+        <div class="absolute inset-x-0 bottom-2.5 z-10 flex justify-center gap-1.5">
+          <template x-for="k in n" :key="k">
+            <button type="button" @click.stop="go(k - 1)" :aria-label="'Rasm ' + k"
+                    class="h-1.5 rounded-full transition-all duration-500"
+                    :class="(i % n) === k - 1 ? 'w-5 bg-white' : 'w-1.5 bg-white/60 hover:bg-white/90'"></button>
+          </template>
+        </div>
+      </div>
+    </template>
+  {% else %}
+    <span class="absolute inset-0 flex items-center justify-center text-charcoal-300">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-12 h-12"><path d="M3 21V8l9-6 9 6v13h-6v-7H9v7H3Z"/></svg>
+    </span>
+  {% endif %}
+</div>
