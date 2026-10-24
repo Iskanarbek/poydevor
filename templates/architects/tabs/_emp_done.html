@@ -1,0 +1,20 @@
+{% if not studio %}
+  <p class="text-sm text-charcoal-500">Siz hozircha hech qaysi studiyaga biriktirilmagansiz.</p>
+{% else %}
+  <div class="mb-5">
+    <h2 class="font-serif text-xl font-semibold text-charcoal-900">Men bajargan ishlar</h2>
+    <p class="text-sm text-charcoal-500">Siz yakunlagan buyurtmalar tarixi.</p>
+  </div>
+
+  <div class="grid gap-5 md:grid-cols-2">
+    {% for a in my_done %}
+      {% include "architects/_emp_job_card.html" with a=a mode="done" %}
+    {% empty %}
+      <div class="rounded-2xl border-2 border-dashed border-charcoal-200 bg-white px-6 py-12 text-center md:col-span-2">
+        <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cream-100 text-clay-600"><svg class="icon !h-7 !w-7"><use href="#i-shield"/></svg></span>
+        <p class="font-serif text-lg font-semibold text-charcoal-900">Hali bajarilgan ish yo'q</p>
+        <p class="mx-auto mt-1 max-w-md text-sm text-charcoal-500">Birinchi ishingizni yakunlaganingizda u shu yerda saqlanadi.</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

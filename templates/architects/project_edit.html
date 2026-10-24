@@ -36,6 +36,7 @@
         <p class="mb-1 text-xs text-charcoal-400">Almashtirish uchun yangi fayl tanlang, aks holda eskisi qoladi.</p>
       {% endif %}
       {{ form.attachment }}
+      <p class="mt-1 text-xs text-charcoal-400">Faqat PDF yoki JPG, ular telefonda ham ochiladi (eng ko'pi 50 MB). Boshqa fayl turlari qabul qilinmaydi.</p>
       {% if form.attachment.errors %}<p class="mt-1 text-sm text-red-600">{{ form.attachment.errors|striptags }}</p>{% endif %}
     </div>
     <button type="submit" class="btn-clay w-full !py-3">Saqlash <svg class="icon"><use href="#i-check"/></svg></button>

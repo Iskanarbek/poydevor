@@ -169,3 +169,85 @@ class StudioOrdersViewTests(TestCase):
         self.assignment.refresh_from_db()
         self.assertEqual(self.assignment.worker, self.worker)
         self.assertEqual(str(self.assignment.deadline), "2030-06-15")
+
+
+class EmployeePanelTests(TestCase):
+    """The employee's home is the same panel layout as a studio's or freelancer's."""
+
+    def setUp(self):
+        client_user = User.objects.create_user(
+            phone="+998901111111", password="x", first_name="Aziz", last_name="K", role=User.Role.USER,
+        )
+        self.owner = make_studio()
+        self.worker = make_employee(self.owner, "Worker1")
+        self.other = make_employee(self.owner, "Worker2")
+        self.assignments = []
+        for place in ("Toshkent", "Samarqand", "Buxoro"):
+            application = Application.objects.create(owner=client_user, rooms_count=3, location=place)
+            offer = send_offer(application, self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+            accept_offer(offer)
+            self.assignments.append(StudioAssignment.objects.get(offer=offer))
+        self.client.force_login(self.worker.user)
+
+    def page(self, tab=None):
+        return self.client.get("/employee/workspace/" + (f"?tab={tab}" if tab else ""))
+
+    def test_uses_the_shared_panel_with_a_tab_bar_and_stats(self):
+        page = self.page()
+        self.assertTemplateUsed(page, "architects/workspace.html")
+        for label in ("Mening ishlarim", "Ochiq buyurtmalar", "Bajarilgan ishlar", "Studiya"):
+            self.assertContains(page, label)
+        self.assertEqual(page.context["tab"], "tasks")
+        self.assertEqual(page.context["emp_stats"], {"active": 0, "overdue": 0, "done": 0, "open": 3})
+
+    def test_unknown_tab_falls_back_to_my_jobs(self):
+        self.assertEqual(self.page("nonsense").context["tab"], "tasks")
+
+    def test_open_tab_lists_unclaimed_orders_with_a_claim_button(self):
+        page = self.page("open")
+        for place in ("Toshkent", "Samarqand", "Buxoro"):
+            self.assertContains(page, place)
+        self.assertContains(page, "Men olaman")
+        self.assertContains(page, f"/employee/buyurtmalar/{self.assignments[0].pk}/olish/")
+
+    def test_claimed_job_moves_to_my_jobs_and_leaves_the_open_list(self):
+        self.client.post(f"/employee/buyurtmalar/{self.assignments[0].pk}/olish/")
+        mine = self.page("tasks")
+        self.assertContains(mine, "Toshkent")
+        self.assertContains(mine, "Bajarildi")
+        self.assertEqual(mine.context["emp_stats"]["active"], 1)
+        self.assertNotContains(self.page("open"), "Toshkent")
+
+    def test_overdue_job_is_flagged_and_listed_first(self):
+        assign_worker(self.assignments[0], self.worker, deadline="2099-01-01")
+        assign_worker(self.assignments[1], self.worker, deadline="2000-01-01")
+        assign_worker(self.assignments[2], self.worker)
+        page = self.page("tasks")
+        order = [a.offer.application.location for a in page.context["my_assignments"]]
+        self.assertEqual(order, ["Samarqand", "Toshkent", "Buxoro"])
+        self.assertEqual(page.context["emp_stats"]["overdue"], 1)
+        self.assertContains(page, "Muddati o'tgan")
+
+    def test_finishing_a_job_lands_on_the_done_tab(self):
+        self.client.post(f"/employee/buyurtmalar/{self.assignments[0].pk}/olish/")
+        response = self.client.post(f"/employee/buyurtmalar/{self.assignments[0].pk}/bajarildi/")
+        self.assertRedirects(response, "/employee/workspace/?tab=done", fetch_redirect_response=False)
+        done = self.page("done")
+        self.assertContains(done, "Toshkent")
+        self.assertEqual(done.context["emp_stats"]["done"], 1)
+
+    def test_other_employees_jobs_are_not_shown_as_mine(self):
+        assign_worker(self.assignments[0], self.other)
+        self.assertNotContains(self.page("tasks"), "Toshkent")
+
+    def test_studio_tab_shows_the_studio_and_the_team(self):
+        page = self.page("studio")
+        self.assertContains(page, "ArcDes")
+        self.assertContains(page, "Worker2")
+        self.assertContains(page, "Siz")
+
+    def test_deadline_days_left(self):
+        assign_worker(self.assignments[0], self.worker, deadline="2000-01-01")
+        self.assignments[0].refresh_from_db()
+        self.assertLess(self.assignments[0].days_left, 0)
+        self.assertIsNone(self.assignments[1].days_left)

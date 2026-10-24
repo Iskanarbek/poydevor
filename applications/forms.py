@@ -1,10 +1,7 @@
-import os
-
 from django import forms
 
-from applications.models import HOUSE_IMAGE_EXTENSIONS, Application
-
-ALLOWED_HOUSE_FILES = HOUSE_IMAGE_EXTENSIONS | {".pdf"}
+from applications.models import Application
+from poydevor.upload_safety import ACCEPT_ATTRIBUTE, validate_pdf_or_jpg
 
 
 class ApplicationForm(forms.ModelForm):
@@ -27,16 +24,14 @@ class ApplicationForm(forms.ModelForm):
                 "rows": 4,
                 "placeholder": "Masalan: 2 qavatli zamonaviy uy loyihasi, hovli va garaj bilan. Ichki dizayn ham kerak.",
             }),
-            "plan_pdf": forms.ClearableFileInput(attrs={"accept": "image/*,.pdf"}),
+            # PDF or JPG only; clean_plan_pdf checks the real content (poydevor/upload_safety.py).
+            "plan_pdf": forms.ClearableFileInput(attrs={"accept": ACCEPT_ATTRIBUTE}),
         }
 
     def clean_plan_pdf(self):
         upload = self.cleaned_data.get("plan_pdf")
         if upload and hasattr(upload, "size"):
-            if os.path.splitext(upload.name)[1].lower() not in ALLOWED_HOUSE_FILES:
-                raise forms.ValidationError("Uy rasmini JPG, PNG, WEBP yoki PDF ko'rinishida yuklang.")
-            if upload.size > 20 * 1024 * 1024:
-                raise forms.ValidationError("Fayl juda katta (eng ko'pi 20 MB).")
+            validate_pdf_or_jpg(upload, max_mb=20)
         return upload
 
     def clean(self):

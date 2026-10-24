@@ -1,0 +1,20 @@
+{% if not studio %}
+  <p class="text-sm text-charcoal-500">Siz hozircha hech qaysi studiyaga biriktirilmagansiz.</p>
+{% else %}
+  <div class="mb-5">
+    <h2 class="font-serif text-xl font-semibold text-charcoal-900">Studiyada ochiq buyurtmalar</h2>
+    <p class="text-sm text-charcoal-500">Studiya qabul qilgan va hali hech kimga biriktirilmagan ishlar. «Men olaman» tugmasini birinchi bosgan xodimga biriktiriladi.</p>
+  </div>
+
+  <div class="grid gap-5 md:grid-cols-2">
+    {% for a in open_assignments %}
+      {% include "architects/_emp_job_card.html" with a=a mode="open" %}
+    {% empty %}
+      <div class="rounded-2xl border-2 border-dashed border-charcoal-200 bg-white px-6 py-12 text-center md:col-span-2">
+        <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cream-100 text-clay-600"><svg class="icon !h-7 !w-7"><use href="#i-layers"/></svg></span>
+        <p class="font-serif text-lg font-semibold text-charcoal-900">Hozircha ochiq buyurtma yo'q</p>
+        <p class="mx-auto mt-1 max-w-md text-sm text-charcoal-500">Studiya yangi buyurtma qabul qilishi bilan u shu yerda paydo bo'ladi.</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

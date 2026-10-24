@@ -253,7 +253,56 @@ production value, and you're done — no code changes needed.
 
 ---
 
-## 8. The staff admin panel
+## 8. Uploads and safety
+
+The site accepts **only PDF and JPG** for the two document uploads: a portfolio project's
+file and a client's house file. Both open on any phone or computer with no extra app, and
+neither can run a program. Everything else (Word, DWG, ZIP, PNG, video, programs, ...) is
+refused with a message telling the person to upload a PDF or JPG.
+
+Portfolio *photos* are a separate box: they are pictures shown on the site, and the browser
+converts them to JPG before sending when it can.
+
+A file is accepted only if all of this is true (`poydevor/upload_safety.py`, one small file):
+
+- the name ends in `.pdf`, `.jpg` or `.jpeg`
+- the content really is that kind of file, so a program, web page, ZIP or APK renamed to
+  `.pdf` or `.jpg` is refused (the first bytes give it away)
+- a JPG opens as a real picture
+- a PDF has no JavaScript, auto-launch or hidden embedded files
+- the name has no hidden right-to-left characters that fake an extension
+
+Limits: 50 MB for a project file, 20 MB for a client's house file.
+
+**Second layer: how files are served.** Everything under `/media/` is sent with
+`X-Content-Type-Options: nosniff`, and anything that is not a photo, PDF or video is forced to
+download instead of opening. `runserver` does this through `poydevor/middleware.py`. On a real
+server nginx serves `/media/` itself, so put the same rules in the nginx site config (replace
+the plain `location /media/` block):
+
+```nginx
+# Photos, PDFs and videos open in the browser; every other file type downloads.
+map $uri $media_disposition {
+    default                                   "attachment";
+    ~*\.(jpe?g|png|gif|webp|avif|pdf|mp4|webm|mov)$  "";
+}
+
+location /media/ {
+    alias /srv/poydevor/media/;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Content-Disposition $media_disposition always;
+    add_header Content-Security-Policy "sandbox; default-src 'none'" always;
+}
+```
+
+This is a strong first defence, not antivirus. If you later want more file types, edit
+`ALLOWED_EXTENSIONS` and add a matching content check in `upload_safety.py`; do not simply
+remove the check. For real malware scanning of every upload, install **ClamAV**
+(`apt install clamav-daemon`) and scan new files from a small Django hook.
+
+---
+
+## 9. The staff admin panel
 
 Two separate places to manage the platform:
 
@@ -279,7 +328,7 @@ could sign in as them.
 
 ---
 
-## 9. Project structure quick reference
+## 10. Project structure quick reference
 
 ```
 accounts/     custom User model, phone-based login, staff panel login

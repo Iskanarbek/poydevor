@@ -1,0 +1,96 @@
+{% load uz_time %}
+{# One studio job as an employee sees it. Needs: a (a StudioAssignment) and mode: "mine", "open" or "done". #}
+{% with app=a.offer.application %}
+<article class="lift flex flex-col rounded-2xl border bg-white p-5 shadow-sm {% if mode == 'mine' and a.is_overdue %}border-red-300 ring-1 ring-red-200{% else %}border-charcoal-200{% endif %}">
+  <div class="mb-3 flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h3 class="flex items-center gap-1.5 font-serif text-lg font-semibold leading-snug text-charcoal-900">
+        <svg class="icon text-clay-600"><use href="#i-pin"/></svg><span class="truncate">{{ app.location }}</span>
+      </h3>
+      <p class="mt-0.5 flex items-center gap-1 text-xs text-charcoal-400">
+        <svg class="icon"><use href="#i-clock"/></svg>
+        {% if mode == 'done' %}Bajarildi: {{ a.done_at|date:"d.m.Y" }}
+        {% elif mode == 'mine' %}Sizga biriktirildi: {{ a.assigned_at|uz_ago }}
+        {% else %}Studiya qabul qildi: {{ a.created_at|uz_ago }}{% endif %}
+      </p>
+    </div>
+    {% if mode == 'mine' %}
+      {% if a.is_overdue %}
+        <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700">Muddati o'tgan</span>
+      {% else %}
+        <span class="shrink-0 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-700">Jarayonda</span>
+      {% endif %}
+    {% elif mode == 'done' %}
+      <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">Bajarildi</span>
+    {% else %}
+      <span class="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">Ochiq</span>
+    {% endif %}
+  </div>
+
+  <div class="mb-4 flex flex-wrap gap-2">
+    <span class="inline-flex items-center gap-1.5 rounded-lg bg-cream-100 px-2.5 py-1.5 text-xs font-medium text-charcoal-700">
+      <svg class="icon"><use href="#i-area"/></svg>{% if app.size_m2 %}{{ app.size_m2 }} m²{% else %}Maydon noma'lum{% endif %}
+    </span>
+    <span class="inline-flex items-center gap-1.5 rounded-lg bg-cream-100 px-2.5 py-1.5 text-xs font-medium text-charcoal-700">
+      <svg class="icon"><use href="#i-rooms"/></svg>{{ app.rooms_count }} xona
+    </span>
+    {% if app.interior_style %}
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-cream-100 px-2.5 py-1.5 text-xs font-medium text-charcoal-700">
+        <svg class="icon"><use href="#i-style"/></svg>{{ app.interior_style }}
+      </span>
+    {% endif %}
+    {% if app.budget %}
+      <span class="inline-flex items-center gap-1.5 rounded-lg bg-clay-50 px-2.5 py-1.5 text-xs font-medium text-clay-800">
+        <svg class="icon"><use href="#i-budget"/></svg>{{ app.budget|floatformat:"0g" }}
+      </span>
+    {% endif %}
+  </div>
+
+  <p class="mb-4 flex-1 text-sm leading-relaxed text-charcoal-600">
+    {% if app.description %}{{ app.description|truncatewords:30 }}{% else %}<span class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan.</span>{% endif %}
+  </p>
+
+  {% if mode == 'mine' %}
+    <div class="mb-4 rounded-xl px-4 py-3 text-sm {% if a.is_overdue %}bg-red-50 text-red-800{% elif a.deadline %}bg-sky-50 text-sky-900{% else %}bg-cream-100 text-charcoal-600{% endif %}">
+      {% if a.deadline %}
+        <span class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-1.5 font-medium"><svg class="icon"><use href="#i-clock"/></svg>Muddat: {{ a.deadline|date:"d.m.Y" }}</span>
+          <span class="text-xs font-semibold">
+            {% if a.days_left < 0 %}{{ a.days_left|cut:"-" }} kun kechikdi
+            {% elif a.days_left == 0 %}Bugun oxirgi kun
+            {% else %}{{ a.days_left }} kun qoldi{% endif %}
+          </span>
+        </span>
+      {% else %}
+        Muddat belgilanmagan
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="flex flex-wrap items-center justify-between gap-3 border-t border-charcoal-100 pt-4">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+      {% if mode != 'open' %}
+        <a href="tel:{{ app.owner.phone }}" class="inline-flex items-center gap-1.5 font-medium text-charcoal-700 hover:text-clay-700">
+          <svg class="icon"><use href="#i-user"/></svg>{{ app.owner.first_name }} · {{ app.owner.phone }}
+        </a>
+      {% endif %}
+      {% if app.plan_pdf %}
+        <a href="{{ app.plan_pdf.url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-charcoal-500 hover:text-clay-700">
+          <svg class="icon"><use href="#i-doc"/></svg>Uy fayli
+        </a>
+      {% endif %}
+    </div>
+    {% if mode == 'mine' %}
+      <form method="post" action="{% url 'architects:assignment_done' a.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-clay !py-2 !px-4">Bajarildi <svg class="icon"><use href="#i-check"/></svg></button>
+      </form>
+    {% elif mode == 'open' %}
+      <form method="post" action="{% url 'architects:assignment_claim' a.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-dark !py-2 !px-4">Men olaman <svg class="icon"><use href="#i-arrow"/></svg></button>
+      </form>
+    {% endif %}
+  </div>
+</article>
+{% endwith %}

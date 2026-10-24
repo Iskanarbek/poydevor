@@ -57,6 +57,14 @@ FREELANCER_TABS = [
     ("finished", "Tugallangan loyihalar"),
     ("store", "Store"),
 ]
+# A studio employee's panel: same layout as the studio and freelancer ones. The labels
+# get a count appended in employee_workspace().
+EMPLOYEE_TABS = [
+    ("tasks", "Mening ishlarim"),
+    ("open", "Ochiq buyurtmalar"),
+    ("done", "Bajarilgan ishlar"),
+    ("studio", "Studiya"),
+]
 
 
 def architect_required(view_func):
@@ -343,23 +351,53 @@ def freelancer_dashboard(request):
 
 @approved_architect_required(Kind.STUDIO_EMPLOYEE)
 def employee_workspace(request):
+    """The employee's home: the same panel layout as a studio or freelancer gets, with
+    their own jobs, the studio's open (unclaimed) orders, what they finished, and the studio."""
     profile = request.architect_profile
     studio = profile.studio
     open_assignments, my_assignments, my_done = [], [], []
+    colleagues = []
     if studio is not None:
         assignments = list(
             StudioAssignment.objects.filter(offer__architect=studio.owner)
-            .select_related("offer__application", "offer__application__owner", "worker__user")
+            .select_related("offer__application", "offer__application__owner", "offer__application__interior_style")
             .order_by("-created_at")
         )
         open_assignments = [a for a in assignments if a.status == StudioAssignment.Status.OPEN]
-        my_assignments = [
-            a for a in assignments if a.worker_id == profile.id and a.status == StudioAssignment.Status.ASSIGNED
-        ]
+        my_assignments = sorted(
+            (a for a in assignments if a.worker_id == profile.id and a.status == StudioAssignment.Status.ASSIGNED),
+            # Overdue first, then the nearest deadline, then jobs without a deadline.
+            key=lambda a: (not a.is_overdue, a.deadline is None, a.deadline or date.max),
+        )
         my_done = [a for a in assignments if a.worker_id == profile.id and a.status == StudioAssignment.Status.DONE]
-    return render(request, "architects/employee_workspace.html", {
-        "profile": profile, "studio": studio,
-        "open_assignments": open_assignments, "my_assignments": my_assignments, "my_done": my_done,
+        colleagues = list(
+            studio.employees.filter(approval_status=Approval.APPROVED).exclude(pk=profile.pk).select_related("user")
+        )
+
+    counts = {"tasks": len(my_assignments), "open": len(open_assignments), "done": len(my_done)}
+    tabs = [(key, f"{label} ({counts[key]})" if counts.get(key) else label) for key, label in EMPLOYEE_TABS]
+    tab = request.GET.get("tab")
+    if tab not in {key for key, _ in EMPLOYEE_TABS}:
+        tab = "tasks"
+
+    return render(request, "architects/workspace.html", {
+        "profile": profile,
+        "title": studio.name if studio is not None else "Studiya",
+        "tabs": tabs,
+        "tab": tab,
+        "tab_template": f"architects/tabs/_emp_{tab}.html",
+        "portfolio_locked": False,
+        "studio": studio,
+        "colleagues": colleagues,
+        "my_assignments": my_assignments,
+        "open_assignments": open_assignments,
+        "my_done": my_done,
+        "emp_stats": {
+            "active": len(my_assignments),
+            "overdue": sum(1 for a in my_assignments if a.is_overdue),
+            "done": len(my_done),
+            "open": len(open_assignments),
+        },
     })
 
 
@@ -375,7 +413,7 @@ def assignment_claim(request, assignment_id):
         claim_assignment(assignment, profile)
     except (AssignmentAlreadyTakenError, WorkerNotInStudioError) as e:
         messages.warning(request, str(e))
-    return redirect("architects:employee_workspace")
+    return redirect(dashboard_url(profile, "tasks"))
 
 
 @require_POST
@@ -384,7 +422,7 @@ def assignment_done(request, assignment_id):
     profile = request.architect_profile
     assignment = get_object_or_404(StudioAssignment, pk=assignment_id, worker=profile)
     mark_assignment_done(assignment)
-    return redirect("architects:employee_workspace")
+    return redirect(dashboard_url(profile, "done"))
 
 
 @require_POST

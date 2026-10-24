@@ -71,5 +71,11 @@ class StudioAssignment(models.Model):
         return f"{self.offer} — {self.get_status_display()}"
 
     @property
+    def days_left(self):
+        """Whole days until the deadline (negative once it has passed), or None without one.
+        Counted on Tashkent's calendar, not UTC's."""
+        return (self.deadline - timezone.localdate()).days if self.deadline else None
+
+    @property
     def is_overdue(self):
-        return bool(self.deadline) and self.status != self.Status.DONE and timezone.now().date() > self.deadline
+        return bool(self.deadline) and self.status != self.Status.DONE and timezone.localdate() > self.deadline

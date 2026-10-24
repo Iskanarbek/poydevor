@@ -102,6 +102,7 @@ MIDDLEWARE = [
     # Serves STATIC_URL files itself (CSS/JS/admin assets) even with DEBUG=False,
     # so no separate nginx static-files config is required to get a working site.
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'poydevor.middleware.MediaSecurityHeadersMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

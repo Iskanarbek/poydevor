@@ -48,8 +48,9 @@
 
     <div data-field="attachment">
       <label for="{{ form.attachment.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.attachment.label }} <span class="text-clay-600">*</span>
-        <span class="font-normal text-charcoal-400">— PDF, Word, DWG, ZIP yoki rasm</span></label>
+        <span class="font-normal text-charcoal-400">— PDF yoki JPG</span></label>
       {{ form.attachment }}
+      <p class="mt-1 text-xs text-charcoal-400">Faqat PDF yoki JPG, ular telefonda ham ochiladi (eng ko'pi 50 MB). Boshqa fayl turlari qabul qilinmaydi.</p>
       {% if form.attachment.errors %}<p data-error class="mt-1 text-sm text-red-600">{{ form.attachment.errors|striptags }}</p>{% endif %}
     </div>
 

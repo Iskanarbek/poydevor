@@ -405,11 +405,15 @@ class HouseImageTests(TestCase):
         page = self.client.get(reverse("applications:post"))
         self.assertContains(page, "Uy rasmi (ixtiyoriy)")
         self.assertNotContains(page, "rejasi")
-        self.assertContains(page, 'accept="image/*,.pdf"')
+        self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"')   # PDF or JPG only
 
     def test_a_photo_is_accepted_and_shown_as_a_picture(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
-        response = self.post(SimpleUploadedFile("uy.gif", self.GIF, content_type="image/gif"))
+        import io
+        from PIL import Image
+        buffer = io.BytesIO()
+        Image.new("RGB", (6, 6), "blue").save(buffer, "JPEG")
+        response = self.post(SimpleUploadedFile("uy.jpg", buffer.getvalue(), content_type="image/jpeg"))
         self.assertEqual(response.status_code, 302)
         application = Application.objects.get()
         self.assertTrue(application.plan_is_image)
@@ -425,11 +429,19 @@ class HouseImageTests(TestCase):
         self.assertFalse(application.plan_is_image)
         self.assertContains(self.client.get(reverse("applications:detail", args=[application.pk])), "Yuklab olish")
 
-    def test_other_file_types_are_rejected(self):
+    def test_dangerous_file_types_are_rejected(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
         response = self.post(SimpleUploadedFile("virus.exe", b"MZ", content_type="application/octet-stream"))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context["form"].errors.get("plan_pdf"))
+        self.assertFalse(Application.objects.exists())
+
+    def test_other_picture_and_document_types_are_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        for name in ["uy.gif", "uy.png", "uy.dwg", "uy.zip"]:
+            response = self.post(SimpleUploadedFile(name, self.GIF, content_type="application/octet-stream"))
+            self.assertEqual(response.status_code, 200, name)
+            self.assertTrue(response.context["form"].errors.get("plan_pdf"), name)
         self.assertFalse(Application.objects.exists())
 
 

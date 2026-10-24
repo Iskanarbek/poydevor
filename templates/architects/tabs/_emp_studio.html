@@ -1,0 +1,62 @@
+{% if not studio %}
+  <p class="text-sm text-charcoal-500">Siz hozircha hech qaysi studiyaga biriktirilmagansiz.</p>
+{% else %}
+  <div class="grid gap-6 lg:grid-cols-3">
+    <section class="lg:col-span-2">
+      <h2 class="mb-4 font-serif text-xl font-semibold text-charcoal-900">Studiya haqida</h2>
+      <div class="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
+        <div class="mb-5 flex items-center gap-4">
+          <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-charcoal-900 text-clay-300"><svg class="icon !h-7 !w-7"><use href="#i-building"/></svg></span>
+          <div>
+            <p class="font-serif text-2xl font-semibold text-charcoal-900">{{ studio.name }}</p>
+            <p class="text-sm text-charcoal-500">{{ studio.founded_on|date:"Y" }}-yildan beri faoliyat yuritadi</p>
+          </div>
+        </div>
+        <dl class="grid gap-4 text-sm sm:grid-cols-2">
+          <div><dt class="text-charcoal-400">Mas'ul shaxs</dt><dd class="font-medium text-charcoal-900">{{ studio.responsible_person }}</dd></div>
+          <div><dt class="text-charcoal-400">Asoschilar</dt><dd class="font-medium text-charcoal-900">{{ studio.founders }}</dd></div>
+          <div><dt class="text-charcoal-400">Telefon</dt><dd class="font-medium text-charcoal-900"><a href="tel:{{ studio.phone }}" class="hover:text-clay-700">{{ studio.phone }}</a></dd></div>
+          <div><dt class="text-charcoal-400">Email</dt><dd class="break-all font-medium text-charcoal-900">{{ studio.email }}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="mb-4 font-serif text-xl font-semibold text-charcoal-900">Mening profilim</h2>
+      <div class="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
+        <div class="mb-4 flex items-center gap-3">
+          {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="" class="h-14 w-14 rounded-full object-cover">
+          {% else %}
+            <span class="flex h-14 w-14 items-center justify-center rounded-full bg-cream-100 text-lg font-semibold text-clay-700">{{ profile.user.first_name|slice:":1" }}{{ profile.user.last_name|slice:":1" }}</span>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="truncate font-medium text-charcoal-900">{{ profile }}</p>
+            <p class="text-xs text-charcoal-500">Studiya xodimi</p>
+          </div>
+        </div>
+        <dl class="space-y-2 text-sm">
+          <div class="flex justify-between gap-3"><dt class="text-charcoal-400">Telefon</dt><dd class="font-medium text-charcoal-900">{{ profile.user.phone }}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-charcoal-400">Jamoaga qo'shilgan</dt><dd class="font-medium text-charcoal-900">{{ profile.created_at|date:"d.m.Y" }}</dd></div>
+          <div class="flex justify-between gap-3"><dt class="text-charcoal-400">Bajargan ishlar</dt><dd class="font-medium text-charcoal-900">{{ emp_stats.done }}</dd></div>
+        </dl>
+      </div>
+    </section>
+  </div>
+
+  <section class="mt-8">
+    <h2 class="mb-4 font-serif text-xl font-semibold text-charcoal-900">Jamoa <span class="font-normal text-charcoal-400">({{ colleagues|length|add:1 }})</span></h2>
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="flex items-center gap-3 rounded-2xl border border-clay-300 bg-clay-50 p-4">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-clay-600 text-sm font-semibold text-white">{{ profile.user.first_name|slice:":1" }}{{ profile.user.last_name|slice:":1" }}</span>
+        <div class="min-w-0"><p class="truncate text-sm font-medium text-charcoal-900">{{ profile }}</p><p class="text-xs text-clay-700">Siz</p></div>
+      </div>
+      {% for colleague in colleagues %}
+        <div class="flex items-center gap-3 rounded-2xl border border-charcoal-200 bg-white p-4">
+          <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream-100 text-sm font-semibold text-clay-700">{{ colleague.user.first_name|slice:":1" }}{{ colleague.user.last_name|slice:":1" }}</span>
+          <div class="min-w-0"><p class="truncate text-sm font-medium text-charcoal-900">{{ colleague }}</p><p class="text-xs text-charcoal-500">Xodim</p></div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endif %}

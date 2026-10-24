@@ -1,0 +1,35 @@
+{% if not studio %}
+  <div class="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50 px-6 py-10 text-center text-amber-900">
+    <p class="font-serif text-lg font-semibold">Siz hozircha hech qaysi studiyaga biriktirilmagansiz</p>
+    <p class="mt-1 text-sm">Studiya egasi sizni jamoadan chiqargan bo'lishi mumkin. Qayta ariza yuborish uchun ro'yxatdan o'tish sahifasidan foydalaning.</p>
+  </div>
+{% else %}
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="font-serif text-xl font-semibold text-charcoal-900">Mening joriy ishlarim</h2>
+      <p class="text-sm text-charcoal-500">Shoshilinch ishlar tepada turadi. Tugatgach «Bajarildi» tugmasini bosing, shunda studiya egasi sizni yangi ish uchun bo'sh deb ko'radi.</p>
+    </div>
+  </div>
+
+  {% if emp_stats.overdue %}
+    <div class="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-800">
+      <svg class="icon mt-0.5 shrink-0" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19zM12 10v4M12 17h.01"/></svg>
+      <span><b>{{ emp_stats.overdue }} ta ishning muddati o'tib ketgan.</b> Iltimos, ularni imkon qadar tezroq yakunlang yoki studiya egasi bilan kelishing.</span>
+    </div>
+  {% endif %}
+
+  <div class="grid gap-5 md:grid-cols-2">
+    {% for a in my_assignments %}
+      {% include "architects/_emp_job_card.html" with a=a mode="mine" %}
+    {% empty %}
+      <div class="rounded-2xl border-2 border-dashed border-charcoal-200 bg-white px-6 py-12 text-center md:col-span-2">
+        <span class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cream-100 text-clay-600"><svg class="icon !h-7 !w-7"><use href="#i-check"/></svg></span>
+        <p class="font-serif text-lg font-semibold text-charcoal-900">Hozircha sizga biriktirilgan ish yo'q</p>
+        <p class="mx-auto mt-1 max-w-md text-sm text-charcoal-500">
+          {% if emp_stats.open %}Studiyada {{ emp_stats.open }} ta ochiq buyurtma bor. Birinchi bo'lib oling!{% else %}Studiya yangi buyurtma qabul qilsa, shu yerda ko'rinadi, yoki studiya egasi o'zi biriktiradi.{% endif %}
+        </p>
+        {% if emp_stats.open %}<a href="?tab=open" class="btn-clay mt-5">Ochiq buyurtmalarni ko'rish <svg class="icon"><use href="#i-arrow"/></svg></a>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

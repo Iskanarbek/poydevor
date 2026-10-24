@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import UploadedFile
 
 from accounts.forms import NewPhoneField
 from architects.models import ArchitectProfile, PortfolioImage, PortfolioProject, Studio
+from poydevor.upload_safety import ACCEPT_ATTRIBUTE, validate_pdf_or_jpg
 
 PORTFOLIO_EXTENSIONS = {
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".pdf", ".mp4", ".mov", ".webm",
@@ -23,8 +24,6 @@ class ArchitectProfileForm(forms.ModelForm):
             "skills": forms.CheckboxSelectMultiple,
         }
 
-
-ATTACHMENT_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".dwg", ".dxf", ".zip", ".rar", ".jpg", ".jpeg", ".png"}
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
@@ -179,7 +178,8 @@ class PortfolioProjectEditForm(forms.ModelForm):
                 "rows": 4,
                 "placeholder": "Loyiha haqida yozing: maydoni, vazifasi, qanday yechimlar qo'llanilgani...",
             }),
-            "attachment": forms.FileInput(attrs={"accept": ",".join(sorted(ATTACHMENT_EXTENSIONS))}),
+            # PDF or JPG only; clean_attachment checks the real content (poydevor/upload_safety.py).
+            "attachment": forms.FileInput(attrs={"accept": ACCEPT_ATTRIBUTE}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -194,10 +194,7 @@ class PortfolioProjectEditForm(forms.ModelForm):
     def clean_attachment(self):
         upload = self.cleaned_data.get("attachment")
         if isinstance(upload, UploadedFile):   # an unchanged, already stored file is left alone
-            if os.path.splitext(upload.name)[1].lower() not in ATTACHMENT_EXTENSIONS:
-                raise forms.ValidationError("Bu fayl turi qabul qilinmaydi (PDF, Word, PowerPoint, DWG, ZIP yoki rasm yuklang).")
-            if upload.size > settings.PORTFOLIO_MAX_FILE_MB * 1024 * 1024:
-                raise forms.ValidationError(f"Fayl juda katta (eng ko'pi {settings.PORTFOLIO_MAX_FILE_MB} MB).")
+            validate_pdf_or_jpg(upload, max_mb=settings.PORTFOLIO_MAX_FILE_MB)
         return upload
 
 
