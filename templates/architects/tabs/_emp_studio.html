@@ -16,7 +16,7 @@
           <div><dt class="text-charcoal-400">Mas'ul shaxs</dt><dd class="font-medium text-charcoal-900">{{ studio.responsible_person }}</dd></div>
           <div><dt class="text-charcoal-400">Asoschilar</dt><dd class="font-medium text-charcoal-900">{{ studio.founders }}</dd></div>
           <div><dt class="text-charcoal-400">Telefon</dt><dd class="font-medium text-charcoal-900"><a href="tel:{{ studio.phone }}" class="hover:text-clay-700">{{ studio.phone }}</a></dd></div>
-          <div><dt class="text-charcoal-400">Email</dt><dd class="break-all font-medium text-charcoal-900">{{ studio.email }}</dd></div>
+          <div><dt class="text-charcoal-400">Telegram</dt><dd class="break-all font-medium text-charcoal-900">{% if studio.owner.telegram_username %}@{{ studio.owner.telegram_username }}{% else %}—{% endif %}</dd></div>
         </dl>
       </div>
     </section>

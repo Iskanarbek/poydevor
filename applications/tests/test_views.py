@@ -128,7 +128,7 @@ class DeleteOrderRefundTests(TestCase):
         response = self.client.get(reverse("applications:delete", args=[self.application.pk]))
         self.assertNotContains(response, "tanga")
         self.assertContains(response, "2 ta ariza rad etiladi")
-        self.assertEqual(self.balances(), [10, 10])  # nothing refunded yet
+        self.assertEqual(self.balances(), [19, 19])  # nothing refunded yet
 
     def test_deleting_refunds_every_architect_and_rejects_their_offers(self):
         from offers.models import Offer
@@ -165,7 +165,7 @@ class DeleteOrderRefundTests(TestCase):
         accept_offer(offer)  # also rejects the other architect's offer
         self.client.post(reverse("applications:delete", args=[self.application.pk]))
         self.assertEqual(self.balances()[0], 20)   # the accepted architect got theirs back
-        self.assertEqual(self.balances()[1], 10)   # the already-rejected one is not refunded twice
+        self.assertEqual(self.balances()[1], 19)   # the already-rejected one is not refunded twice
         self.assertFalse(Offer.objects.filter(status=Offer.Status.ACCEPTED).exists())
 
 
@@ -256,7 +256,7 @@ class OrderExpiryTests(TestCase):
         self.assertEqual(self.application.days_left, 31)
         self.age(-0)  # untouched
         self.assertEqual(expire_stale_applications(), 0)
-        self.assertEqual(self.balance(), 10)   # architect keeps waiting, still paid
+        self.assertEqual(self.balance(), 19)   # architect keeps waiting, still paid
 
     def test_only_the_owner_can_confirm(self):
         other = User.objects.create_user(phone="+998907777770", first_name="O", last_name="T", role=User.Role.USER)

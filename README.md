@@ -122,14 +122,15 @@ can add real credentials later with zero code changes and zero downtime.
 
 ### How coins work
 
-- **1 coin = 10,000 so'm.** (`COIN_PRICE_UZS` in `poydevor/settings.py`)
-- **Applying to one project costs 10 coins = 100,000 so'm** (`OFFER_COST_COINS`).
-  This is what an individual architect or a studio spends each time they apply
-  to a client's order. Being invited by a client directly costs nothing.
-- Every newly approved architect/studio gets **20 coins free** (two project
-  applications) the moment they're approved — a one-time signup bonus.
-- Coin packages for sale: 10 / 20 / 50 / 100 coins — 100,000 / 200,000 /
-  500,000 / 1,000,000 so'm respectively.
+- **1 coin = 150,000 so'm.** (`COIN_PRICE_UZS` in `poydevor/settings.py`)
+- **Applying to one project costs 1 coin** (`OFFER_COST_COINS`). This is what an
+  individual architect or a studio spends each time they apply to a client's order.
+- **Accepting a project a client sent directly to you costs 2 coins**
+  (`INVITE_ACCEPT_COST_COINS`); declining is free. If the client later deletes the
+  order, the coins are returned.
+- Every newly approved architect/studio gets **2 coins free** — a one-time signup bonus.
+- Coin packages for sale: 1 / 3 / 5 / 10 coins — 150,000 / 450,000 / 750,000 /
+  1,500,000 so'm respectively.
 - **Currency: Uzbek so'm (UZS) only.** Payme and Click are Uzbekistan-only
   payment systems; there is no dollar option, and none is needed — all
   pricing, invoicing, and payouts are in so'm.

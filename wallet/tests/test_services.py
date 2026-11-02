@@ -51,12 +51,12 @@ class SignupBonusAndPricingTests(TestCase):
         self.assertEqual(self.wallet.balance, 2 * settings.OFFER_COST_COINS)
         self.assertFalse(grant_signup_bonus(self.wallet))
         self.wallet.refresh_from_db()
-        self.assertEqual(self.wallet.balance, 20)
+        self.assertEqual(self.wallet.balance, 2)
 
     def test_pricing(self):
         from wallet.services import coin_price_uzs
-        self.assertEqual(coin_price_uzs(10), 100_000)
-        self.assertEqual(coin_price_uzs(1), 10_000)
+        self.assertEqual(coin_price_uzs(10), 1_500_000)
+        self.assertEqual(coin_price_uzs(1), 150_000)
 
     def test_credit_and_refund_order_are_idempotent(self):
         from wallet.models import PaymentOrder

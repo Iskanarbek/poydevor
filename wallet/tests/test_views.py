@@ -42,9 +42,9 @@ class StoreTabTests(WalletTestCase):
         self.assertContains(response, "Payme orqali to")
         self.assertContains(response, "Click orqali to")
         packages = {p["coins"]: p for p in response.context["packages"]}
-        self.assertEqual(packages[10]["price_uzs"], 100_000)
-        self.assertEqual(packages[10]["projects"], 1)
-        self.assertEqual(packages[100]["price_uzs"], 1_000_000)
+        self.assertEqual(packages[1]["price_uzs"], 150_000)
+        self.assertEqual(packages[1]["projects"], 1)
+        self.assertEqual(packages[10]["price_uzs"], 1_500_000)
 
     @override_settings(PAYME=PAYME, CLICK=NOT_CONFIGURED_CLICK)
     def test_only_configured_provider_is_offered(self):
@@ -58,15 +58,15 @@ class BuyCoinsViewTests(WalletTestCase):
     def test_payme_purchase_creates_order_and_redirects_to_checkout(self):
         response = self.client.post(reverse("wallet:buy"), {"coins": "10", "provider": "payme"})
         order = PaymentOrder.objects.get()
-        self.assertEqual((order.coins, order.amount_uzs, order.provider), (10, 100_000, "payme"))
-        self.assertEqual(order.amount_tiyin, 10_000_000)
+        self.assertEqual((order.coins, order.amount_uzs, order.provider), (10, 1_500_000, "payme"))
+        self.assertEqual(order.amount_tiyin, 150_000_000)
         self.assertEqual(order.status, PaymentOrder.Status.CREATED)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("https://test.paycom.uz/"))
         decoded = base64.b64decode(response.url.rsplit("/", 1)[1]).decode()
         self.assertIn("m=merchant-1", decoded)
         self.assertIn(f"ac.order_id={order.pk}", decoded)
-        self.assertIn("a=10000000", decoded)
+        self.assertIn("a=150000000", decoded)
         self.wallet.refresh_from_db()
         self.assertEqual(self.wallet.balance, 0)  # nothing is credited until the provider confirms
 
@@ -77,13 +77,13 @@ class BuyCoinsViewTests(WalletTestCase):
 
     @override_settings(PAYME=PAYME, CLICK=CLICK)
     def test_click_purchase_redirects_to_click(self):
-        response = self.client.post(reverse("wallet:buy"), {"coins": "20", "provider": "click"})
+        response = self.client.post(reverse("wallet:buy"), {"coins": "5", "provider": "click"})
         order = PaymentOrder.objects.get()
-        self.assertEqual(order.amount_uzs, 200_000)
+        self.assertEqual(order.amount_uzs, 750_000)
         self.assertTrue(response.url.startswith("https://my.click.uz/services/pay?"))
         self.assertIn("service_id=111", response.url)
         self.assertIn("merchant_id=222", response.url)
-        self.assertIn("amount=200000", response.url)
+        self.assertIn("amount=750000", response.url)
         self.assertIn(f"transaction_param={order.pk}", response.url)
 
     @override_settings(PAYME=NOT_CONFIGURED, CLICK=NOT_CONFIGURED_CLICK)

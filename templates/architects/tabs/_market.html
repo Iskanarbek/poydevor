@@ -63,7 +63,7 @@
           <form method="post" action="{% url 'offers:respond' offer.pk %}">
             {% csrf_token %}
             <input type="hidden" name="decision" value="accept">
-            <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">Qabul qilish</button>
+            <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">Qabul qilish — {{ invite_cost }} tanga</button>
           </form>
           <form method="post" action="{% url 'offers:respond' offer.pk %}">
             {% csrf_token %}

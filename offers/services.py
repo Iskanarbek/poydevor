@@ -5,9 +5,11 @@ from django.utils import timezone
 from applications.models import Application
 from architects.models import ArchitectProfile
 from offers.models import Offer, StudioAssignment
+from wallet.models import Wallet
 from wallet.services import spend_coins
 
 OFFER_COST = settings.OFFER_COST_COINS
+INVITE_ACCEPT_COST = settings.INVITE_ACCEPT_COST_COINS
 MAX_ACTIVE_OFFERS_PER_APPLICATION = 3
 
 
@@ -70,6 +72,17 @@ def accept_offer(offer: Offer) -> None:
     # claim it, or so the owner can hand it to someone specific.
     if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER:
         StudioAssignment.objects.get_or_create(offer=offer)
+
+
+@transaction.atomic
+def accept_invitation(offer: Offer) -> None:
+    """An architect accepts a project a client sent to them: costs INVITE_ACCEPT_COST coins.
+    Everything rolls back (coins included) if the order was already decided."""
+    wallet, _ = Wallet.objects.get_or_create(architect=offer.architect)
+    spend_coins(wallet, INVITE_ACCEPT_COST)
+    accept_offer(offer)
+    offer.coins_spent = INVITE_ACCEPT_COST
+    offer.save(update_fields=["coins_spent"])
 
 
 @transaction.atomic

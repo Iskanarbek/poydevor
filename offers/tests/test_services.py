@@ -36,7 +36,7 @@ class SendOfferTests(TestCase):
     def test_architect_applied_spends_offer_cost(self):
         offer = send_offer(self.application, self.architects[0], source=Offer.Source.ARCHITECT_APPLIED)
         self.architects[0].wallet.refresh_from_db()
-        self.assertEqual(self.architects[0].wallet.balance, 90)
+        self.assertEqual(self.architects[0].wallet.balance, 99)
         self.assertEqual(offer.status, Offer.Status.PENDING)
 
     def test_fourth_architect_applied_offer_blocked(self):

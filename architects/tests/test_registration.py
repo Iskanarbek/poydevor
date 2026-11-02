@@ -44,7 +44,7 @@ class MediaRootMixin:
 STUDIO_DATA = {
     "studio_name": "ArcDes Studio Tashkent", "founded_on": "2020-05-15",
     "founders": "Alisher Qodirov, Nodir Karimov", "responsible_person": "Alisher Qodirov",
-    "responsible_birth_date": "1992-08-12", "email": "info@arcdes.uz", "phone": "+998 90 123 45 67",
+    "responsible_birth_date": "1992-08-12", "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
     "staff_count": 15, "projects_count": 45,
 }
 
@@ -79,7 +79,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
         self.assertFalse(profile.portfolio_exempt)                        # but a portfolio is required
         self.assertFalse(profile.portfolio_complete)
         self.assertEqual(Studio.objects.get(owner=profile).name, "ArcDes Studio Tashkent")
-        self.assertEqual(profile.wallet.balance, 20)                      # starting coins
+        self.assertEqual(profile.wallet.balance, 2)                      # starting coins
 
     def test_first_screen_inside_asks_for_the_portfolio(self):
         self.post()
@@ -88,7 +88,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
         self.assertContains(page, "Portfolioni to'ldiring")
         self.assertContains(page, "0 / 10 loyiha tayyor")
 
-    def test_sign_up_page_asks_only_for_a_profile_photo_and_has_no_portfolio_or_review_notes(self):
+    def test_sign_up_page_asks_only_for_a_logo_and_has_no_portfolio_or_review_notes(self):
         response = self.client.get(reverse("architects:register_studio"))
         self.assertEqual(response.content.decode().count('<input type="file"'), 1)   # only the profile photo
         for text in SIGNUP_NOISE:
@@ -112,7 +112,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
 class FreelancerRegistrationTests(MediaRootMixin, TestCase):
     DATA = {
         "full_name": "Jasur Axmedov", "birth_year": 1995, "phone": "+998 97 555 44 33",
-        "email": "jasur.architect@gmail.com", "projects_count": 18,
+        "telegram_username": "jasur_arch", "projects_count": 18,
     }
 
     def test_registration_needs_no_files_and_goes_straight_into_the_account(self):
@@ -126,7 +126,7 @@ class FreelancerRegistrationTests(MediaRootMixin, TestCase):
         self.assertEqual(profile.user.last_name, "Axmedov")
         self.assertEqual(profile.claimed_projects_count, 18)
         self.assertFalse(profile.registration_files.exists())
-        self.assertEqual(profile.wallet.balance, 20)
+        self.assertEqual(profile.wallet.balance, 2)
 
     def test_first_screen_inside_asks_for_5_projects(self):
         self.client.post(reverse("architects:register_freelancer"), {**self.DATA, "avatar": avatar()})
@@ -135,7 +135,7 @@ class FreelancerRegistrationTests(MediaRootMixin, TestCase):
         self.assertContains(page, "0 / 5 loyiha tayyor")
         self.assertContains(page, "kamida bitta rasm")
 
-    def test_sign_up_page_asks_only_for_a_profile_photo_and_has_no_portfolio_or_review_notes(self):
+    def test_sign_up_page_asks_only_for_a_logo_and_has_no_portfolio_or_review_notes(self):
         response = self.client.get(reverse("architects:register_freelancer"))
         self.assertEqual(response.content.decode().count('<input type="file"'), 1)   # only the profile photo
         for text in SIGNUP_NOISE:
@@ -170,7 +170,7 @@ class EmployeeRegistrationTests(MediaRootMixin, TestCase):
     def register(self, studio=None):
         return self.client.post(reverse("architects:register_employee"), {
             "full_name": "Sardor Murodov", "birth_year": 1998, "phone": "+998 93 987 65 43",
-            "email": "sardor.m@gmail.com", "studio": (studio or self.studio).pk, "avatar": avatar(),
+            "telegram_username": "sardor_m1", "studio": (studio or self.studio).pk, "avatar": avatar(),
         })
 
     def test_registration_creates_pending_employee_of_the_studio(self):
@@ -248,7 +248,7 @@ class ApprovalTests(TestCase):
         set_approval(profile, Approval.APPROVED)
         profile.refresh_from_db()
         self.assertEqual(profile.approval_status, Approval.APPROVED)
-        self.assertEqual(profile.wallet.balance, 20)  # 2 projects x 10 coins
+        self.assertEqual(profile.wallet.balance, 2)  # 2 projects x 1 coin
         self.assertEqual(
             profile.wallet.transactions.filter(reason=CoinTransaction.Reason.SIGNUP_BONUS).count(), 1,
         )
@@ -259,12 +259,12 @@ class ApprovalTests(TestCase):
         set_approval(profile, Approval.REJECTED)
         set_approval(profile, Approval.APPROVED)
         profile.wallet.refresh_from_db()
-        self.assertEqual(profile.wallet.balance, 20)
+        self.assertEqual(profile.wallet.balance, 2)
 
     def test_studio_owner_gets_the_bonus_too(self):
         profile = self.make_profile(Kind.STUDIO_OWNER)
         set_approval(profile, Approval.APPROVED)
-        self.assertEqual(profile.wallet.balance, 20)
+        self.assertEqual(profile.wallet.balance, 2)
 
     def test_employee_gets_no_wallet(self):
         profile = self.make_profile(Kind.STUDIO_EMPLOYEE)
@@ -285,7 +285,7 @@ class ApprovalTests(TestCase):
         })
         profile.refresh_from_db()
         self.assertEqual(profile.approval_status, Approval.APPROVED)
-        self.assertEqual(profile.wallet.balance, 20)
+        self.assertEqual(profile.wallet.balance, 2)
 
 
 class VisibilityTests(TestCase):
@@ -465,3 +465,39 @@ class ProfilePhotoOptionalTests(MediaRootMixin, TestCase):
     def test_the_photo_is_saved_on_the_profile_when_provided(self):
         self.client.post(reverse("architects:register_freelancer"), {**FreelancerRegistrationTests.DATA, "avatar": avatar()})
         self.assertTrue(ArchitectProfile.objects.get().avatar.name.endswith(".gif"))
+
+
+class NoEmailTelegramAndStudioLogoTests(MediaRootMixin, TestCase):
+    def test_no_registration_form_asks_for_an_email(self):
+        for name in ("register_studio", "register_freelancer", "register_employee"):
+            with self.subTest(form=name):
+                page = self.client.get(reverse(f"architects:{name}"))
+                self.assertNotContains(page, 'name="email"')
+                self.assertContains(page, 'name="telegram_username"')
+
+    def test_telegram_is_required_and_cleaned(self):
+        url = reverse("architects:register_freelancer")
+        data = {**FreelancerRegistrationTests.DATA}
+        bad = self.client.post(url, {**data, "telegram_username": "", "avatar": avatar()})
+        self.assertTrue(bad.context["form"].errors.get("telegram_username"))
+        short = self.client.post(url, {**data, "telegram_username": "ab", "avatar": avatar()})
+        self.assertTrue(short.context["form"].errors.get("telegram_username"))
+        self.assertFalse(ArchitectProfile.objects.exists())
+        self.client.post(url, {**data, "telegram_username": "https://t.me/@jasur_arch", "avatar": avatar()}) 
+        self.client.post(url, {**data, "telegram_username": "@jasur_arch", "avatar": avatar()})
+        self.assertEqual(ArchitectProfile.objects.get().telegram_username, "jasur_arch")
+        self.assertEqual(ArchitectProfile.objects.get().user.email, "")
+
+    def test_a_studio_must_upload_its_logo_and_is_shown_by_name(self):
+        url = reverse("architects:register_studio")
+        page = self.client.get(url)
+        self.assertContains(page, "Studiya logotipi")
+        without = self.client.post(url, STUDIO_DATA)
+        self.assertEqual(without.status_code, 200)
+        self.assertTrue(without.context["form"].errors.get("avatar"))
+        self.assertFalse(Studio.objects.exists())
+        self.client.post(url, {**STUDIO_DATA, "avatar": avatar()})
+        profile = ArchitectProfile.objects.get()
+        self.assertTrue(profile.avatar.name)
+        self.assertEqual(profile.display_name, "ArcDes Studio Tashkent")
+        self.assertEqual(profile.telegram_username, "arcdes_uz")

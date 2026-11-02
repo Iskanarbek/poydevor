@@ -280,6 +280,7 @@ def _workspace(request, profile, tabs, default_tab, title):
         "tab_template": f"architects/tabs/_{tab}.html",
         "wallet": getattr(profile, "wallet", None),
         "offer_cost": settings.OFFER_COST_COINS,
+        "invite_cost": settings.INVITE_ACCEPT_COST_COINS,
         # Studios and freelancers must finish their portfolio before they can take orders.
         "portfolio_locked": not profile.portfolio_ok and profile.kind != Kind.STUDIO_EMPLOYEE,
     }

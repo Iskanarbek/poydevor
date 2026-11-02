@@ -209,7 +209,7 @@ class CannotOrderUntilCompleteTests(TestCase):
         self.assertEqual(self.client.get(self.url).status_code, 200)
         self.client.post(self.url)
         self.assertTrue(Offer.objects.filter(architect=self.architect).exists())
-        self.assertEqual(self.balance(), 10)
+        self.assertEqual(self.balance(), 19)
 
     def test_a_finished_but_unverified_portfolio_still_cannot_apply(self):
         complete_portfolio(self.architect, verified=False)

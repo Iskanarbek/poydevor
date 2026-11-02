@@ -252,7 +252,7 @@ class Studio(models.Model):
     founders = models.CharField(max_length=255)
     responsible_person = models.CharField(max_length=150)
     responsible_birth_date = models.DateField()
-    email = models.EmailField()
+    email = models.EmailField(blank=True)
     phone = models.CharField(max_length=20)
     staff_count = models.PositiveIntegerField()
     projects_count = models.PositiveIntegerField()

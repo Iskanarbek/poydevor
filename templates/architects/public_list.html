@@ -27,7 +27,7 @@
       <a href="{{ detail_url }}" class="block p-4">
         <div class="flex items-center gap-3">
           {% if profile.avatar %}
-            <img src="{{ profile.avatar.url }}" alt="" class="w-10 h-10 rounded-full object-cover">
+            <img src="{{ profile.avatar.url }}" alt="" class="w-10 h-10 {% if profile.kind == "studio_owner" %}rounded-lg bg-white object-contain{% else %}rounded-full object-cover{% endif %}">
           {% else %}
             <span class="w-10 h-10 rounded-full bg-charcoal-100 flex items-center justify-center text-charcoal-500"><svg class="icon !w-5 !h-5"><use href="#i-user"/></svg></span>
           {% endif %}

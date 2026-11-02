@@ -53,7 +53,7 @@ class ArchitectApplyTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Offer.objects.filter(application=self.application, architect=self.architect).exists())
         self.architect.wallet.refresh_from_db()
-        self.assertEqual(self.architect.wallet.balance, 90)
+        self.assertEqual(self.architect.wallet.balance, 99)
 
 
 class ArchitectRespondTests(TestCase):
@@ -177,20 +177,22 @@ class ArchitectProjectDetailTests(TestCase):
     def test_detail_page_shows_full_information_and_take_button(self):
         response = self.client.get(self.url)
         self.assertContains(response, "Ikki qavatli hi-tech uy loyihasi")
-        self.assertContains(response, "Qatnashish — 10 tanga")
-        self.assertEqual((response.context["can_afford"], response.context["balance_after"]), (True, 10))
+        self.assertContains(response, "Qatnashish — 1 tanga")
+        self.assertEqual((response.context["can_afford"], response.context["balance_after"]), (True, 19))
         # The client's contact details stay hidden until the offer is accepted.
         self.assertNotContains(response, self.owner.phone)
 
-    def test_taking_the_project_spends_ten_coins(self):
+    def test_taking_the_project_spends_one_coin(self):
         self.client.post(self.url)
         self.wallet.refresh_from_db()
-        self.assertEqual(self.wallet.balance, 10)
+        self.assertEqual(self.wallet.balance, 19)
         self.assertTrue(Offer.objects.filter(application=self.application, architect=self.architect).exists())
 
     def test_two_projects_fit_the_starting_coins_and_a_third_is_blocked(self):
         second = Application.objects.create(owner=self.owner, rooms_count=3, location="Samarqand")
         third = Application.objects.create(owner=self.owner, rooms_count=2, location="Buxoro")
+        self.wallet.balance = 2
+        self.wallet.save()
         self.client.post(self.url)
         self.client.post(reverse("offers:architect_apply", args=[second.pk]))
         self.wallet.refresh_from_db()
@@ -198,7 +200,7 @@ class ArchitectProjectDetailTests(TestCase):
 
         page = self.client.get(reverse("offers:architect_apply", args=[third.pk]))
         self.assertContains(page, "Tangalar yetarli emas")
-        self.assertNotContains(page, "Qatnashish — 10 tanga")
+        self.assertNotContains(page, "Qatnashish — 1 tanga")
         self.assertFalse(page.context["can_afford"])
 
         # Even a forged POST can't take it without coins.
@@ -212,7 +214,7 @@ class ArchitectProjectDetailTests(TestCase):
         self.client.post(self.url)
         page = self.client.get(self.url)
         self.assertContains(page, "ariza yuborgansiz")
-        self.assertNotContains(page, "Qatnashish — 10 tanga")
+        self.assertNotContains(page, "Qatnashish — 1 tanga")
 
         other = Application.objects.create(owner=self.owner, rooms_count=3, location="Namangan")
         for i in range(3):
@@ -227,3 +229,47 @@ class ArchitectProjectDetailTests(TestCase):
         self.architect.approval_status = ArchitectProfile.ApprovalStatus.PENDING
         self.architect.save()
         self.assertEqual(self.client.get(self.url).status_code, 404)
+
+
+class AcceptingAnInvitationCostsTwoCoinsTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user(phone="+998901111111", first_name="A", last_name="K", role=User.Role.USER)
+        self.application = Application.objects.create(owner=owner, rooms_count=3, location="Toshkent")
+        user = User.objects.create_user(phone="+998902222222", first_name="N", last_name="Y", role=User.Role.ARCHITECT)
+        self.architect = ArchitectProfile.objects.create(user=user, bio="x")
+        self.wallet = Wallet.objects.create(architect=self.architect, balance=3)
+        self.offer = Offer.objects.create(
+            application=self.application, architect=self.architect, source=Offer.Source.USER_INVITED,
+        )
+        self.client.force_login(user)
+        self.url = reverse("offers:respond", args=[self.offer.pk])
+
+    def test_accepting_takes_two_coins(self):
+        self.client.post(self.url, {"decision": "accept"})
+        self.offer.refresh_from_db()
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.offer.status, Offer.Status.ACCEPTED)
+        self.assertEqual(self.offer.coins_spent, 2)
+        self.assertEqual(self.wallet.balance, 1)
+
+    def test_not_enough_coins_sends_to_the_store_and_changes_nothing(self):
+        self.wallet.balance = 1
+        self.wallet.save()
+        response = self.client.post(self.url, {"decision": "accept"})
+        self.assertRedirects(response, "/freelancer/dashboard/?tab=store", fetch_redirect_response=False)
+        self.offer.refresh_from_db()
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.offer.status, Offer.Status.PENDING)
+        self.assertEqual(self.wallet.balance, 1)
+
+    def test_declining_is_free(self):
+        self.client.post(self.url, {"decision": "reject"})
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, 3)
+
+    def test_deleting_the_order_gives_the_two_coins_back(self):
+        from applications.services import delete_application
+        self.client.post(self.url, {"decision": "accept"})
+        delete_application(self.application)
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.balance, 3)

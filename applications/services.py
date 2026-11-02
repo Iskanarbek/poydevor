@@ -35,10 +35,13 @@ def delete_application(application: Application, auto: bool = False) -> int:
     if application.status in (Application.Status.OPEN, Application.Status.IN_PROGRESS):
         now = timezone.now()
         for offer in live_offers(application).select_for_update().select_related("architect"):
-            if offer.source == Offer.Source.ARCHITECT_APPLIED:
+            paid = offer.coins_spent or (
+                settings.OFFER_COST_COINS if offer.source == Offer.Source.ARCHITECT_APPLIED else 0
+            )
+            if paid:
                 wallet, _ = Wallet.objects.get_or_create(architect=offer.architect)
                 # Offers made before the amount was recorded cost the standard fee.
-                refund_offer_coins(wallet, offer.coins_spent or settings.OFFER_COST_COINS)
+                refund_offer_coins(wallet, paid)
                 refunded += 1
             offer.status = Offer.Status.REJECTED
             offer.decided_at = now

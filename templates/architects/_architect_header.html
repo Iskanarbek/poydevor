@@ -4,7 +4,7 @@
   <div class="flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-start lg:justify-between">
     <div class="flex min-w-0 gap-4 sm:gap-5">
       {% if profile.avatar %}
-        <img src="{{ profile.avatar.url }}" alt="{{ profile.display_name }}" class="h-20 w-20 shrink-0 rounded-full object-cover ring-4 ring-cream-50 shadow-md sm:h-24 sm:w-24">
+        <img src="{{ profile.avatar.url }}" alt="{{ profile.display_name }}" class="h-20 w-20 shrink-0 {% if profile.kind == "studio_owner" %}rounded-2xl bg-white object-contain{% else %}rounded-full object-cover{% endif %} ring-4 ring-cream-50 shadow-md sm:h-24 sm:w-24">
       {% else %}
         <span class="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-charcoal-100 text-charcoal-400 ring-4 ring-cream-50 sm:h-24 sm:w-24">
           <svg class="icon !h-10 !w-10"><use href="#i-user"/></svg>

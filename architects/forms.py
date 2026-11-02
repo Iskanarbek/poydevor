@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import date
 
 from django import forms
@@ -70,14 +71,25 @@ class RegistrationForm(forms.Form):
         label="Profil rasmi", required=False,
         widget=forms.FileInput(attrs={"accept": "image/*"}),
     )
-    email = forms.EmailField(label="Email address")
     phone = NewPhoneField()
+    telegram_username = forms.CharField(
+        label="Telegram akkauntingiz", max_length=50,
+        widget=forms.TextInput(attrs={"placeholder": "@username"}),
+        help_text="Mijoz siz bilan Telegram orqali bog'lanadi.",
+    )
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
         if user is not None:
             del self.fields["phone"]
+
+    def clean_telegram_username(self):
+        value = self.cleaned_data["telegram_username"].strip()
+        value = re.sub(r"^(?:https?://)?(?:t\.me/|telegram\.me/)", "", value).lstrip("@").rstrip("/")
+        if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", value):
+            raise forms.ValidationError("Telegram username noto'g'ri. Masalan: @poydevor_uz (5–32 ta harf, raqam yoki _).")
+        return value
 
     def clean(self):
         cleaned = super().clean()
@@ -95,6 +107,12 @@ def _birth_year_field():
 
 
 class StudioRegistrationForm(RegistrationForm):
+    # A studio is shown by its logo and name, not by the owner's face (saved as the profile picture).
+    avatar = forms.ImageField(
+        label="Studiya logotipi",
+        widget=forms.FileInput(attrs={"accept": "image/*"}),
+        help_text="Mijozlar studiyangizni shu logotip va nom bilan ko'radi.",
+    )
     studio_name = forms.CharField(label="Studio nomi", max_length=150)
     founded_on = forms.DateField(label="Qachon asos solingan", widget=forms.DateInput(attrs={"type": "date"}))
     founders = forms.CharField(label="Asoschilar", max_length=255)
@@ -105,7 +123,7 @@ class StudioRegistrationForm(RegistrationForm):
 
     field_order = [
         "avatar", "studio_name", "founded_on", "founders", "responsible_person", "responsible_birth_date",
-        "email", "phone", "staff_count", "projects_count",
+        "phone", "telegram_username", "staff_count", "projects_count",
     ]
 
 
@@ -117,7 +135,7 @@ class EmployeeRegistrationForm(RegistrationForm):
         empty_label="Studiyani tanlang",
     )
 
-    field_order = ["avatar", "full_name", "birth_year", "phone", "email", "studio"]
+    field_order = ["avatar", "full_name", "birth_year", "phone", "telegram_username", "studio"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -131,7 +149,7 @@ class FreelancerRegistrationForm(RegistrationForm):
     birth_year = _birth_year_field()
     projects_count = forms.IntegerField(label="Shu paytgacha nechta loyiha amalga oshirgan", min_value=0)
 
-    field_order = ["avatar", "full_name", "birth_year", "phone", "email", "projects_count"]
+    field_order = ["avatar", "full_name", "birth_year", "phone", "telegram_username", "projects_count"]
 
 
 class PortfolioImagesForm(forms.Form):

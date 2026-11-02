@@ -12,8 +12,10 @@ from offers.services import (
     ArchitectNotAllowedError,
     MaxArchitectsReachedError,
     MAX_ACTIVE_OFFERS_PER_APPLICATION,
+    INVITE_ACCEPT_COST,
     OFFER_COST,
     OfferAlreadyDecidedError,
+    accept_invitation,
     accept_offer,
     complete_offer,
     reject_offer,
@@ -113,7 +115,16 @@ def respond(request, offer_pk):
                 messages.warning(request, _portfolio_gate_message(offer.architect) or PORTFOLIO_MESSAGE)
                 return redirect(portfolio_url(offer.architect))
             try:
-                accept_offer(offer)
+                if offer.source == Offer.Source.USER_INVITED:
+                    accept_invitation(offer)
+                else:
+                    accept_offer(offer)
+            except InsufficientCoinsError:
+                messages.warning(
+                    request,
+                    f"Taklifni qabul qilish uchun {INVITE_ACCEPT_COST} tanga kerak. Avval tanga sotib oling.",
+                )
+                return redirect(dashboard_url(offer.architect, "store"))
             except OfferAlreadyDecidedError:
                 return redirect(dashboard_url(offer.architect, "market"))
         else:

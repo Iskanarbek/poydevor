@@ -27,16 +27,21 @@
     <form method="post" enctype="multipart/form-data" class="grid gap-5 sm:grid-cols-2">
       {% csrf_token %}
       <div data-field="avatar" class="sm:col-span-2 flex items-center gap-5 rounded-2xl border border-charcoal-100 bg-cream-50 p-5" x-data="{ preview: '' }">
-        <div class="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-white ring-4 ring-white shadow-md">
-          <img x-show="preview" :src="preview" alt="" class="h-full w-full object-cover">
+        <div class="h-24 w-24 shrink-0 overflow-hidden {% if form.avatar.field.required %}rounded-2xl{% else %}rounded-full{% endif %} bg-white ring-4 ring-white shadow-md">
+          <img x-show="preview" :src="preview" alt="" class="h-full w-full {% if form.avatar.field.required %}object-contain{% else %}object-cover{% endif %}">
           <span x-show="!preview" class="flex h-full w-full items-center justify-center text-charcoal-300"><svg class="icon !h-10 !w-10"><use href="#i-user"/></svg></span>
         </div>
         <div class="min-w-0">
+          {% if form.avatar.field.required %}
+          <p class="text-sm font-medium text-charcoal-800">{{ form.avatar.label }} <span class="text-clay-600">*</span></p>
+          <p class="mb-2 text-xs text-charcoal-500">{{ form.avatar.help_text }}</p>
+          {% else %}
           <p class="text-sm font-medium text-charcoal-800">Profil rasmi <span class="text-charcoal-400 font-normal">(ixtiyoriy)</span></p>
           <p class="mb-2 text-xs text-charcoal-500">Mijozlar sizni shu rasm bilan ko'radi. Yuzingiz aniq ko'ringan rasm tanlang. Hozir yuklamasangiz ham bo'ladi — keyinroq profilingizdan qo'shishingiz mumkin.</p>
+          {% endif %}
           <label class="btn-ghost cursor-pointer !py-2">
-            <span x-text="preview ? 'Rasmni almashtirish' : 'Rasm tanlash'"></span>
-            <input type="file" name="avatar" id="{{ form.avatar.id_for_label }}" accept="image/*" class="hidden"
+            <span x-text="preview ? 'Rasmni almashtirish' : '{% if form.avatar.field.required %}Logotip tanlash{% else %}Rasm tanlash{% endif %}'"></span>
+            <input type="file" name="avatar" id="{{ form.avatar.id_for_label }}" accept="image/*" class="hidden" {% if form.avatar.field.required %}required{% endif %}
                    @change="if ($event.target.files[0]) preview = URL.createObjectURL($event.target.files[0])">
           </label>
           {% if form.avatar.errors %}<p data-error class="mt-2 text-sm text-red-600">{{ form.avatar.errors|striptags }}</p>{% endif %}
@@ -48,6 +53,7 @@
             <span class="text-clay-600 mr-1">{{ forloop.counter0 }}.</span>{{ field.label }}
           </label>
           {{ field }}
+          {% if field.help_text %}<p class="mt-1 text-xs text-charcoal-500">{{ field.help_text }}</p>{% endif %}
           {% if field.errors %}<p data-error class="mt-1 text-sm text-red-600">{{ field.errors|striptags }}</p>{% endif %}
         </div>
       {% endif %}{% endfor %}

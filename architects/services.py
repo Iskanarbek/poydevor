@@ -11,7 +11,7 @@ def split_full_name(full_name: str) -> tuple[str, str]:
     return first, last.strip()
 
 
-def _account_for(phone: str, full_name: str, email: str, user: User | None) -> User:
+def _account_for(phone: str, full_name: str, user: User | None) -> User:
     """The login account behind a registration.
 
     A brand-new person gets a passwordless account (they sign in with their
@@ -22,7 +22,7 @@ def _account_for(phone: str, full_name: str, email: str, user: User | None) -> U
     if user is None:
         user = User(phone=phone, role=User.Role.ARCHITECT)
         user.set_unusable_password()
-    user.first_name, user.last_name, user.email = first_name, last_name, email
+    user.first_name, user.last_name = first_name, last_name
     user.save()
     return user
 
@@ -34,13 +34,14 @@ def _account_for(phone: str, full_name: str, email: str, user: User | None) -> U
 
 @transaction.atomic
 def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["responsible_person"], data["email"], user)
+    account = _account_for(data["phone"], data["responsible_person"], user)
     profile = ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.STUDIO_OWNER,
         approval_status=ArchitectProfile.ApprovalStatus.PENDING,   # switched to approved just below
         portfolio_exempt=False,
         birth_year=data["responsible_birth_date"].year,
+        telegram_username=data["telegram_username"],
         claimed_projects_count=data["projects_count"],
     )
     Studio.objects.create(
@@ -50,7 +51,6 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
         founders=data["founders"],
         responsible_person=data["responsible_person"],
         responsible_birth_date=data["responsible_birth_date"],
-        email=data["email"],
         phone=data["phone"],
         staff_count=data["staff_count"],
         projects_count=data["projects_count"],
@@ -61,7 +61,7 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
 
 @transaction.atomic
 def register_employee(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["full_name"], data["email"], user)
+    account = _account_for(data["phone"], data["full_name"], user)
     return ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.STUDIO_EMPLOYEE,
@@ -69,18 +69,20 @@ def register_employee(data: dict, user: User | None = None) -> ArchitectProfile:
         portfolio_exempt=False,
         studio=data["studio"],
         birth_year=data["birth_year"],
+        telegram_username=data["telegram_username"],
     )
 
 
 @transaction.atomic
 def register_freelancer(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["full_name"], data["email"], user)
+    account = _account_for(data["phone"], data["full_name"], user)
     profile = ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.FREELANCER,
         approval_status=ArchitectProfile.ApprovalStatus.PENDING,
         portfolio_exempt=False,
         birth_year=data["birth_year"],
+        telegram_username=data["telegram_username"],
         claimed_projects_count=data["projects_count"],
     )
     set_approval(profile, ArchitectProfile.ApprovalStatus.APPROVED)

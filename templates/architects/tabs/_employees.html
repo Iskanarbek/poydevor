@@ -5,7 +5,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 border border-amber-200 bg-amber-50/50 rounded-2xl p-4">
         <div>
           <p class="font-medium text-charcoal-900">{{ employee.user.first_name }} {{ employee.user.last_name }}</p>
-          <p class="text-sm text-charcoal-500">{{ employee.user.phone }} · {{ employee.user.email }}{% if employee.birth_year %} · {{ employee.birth_year }}-yil{% endif %}</p>
+          <p class="text-sm text-charcoal-500">{{ employee.user.phone }}{% if employee.telegram_username %} · @{{ employee.telegram_username }}{% endif %}{% if employee.birth_year %} · {{ employee.birth_year }}-yil{% endif %}</p>
         </div>
         <div class="flex gap-2">
           <form method="post" action="{% url 'architects:employee_decision' employee.pk %}">
@@ -33,7 +33,7 @@
       <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-4">
         <p class="font-medium text-charcoal-900">{{ employee.user.first_name }} {{ employee.user.last_name }}</p>
         <p class="text-sm text-charcoal-500">{{ employee.user.phone }}</p>
-        <p class="text-sm text-charcoal-500">{{ employee.user.email }}</p>
+        <p class="text-sm text-charcoal-500">{% if employee.telegram_username %}@{{ employee.telegram_username }}{% else %}{{ employee.user.phone }}{% endif %}</p>
         <a href="{% url 'architects:employee_remove' employee.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
           <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> Ishdan bo'shatish
         </a>

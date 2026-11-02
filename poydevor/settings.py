@@ -243,14 +243,15 @@ LOGOUT_REDIRECT_URL = 'accounts:welcome'
 
 
 # Coins
-# 100 000 UZS buys 10 coins (10 000 UZS per coin) and applying to one project
-# costs 10 coins. Every approved studio/freelancer starts with enough coins for
-# two projects.
+# One coin costs 150 000 UZS. Applying to a project costs 1 coin; accepting a project a
+# client sent straight to the architect costs 2 coins. Every approved studio/freelancer
+# starts with 2 free coins.
 
-COIN_PRICE_UZS = 10_000
-OFFER_COST_COINS = 10
-SIGNUP_BONUS_COINS = 2 * OFFER_COST_COINS
-COIN_PACKAGES = [10, 20, 50, 100]
+COIN_PRICE_UZS = 150_000
+OFFER_COST_COINS = 1
+INVITE_ACCEPT_COST_COINS = 2
+SIGNUP_BONUS_COINS = 2
+COIN_PACKAGES = [1, 3, 5, 10]
 
 # Portfolio an architect must build after signing up: at least this many projects,
 # each with at least this many photos (a project's first photo is its cover). Until then
