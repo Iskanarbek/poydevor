@@ -1,21 +1,25 @@
-{# Style chips + project cards. Needs: projects, styles, selected_style, base_url (where the chips point). #}
-<div class="flex flex-wrap gap-2 mb-6 mt-5">
-  <a href="{{ base_url }}"
-     class="rounded-full border px-4 py-1.5 text-sm transition {% if not selected_style %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
-    Barchasi
-  </a>
-  {% for style in styles %}
-    <a href="{{ base_url }}?style={{ style.id }}"
-       class="rounded-full border px-4 py-1.5 text-sm transition {% if selected_style == style.id|stringformat:'s' %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
-      {{ style.name }}
-    </a>
+{# Filters + project cards. Needs: projects, filter_groups, filtered, clear_url. #}
+<div class="mb-6 mt-5 space-y-3 rounded-2xl border border-charcoal-100 bg-white p-4 shadow-sm">
+  {% for group in filter_groups %}
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="w-24 shrink-0 text-xs font-medium uppercase tracking-wider text-charcoal-400">{{ group.title }}</span>
+      {% for option in group.options %}
+        <a href="{{ option.url }}"
+           class="rounded-full border px-3.5 py-1 text-sm transition {% if option.active %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
+          {{ option.label }}
+        </a>
+      {% endfor %}
+    </div>
   {% endfor %}
+  {% if filtered %}
+    <a href="{{ clear_url }}" class="inline-block text-sm text-clay-700 hover:underline">Filtrlarni tozalash</a>
+  {% endif %}
 </div>
 
 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
   {% for project in projects %}
     {% include "architects/_project_card.html" with project=project show_architect=True %}
   {% empty %}
-    <p class="text-sm text-charcoal-500">Hozircha loyihalar topilmadi.</p>
+    <p class="text-sm text-charcoal-500">Bu filtrlar bo'yicha loyiha topilmadi.{% if filtered %} <a href="{{ clear_url }}" class="text-clay-700 hover:underline">Filtrlarni tozalash</a>{% endif %}</p>
   {% endfor %}
 </div>

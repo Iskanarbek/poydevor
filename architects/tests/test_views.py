@@ -586,3 +586,57 @@ class ProjectEditDeleteTests(TestCase):
         html = self.client.get(reverse("architects:portfolio_edit")).content.decode()
         self.assertIn('name="avatar"', html)
         self.assertIn("Profil rasmi", html)
+
+
+class GalleryFilterTests(TestCase):
+    """Filters on the project gallery: kind of job, kind of object, price range ("$5000+" has no
+    upper limit) and style, combinable."""
+
+    def setUp(self):
+        user = User.objects.create_user(phone="+998901239999", first_name="Nodir", last_name="K", role=User.Role.ARCHITECT)
+        self.profile = ArchitectProfile.objects.create(user=user, bio="x", portfolio_exempt=True)
+        self.loft = Style.objects.create(name="Loft")
+
+        def make(title, service, obj, price, style=None):
+            project = PortfolioProject.objects.create(
+                architect=self.profile, title=title, service_type=service, object_type=obj, price_usd=price, style=style,
+            )
+            PortfolioImage.objects.create(project=project, image="portfolio/p.jpg", order=0)
+            return project
+
+        make("Arzon interyer", "interior", "apartment", 400, self.loft)
+        make("Orta arxitektura", "architecture", "yard", 1500)
+        make("Qimmat restoran", "interior", "restaurant", 8000)
+        make("Narxsiz ish", "interior", "office", None)
+
+    def titles(self, **params):
+        response = self.client.get(reverse("architects:project_gallery"), params)
+        return {p.title for p in response.context["projects"]}
+
+    def test_no_filter_shows_everything(self):
+        self.assertEqual(len(self.titles()), 4)
+
+    def test_filter_by_kind_of_job(self):
+        self.assertEqual(self.titles(service="architecture"), {"Orta arxitektura"})
+        self.assertEqual(self.titles(service="interior"), {"Arzon interyer", "Qimmat restoran", "Narxsiz ish"})
+
+    def test_filter_by_kind_of_object(self):
+        self.assertEqual(self.titles(object="restaurant"), {"Qimmat restoran"})
+
+    def test_price_ranges_and_the_open_ended_top_range(self):
+        self.assertEqual(self.titles(price="0-500"), {"Arzon interyer"})
+        self.assertEqual(self.titles(price="1000-2000"), {"Orta arxitektura"})
+        self.assertEqual(self.titles(price="5000-up"), {"Qimmat restoran"})     # "$5000 va undan ko'p"
+        self.assertNotIn("Narxsiz ish", self.titles(price="0-500"))             # no price = never in a range
+
+    def test_filters_combine_and_unknown_values_are_ignored(self):
+        self.assertEqual(self.titles(service="interior", price="0-500", style=self.loft.pk), {"Arzon interyer"})
+        self.assertEqual(self.titles(service="interior", price="1000-2000"), set())
+        self.assertEqual(len(self.titles(service="nonsense", price="zzz", object="x")), 4)
+
+    def test_chips_keep_the_other_filters_and_can_be_cleared(self):
+        response = self.client.get(reverse("architects:project_gallery"), {"service": "interior", "price": "0-500"})
+        self.assertContains(response, "5000 va undan ko&#x27;p")
+        self.assertContains(response, "Filtrlarni tozalash")
+        urls = [o["url"] for g in response.context["filter_groups"] for o in g["options"]]
+        self.assertTrue(any("service=interior" in u and "price=5000-up" in u for u in urls))
