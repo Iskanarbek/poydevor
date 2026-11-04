@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Ariza yuborish — {{ architect }} — Poydevor{% endblock %}
+{% block title %}Ariza yuborish — {{ architect.display_name }} — Poydevor{% endblock %}
 
 {% block content %}
 <div class="max-w-xl mx-auto">
-  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">{{ architect }}ga ariza yuborish</h1>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">{{ architect.display_name }}ga ariza yuborish</h1>
   <p class="text-sm text-charcoal-500 mb-6">
     Arxitektor qabul qilgandan so'ng aloqa ma'lumotlari (telefon, telegram) ikkala tomon uchun ham ko'rinadi.
   </p>

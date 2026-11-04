@@ -143,7 +143,7 @@ class StudioOrdersViewTests(TestCase):
         self.client.force_login(self.owner.user)
         page = self.client.get("/studio/dashboard/?tab=orders")
         self.assertContains(page, "Toshkent")
-        self.assertContains(page, "Bo'sh — keyingi ishga tayyor")
+        self.assertContains(page, "Hozir ish yo")       # nobody has a job yet
 
     def test_employee_can_claim_from_their_workspace(self):
         self.client.force_login(self.worker.user)
@@ -318,7 +318,7 @@ class StudioOrdersTableTests(TestCase):
         assignment = StudioAssignment.objects.get(offer=offer)
         self.client.post(f"/studio/buyurtmalar/{assignment.pk}/biriktirish/", {"worker": self.worker1.pk})
         response = self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/")
-        self.assertRedirects(response, "/studio/dashboard/?tab=finished", fetch_redirect_response=False)
+        self.assertRedirects(response, "/studio/dashboard/?tab=orders", fetch_redirect_response=False)   # stays on the page
         offer.refresh_from_db()
         assignment.refresh_from_db()
         self.assertEqual((offer.status, assignment.status), (Offer.Status.COMPLETED, StudioAssignment.Status.DONE))
@@ -418,3 +418,36 @@ class OfferDetailPageTests(TestCase):
         page = self.client.get("/studio/dashboard/?tab=finished")
         for text in ("Skandinav", "Kvartira", "Interyer dizayni", "$1000", "Batafsil"):
             self.assertContains(page, text)
+
+
+class BusyWorkerTests(TestCase):
+    """"Band" is only a picture of the workload: a busy worker can still take more jobs, and the
+    board lists every job they have."""
+
+    def setUp(self):
+        self.client_user = User.objects.create_user(phone="+998901111111", password="x", first_name="Aziz", last_name="K", role=User.Role.USER)
+        self.owner = make_studio()
+        self.worker = make_employee(self.owner, "Worker1")
+        self.worker.approval_status = ArchitectProfile.ApprovalStatus.APPROVED
+        self.worker.save()
+        self.assignments = []
+        for place in ("Toshkent", "Samarqand", "Buxoro"):
+            app = Application.objects.create(owner=self.client_user, rooms_count=2, location=place)
+            offer = send_offer(app, self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+            accept_offer(offer)
+            self.assignments.append(StudioAssignment.objects.get(offer=offer))
+
+    def test_a_worker_with_jobs_can_still_claim_another_and_the_board_lists_all_of_them(self):
+        self.client.force_login(self.worker.user)
+        self.client.post(f"/employee/buyurtmalar/{self.assignments[0].pk}/olish/")
+        response = self.client.post(f"/employee/buyurtmalar/{self.assignments[1].pk}/olish/")      # already busy, still allowed
+        self.assertEqual(response.status_code, 302)
+        self.assignments[1].refresh_from_db()
+        self.assertEqual(self.assignments[1].worker, self.worker)
+        self.client.force_login(self.owner.user)
+        page = self.client.get("/studio/dashboard/?tab=orders")
+        row = page.context["worker_board"][0]
+        self.assertEqual(row["count"], 2)
+        self.assertContains(page, "2 ta ish")
+        self.assertContains(page, "Toshkent")
+        self.assertContains(page, "Samarqand")

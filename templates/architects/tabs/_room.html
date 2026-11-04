@@ -10,7 +10,7 @@
       </span>
     {% endif %}
     <div>
-      <h2 class="font-serif text-xl font-semibold text-charcoal-900">{{ profile }}</h2>
+      <h2 class="font-serif text-xl font-semibold text-charcoal-900">{{ profile.display_name }}</h2>
       <p class="text-sm text-charcoal-500">{% if profile.bio %}{{ profile.bio|truncatewords:20 }}{% else %}O'zingiz haqingizda qisqacha yozing.{% endif %}</p>
     </div>
   </div>

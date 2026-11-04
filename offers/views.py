@@ -119,6 +119,7 @@ def respond(request, offer_pk):
                     accept_invitation(offer)
                 else:
                     accept_offer(offer)
+                messages.success(request, "Buyurtma qabul qilindi. Endi xodim tanlang.")
             except InsufficientCoinsError:
                 messages.warning(
                     request,
@@ -129,6 +130,7 @@ def respond(request, offer_pk):
                 return redirect(dashboard_url(offer.architect, "orders"))
         else:
             reject_offer(offer)
+            messages.success(request, "Buyurtma rad etildi.")
     return redirect(dashboard_url(offer.architect, "orders"))
 
 
@@ -165,8 +167,8 @@ def architect_finish(request, offer_pk):
     offer = get_object_or_404(Offer, pk=offer_pk, architect__user=request.user, status=Offer.Status.ACCEPTED)
     if request.method == "POST":
         finish_by_architect(offer)
-        messages.success(request, "Loyiha yakunlandi va tugatilgan ishlarga o'tdi.")
-        return redirect(dashboard_url(offer.architect, "finished"))
+        messages.success(request, "Loyiha yakunlandi va «Tugatilgan ishlar»ga o'tdi.")
+        return redirect(dashboard_url(offer.architect, "orders"))      # stay on the Buyurtmalar page
     return redirect(dashboard_url(offer.architect, "orders"))
 
 

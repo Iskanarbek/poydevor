@@ -112,20 +112,26 @@
 
 {% if studio %}
 <div>
-  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Xodimlar holati</h2>
+  <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-1">Xodimlar holati</h2>
+  <p class="mb-4 text-sm text-charcoal-500">Har bir xodim hozir qaysi ishlar ustida ishlayotgani. Band xodim ham yangi ish olishi mumkin.</p>
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
     {% for row in worker_board %}
-      <div class="border rounded-2xl bg-white shadow-sm p-4 {% if row.overdue %}border-red-300{% elif row.available %}border-green-200{% else %}border-charcoal-200{% endif %}">
-        <p class="font-medium text-charcoal-900">{{ row.employee }}</p>
-        {% if row.available %}
-          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-green-100 text-green-700">Bo'sh — keyingi ishga tayyor</p>
-        {% elif row.overdue %}
-          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-red-100 text-red-700">Muddatni o'tkazib yubordi</p>
-          <p class="mt-2 text-xs text-charcoal-500">{{ row.current.offer.application.location }}</p>
-        {% else %}
-          <p class="mt-1.5 text-xs font-medium inline-flex px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">Band</p>
-          <p class="mt-2 text-xs text-charcoal-500">{{ row.current.offer.application.location }}{% if row.current.deadline %} · muddat: {{ row.current.deadline }}{% endif %}</p>
-        {% endif %}
+      <div class="rounded-2xl border bg-white p-4 shadow-sm {% if row.overdue %}border-red-300{% elif row.available %}border-green-200{% else %}border-charcoal-200{% endif %}">
+        <div class="flex items-center justify-between gap-2">
+          <p class="font-medium text-charcoal-900">{{ row.employee }}</p>
+          {% if row.available %}
+            <span class="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Bo'sh</span>
+          {% else %}
+            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-medium {% if row.overdue %}bg-red-100 text-red-700{% else %}bg-sky-100 text-sky-700{% endif %}">{{ row.count }} ta ish</span>
+          {% endif %}
+        </div>
+        {% for job in row.jobs %}
+          <p class="mt-2 text-xs {% if job.is_overdue %}font-semibold text-red-600{% else %}text-charcoal-500{% endif %}">
+            {{ job.offer.application.location }}{% if job.deadline %} · muddat: {{ job.deadline|date:"d.m.Y" }}{% endif %}{% if job.is_overdue %} — muddati o'tgan{% endif %}
+          </p>
+        {% empty %}
+          <p class="mt-2 text-xs text-charcoal-500">Hozir ish yo'q — yangi ishga tayyor.</p>
+        {% endfor %}
       </div>
     {% empty %}
       <p class="text-sm text-charcoal-500 sm:col-span-2 lg:col-span-3">Studiyada hali tasdiqlangan xodimlar yo'q.</p>

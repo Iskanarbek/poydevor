@@ -333,21 +333,22 @@ def _workspace(request, profile, tabs, default_tab, title):
 
 
 def _worker_board(employees, assignments):
-    """One row per studio employee: their current (undone) assignment, if
-    any, and whether it's overdue — what the studio owner scans to see who
-    is busy, who skipped a deadline, and who is free for the next job."""
-    active_by_worker = {}
+    """One row per studio employee with ALL of their current (undone) jobs: the studio owner
+    scans it to see how loaded each worker is. Being busy never stops a worker from taking
+    new jobs; this is only a picture of the workload."""
+    jobs_by_worker = {}
     for a in assignments:
         if a.worker_id and a.status != StudioAssignment.Status.DONE:
-            active_by_worker[a.worker_id] = a
+            jobs_by_worker.setdefault(a.worker_id, []).append(a)
     rows = []
     for employee in employees:
-        current = active_by_worker.get(employee.id)
+        jobs = sorted(jobs_by_worker.get(employee.id, []), key=lambda a: (a.deadline is None, a.deadline or date.max))
         rows.append({
             "employee": employee,
-            "current": current,
-            "available": current is None,
-            "overdue": bool(current and current.is_overdue),
+            "jobs": jobs,
+            "count": len(jobs),
+            "available": not jobs,
+            "overdue": sum(1 for a in jobs if a.is_overdue),
         })
     return rows
 
@@ -463,10 +464,12 @@ def assignment_assign(request, assignment_id):
         )
         try:
             assign_worker(assignment, worker, deadline=deadline)
+            messages.success(request, f"Ish {worker} xodimiga biriktirildi.")
         except WorkerNotInStudioError as e:
             messages.warning(request, str(e))
     elif deadline_raw:
         set_deadline(assignment, deadline)
+        messages.success(request, "Muddat saqlandi.")
     return redirect(dashboard_url(profile, "orders"))
 
 
