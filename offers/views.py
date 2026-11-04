@@ -85,7 +85,7 @@ def architect_apply(request, application_pk):
             return render(request, "offers/apply_error.html", {
                 "error": "Siz bu e'longa allaqachon ariza yubordingiz.", "application": application,
             })
-        return redirect(dashboard_url(architect, "market"))
+        return redirect(dashboard_url(architect, "orders"))
 
     slots_taken = application.offers.filter(status=Offer.Status.PENDING).count()
     return render(request, "offers/architect_apply_confirm.html", {
@@ -126,10 +126,10 @@ def respond(request, offer_pk):
                 )
                 return redirect(dashboard_url(offer.architect, "store"))
             except OfferAlreadyDecidedError:
-                return redirect(dashboard_url(offer.architect, "market"))
+                return redirect(dashboard_url(offer.architect, "orders"))
         else:
             reject_offer(offer)
-    return redirect(dashboard_url(offer.architect, "market"))
+    return redirect(dashboard_url(offer.architect, "orders"))
 
 
 @login_required
@@ -167,7 +167,7 @@ def architect_finish(request, offer_pk):
         finish_by_architect(offer)
         messages.success(request, "Loyiha yakunlandi va tugatilgan ishlarga o'tdi.")
         return redirect(dashboard_url(offer.architect, "finished"))
-    return redirect(dashboard_url(offer.architect, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market"))
+    return redirect(dashboard_url(offer.architect, "orders"))
 
 
 @login_required
@@ -187,7 +187,7 @@ def offer_detail(request, offer_pk):
     if is_worker:
         back_url = dashboard_url(profile, "tasks")
     else:
-        back_url = dashboard_url(profile, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market")
+        back_url = dashboard_url(profile, "orders")
     return render(request, "offers/offer_detail.html", {
         "offer": offer,
         "application": offer.application,

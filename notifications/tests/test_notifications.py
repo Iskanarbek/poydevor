@@ -119,12 +119,12 @@ class SectionBadgeTests(Base):
         send_offer(self.application, self.freelancer, source=Offer.Source.USER_INVITED)
         self.client.force_login(self.freelancer.user)
         page = self.client.get("/freelancer/dashboard/?tab=room")
-        self.assertEqual(page.context["tab_badges"], {"market": 1})
-        self.assertContains(page, 'data-badge="market"')
-        market = self.client.get("/freelancer/dashboard/?tab=market")
-        self.assertEqual(len(market.context["new_here"]), 1)              # the news is shown on the tab itself
-        self.assertContains(market, "sizga loyiha yubordi")
-        again = self.client.get("/freelancer/dashboard/?tab=market")
+        self.assertEqual(page.context["tab_badges"], {"orders": 1})
+        self.assertContains(page, 'data-badge="orders"')
+        orders = self.client.get("/freelancer/dashboard/?tab=orders")
+        self.assertEqual(len(orders.context["new_here"]), 1)              # the news is shown on the tab itself
+        self.assertContains(orders, "sizga loyiha yubordi")
+        again = self.client.get("/freelancer/dashboard/?tab=orders")
         self.assertEqual((again.context["new_here"], again.context["tab_badges"]), ([], {}))   # ...once
 
     def test_there_is_no_notifications_page_or_bell(self):

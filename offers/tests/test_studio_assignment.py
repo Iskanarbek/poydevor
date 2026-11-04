@@ -341,7 +341,10 @@ class StudioOrdersTableTests(TestCase):
         offer = send_offer(self.order("Nukus"), free, source=O.Source.ARCHITECT_APPLIED)
         accept_offer(offer)
         self.client.force_login(free_user)
-        self.assertContains(self.client.get("/freelancer/dashboard/?tab=market"), "Yakunlash")
+        table = self.client.get("/freelancer/dashboard/?tab=orders")
+        self.assertContains(table, "Yakunlash")
+        self.assertContains(table, "Nukus")
+        self.assertNotContains(self.client.get("/freelancer/dashboard/?tab=market"), "Mening arizalarim")   # moved to Buyurtmalar
         self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/")
         self.assertContains(self.client.get("/freelancer/dashboard/?tab=finished"), "Nukus")
 

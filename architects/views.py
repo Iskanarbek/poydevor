@@ -54,6 +54,7 @@ STUDIO_TABS = [
 ]
 FREELANCER_TABS = [
     ("market", "E'lonlar bozori"),
+    ("orders", "Buyurtmalar"),
     ("room", "Mening xonam"),
     ("finished", "Tugallangan loyihalar"),
     ("store", "Store"),
@@ -306,19 +307,19 @@ def _workspace(request, profile, tabs, default_tab, title):
         context["pending_employees"] = studio.employees.filter(approval_status=Approval.PENDING).select_related("user")
         context["employees"] = studio.employees.filter(approval_status=Approval.APPROVED).select_related("user")
     elif tab == "orders":
-        studio = profile.studio_owned
-        employees = list(studio.employees.filter(approval_status=Approval.APPROVED).select_related("user"))
+        studio = getattr(profile, "studio_owned", None)      # freelancers have the same table, without workers
+        employees = list(studio.employees.filter(approval_status=Approval.APPROVED).select_related("user")) if studio else []
         context["studio"] = studio
         context["employees"] = employees
         # One table for everything the studio applied for or was invited to, with its state.
         offers = list(
             profile.offers.exclude(status=Offer.Status.COMPLETED)
-            .select_related("application", "application__owner")
+            .select_related("application", "application__owner", "application__interior_style")
             .order_by("-created_at")
         )
         for offer in offers:
-            if offer.status == Offer.Status.ACCEPTED:
-                StudioAssignment.objects.get_or_create(offer=offer)      # older accepted offers may lack one
+            if offer.status == Offer.Status.ACCEPTED and studio:      # older accepted offers may lack one
+                StudioAssignment.objects.get_or_create(offer=offer)
         assignments = {
             a.offer_id: a for a in StudioAssignment.objects.filter(offer__in=offers).select_related("worker__user")
         }

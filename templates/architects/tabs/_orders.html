@@ -51,8 +51,10 @@
                 <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Xodim bajardi</span>
               {% elif a and a.status == 'assigned' %}
                 <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-700">Jarayonda</span>
-              {% else %}
+              {% elif studio %}
                 <span class="rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700">Mijoz qabul qildi — xodim tanlang</span>
+              {% else %}
+                <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700">Mijoz qabul qildi</span>
               {% endif %}
             </td>
 
@@ -92,6 +94,10 @@
                 <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
                   <button type="submit" class="rounded-lg px-3 py-1.5 text-xs font-medium text-white {% if a.status == 'done' %}bg-green-600 hover:bg-green-700{% else %}bg-charcoal-700 hover:bg-charcoal-900{% endif %}">Yakunlash</button>
                 </form>
+              {% elif offer.status == 'accepted' %}
+                <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
+                  <button type="submit" class="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">Yakunlash</button>
+                </form>
               {% else %}<span class="text-charcoal-400">—</span>{% endif %}
             </td>
           </tr>
@@ -104,6 +110,7 @@
   </div>
 </div>
 
+{% if studio %}
 <div>
   <h2 class="font-serif text-lg font-semibold text-charcoal-900 mb-4">Xodimlar holati</h2>
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -125,3 +132,4 @@
     {% endfor %}
   </div>
 </div>
+{% endif %}

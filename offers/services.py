@@ -70,7 +70,7 @@ def send_offer(application: Application, architect, source: str) -> Offer:
     if source == Offer.Source.USER_INVITED:
         notify(
             architect, f"Mijoz sizga loyiha yubordi: {place}. Qabul qilish yoki rad etishingiz mumkin.",
-            dashboard_url(architect, "market"),
+            dashboard_url(architect, "orders"),
         )
     else:
         notify(
@@ -102,12 +102,12 @@ def accept_offer(offer: Offer) -> None:
     place = offer.application.location
     for other in others:
         notify(
-            other.architect, f"Mijoz boshqa arxitektorni tanladi: {place}.", dashboard_url(other.architect, "market"),
+            other.architect, f"Mijoz boshqa arxitektorni tanladi: {place}.", dashboard_url(other.architect, "orders"),
         )
     if offer.source == Offer.Source.ARCHITECT_APPLIED:      # the client accepted the architect's application
         notify(
             offer.architect, f"Arizangiz qabul qilindi: {place}. Mijoz bilan bog'lanishingiz mumkin.",
-            dashboard_url(offer.architect, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market"),
+            dashboard_url(offer.architect, "orders"),
         )
     else:                                                    # the architect accepted the client's invitation
         notify(
@@ -149,7 +149,7 @@ def reject_offer(offer: Offer) -> None:
     offer.save(update_fields=["status", "decided_at"])
     place = offer.application.location
     if offer.source == Offer.Source.ARCHITECT_APPLIED:      # the client turned the architect down
-        notify(offer.architect, f"Arizangiz rad etildi: {place}.", dashboard_url(offer.architect, "market"))
+        notify(offer.architect, f"Arizangiz rad etildi: {place}.", dashboard_url(offer.architect, "orders"))
     else:                                                    # the architect declined the client's invitation
         notify(
             offer.application.owner, f"{offer.architect.display_name} taklifingizni rad etdi: {place}.",
