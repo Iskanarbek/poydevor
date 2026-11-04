@@ -137,11 +137,10 @@ class StudioRegistrationForm(RegistrationForm):
     )
     responsible_person = forms.CharField(label="Mas'ul shaxs F.I.Sh.", max_length=150)
     responsible_birth_date = forms.DateField(label="Mas'ul shaxsning tug'ilgan sanasi", widget=forms.DateInput(attrs={"type": "date"}))
-    projects_count = forms.IntegerField(label="Qancha loyiha bajarilgan", min_value=0)
 
     field_order = [
         "avatar", "studio_name", "founded_year", "responsible_person", "responsible_birth_date",
-        "phone", "telegram_username", "password", "password_confirm", "projects_count",
+        "phone", "telegram_username", "password", "password_confirm",
     ]
 
 
@@ -165,9 +164,8 @@ class EmployeeRegistrationForm(RegistrationForm):
 class FreelancerRegistrationForm(RegistrationForm):
     full_name = forms.CharField(label="Ism va Familiya", max_length=200)
     birth_year = _birth_year_field()
-    projects_count = forms.IntegerField(label="Shu paytgacha nechta loyiha amalga oshirgan", min_value=0)
 
-    field_order = ["avatar", "full_name", "birth_year", "phone", "telegram_username", "password", "password_confirm", "projects_count"]
+    field_order = ["avatar", "full_name", "birth_year", "phone", "telegram_username", "password", "password_confirm"]
 
 
 class PortfolioImagesForm(forms.Form):

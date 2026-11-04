@@ -45,7 +45,6 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
         approval_status=ArchitectProfile.ApprovalStatus.PENDING,   # switched to approved just below
         portfolio_exempt=False,
         telegram_username=data["telegram_username"],
-        claimed_projects_count=data["projects_count"],
         birth_year=data["responsible_birth_date"].year,
     )
     Studio.objects.create(
@@ -55,7 +54,6 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
         responsible_person=data["responsible_person"],
         responsible_birth_date=data["responsible_birth_date"],
         phone=data["phone"],
-        projects_count=data["projects_count"],
     )
     set_approval(profile, ArchitectProfile.ApprovalStatus.APPROVED)
     return profile
@@ -90,7 +88,6 @@ def register_freelancer(data: dict, user: User | None = None) -> ArchitectProfil
         portfolio_exempt=False,
         birth_year=data["birth_year"],
         telegram_username=data["telegram_username"],
-        claimed_projects_count=data["projects_count"],
     )
     set_approval(profile, ArchitectProfile.ApprovalStatus.APPROVED)
     return profile

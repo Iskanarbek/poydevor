@@ -45,7 +45,7 @@ STUDIO_DATA = {
     "studio_name": "ArcDes Studio Tashkent", "founded_year": 2020,
     "responsible_person": "Alisher Qodirov", "responsible_birth_date": "1992-08-12",
     "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
-    "password": "1", "password_confirm": "1", "projects_count": 45,
+    "password": "1", "password_confirm": "1",
 }
 
 
@@ -112,7 +112,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
 class FreelancerRegistrationTests(MediaRootMixin, TestCase):
     DATA = {
         "full_name": "Jasur Axmedov", "birth_year": 1995, "phone": "+998 97 555 44 33",
-        "telegram_username": "jasur_arch", "password": "1", "password_confirm": "1", "projects_count": 18,
+        "telegram_username": "jasur_arch", "password": "1", "password_confirm": "1",
     }
 
     def test_registration_needs_no_files_and_goes_straight_into_the_account(self):
@@ -124,7 +124,7 @@ class FreelancerRegistrationTests(MediaRootMixin, TestCase):
         self.assertFalse(profile.portfolio_exempt)
         self.assertEqual(profile.user.first_name, "Jasur")
         self.assertEqual(profile.user.last_name, "Axmedov")
-        self.assertEqual(profile.claimed_projects_count, 18)
+        self.assertEqual(profile.claimed_projects_count, 0)             # no longer asked
         self.assertFalse(profile.registration_files.exists())
         self.assertEqual(profile.wallet.balance, 2)
 

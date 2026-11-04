@@ -71,24 +71,25 @@ class FullJourneyTests(TestCase):
         page = self.client.get(reverse("architects:register_studio"))
         for needed in ("Studiya logotipi", "ilgan sanasi", "Parolni takrorlang"):
             self.assertContains(page, needed)
-        for gone in ('name="email"', 'name="founders"', 'name="staff_count"'):
+        for gone in ('name="email"', 'name="founders"', 'name="staff_count"', 'name="projects_count"'):
             self.assertNotContains(page, gone)
         response = self.client.post(reverse("architects:register_studio"), {
             "avatar": jpeg("logo.jpg", "red"), "studio_name": "ArcDes", "founded_year": 2018,
             "responsible_person": "Alisher Qodirov", "responsible_birth_date": "1990-03-04", "phone": "+998 90 111 11 11",
-            "telegram_username": "@arcdes", "password": "1", "password_confirm": "1", "projects_count": 30,
+            "telegram_username": "@arcdes", "password": "1", "password_confirm": "1",
         })
         self.assertRedirects(response, reverse("architects:studio_dashboard"), fetch_redirect_response=False)
         studio_owner = ArchitectProfile.objects.get(user__phone="+998901111111")
         self.assertEqual(studio_owner.display_name, "ArcDes")
         self.assertEqual(studio_owner.wallet.balance, 2)
+        self.assertNotContains(self.client_class().get(reverse("architects:register_freelancer")), 'name="projects_count"')
         self.add_portfolio(10)
 
         # 2. A freelancer registers (no Telegram: optional), builds a portfolio with a style of their own.
         self.new_visitor()
         response = self.client.post(reverse("architects:register_freelancer"), {
             "full_name": "Jasur Axmedov", "birth_year": 1994, "phone": "+998 90 222 22 22", "telegram_username": "",
-            "password": "pw", "password_confirm": "pw", "projects_count": 12,
+            "password": "pw", "password_confirm": "pw",
         })
         self.assertEqual(response.status_code, 302)
         freelancer = ArchitectProfile.objects.get(user__phone="+998902222222")
