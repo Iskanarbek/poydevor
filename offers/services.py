@@ -2,6 +2,7 @@ from datetime import date
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from django.urls import reverse
@@ -143,6 +144,17 @@ def accept_invitation(offer: Offer) -> None:
 
 
 @transaction.atomic
+def decline_invitation(offer: Offer) -> None:
+    """The architect/studio says no to a client's invitation. The client is told, and the
+    invitation is removed completely (it disappears from the architect's table)."""
+    notify(
+        offer.application.owner, f"{offer.architect.display_name} taklifingizni rad etdi: {offer.application.location}.",
+        reverse("applications:detail", args=[offer.application_id]),
+    )
+    offer.delete()
+
+
+@transaction.atomic
 def reject_offer(offer: Offer) -> None:
     offer.status = Offer.Status.REJECTED
     offer.decided_at = timezone.now()
@@ -211,7 +223,8 @@ def assign_worker(assignment: StudioAssignment, worker: ArchitectProfile, deadli
     assignment.worker = worker
     assignment.status = StudioAssignment.Status.ASSIGNED
     assignment.assigned_at = timezone.now()
-    fields = ["worker", "status", "assigned_at"]
+    assignment.overdue_notified_at = None
+    fields = ["worker", "status", "assigned_at", "overdue_notified_at"]
     if deadline is not None:
         assignment.deadline = deadline
         fields.append("deadline")
@@ -243,7 +256,8 @@ def claim_assignment(assignment: StudioAssignment, worker: ArchitectProfile) -> 
 @transaction.atomic
 def set_deadline(assignment: StudioAssignment, deadline) -> None:
     assignment.deadline = deadline
-    assignment.save(update_fields=["deadline"])
+    assignment.overdue_notified_at = None
+    assignment.save(update_fields=["deadline", "overdue_notified_at"])
     if assignment.worker and deadline:
         notify(
             assignment.worker,
@@ -262,3 +276,30 @@ def mark_assignment_done(assignment: StudioAssignment) -> None:
             assignment.offer.architect, f"{assignment.worker} buyurtmani bajardi: {assignment.offer.application.location}.",
             dashboard_url(assignment.offer.architect, "orders"),
         )
+
+
+@transaction.atomic
+def notify_overdue_assignments(user=None) -> int:
+    """Tell the studio and the worker when a worker missed a deadline (once per deadline).
+
+    There is no background clock, so this runs whenever someone concerned opens a page (and from
+    the ``notify_overdue`` command, for a cron job). ``user`` limits it to that person's jobs."""
+    late = StudioAssignment.objects.filter(
+        status=StudioAssignment.Status.ASSIGNED, deadline__lt=timezone.localdate(), overdue_notified_at__isnull=True,
+        worker__isnull=False,
+    ).select_related("offer__application", "offer__architect__user", "worker__user")
+    if user is not None:
+        late = late.filter(Q(offer__architect__user=user) | Q(worker__user=user))
+    count = 0
+    for assignment in late:
+        place = assignment.offer.application.location
+        when = _day(assignment.deadline)
+        notify(
+            assignment.offer.architect, f"{assignment.worker} muddatni o'tkazib yubordi: {place} (muddat: {when}).",
+            dashboard_url(assignment.offer.architect, "orders"),
+        )
+        notify(assignment.worker, f"Muddat o'tib ketdi: {place} (muddat: {when}). Ishni tugating.", dashboard_url(assignment.worker, "tasks"))
+        assignment.overdue_notified_at = timezone.now()
+        assignment.save(update_fields=["overdue_notified_at"])
+        count += 1
+    return count

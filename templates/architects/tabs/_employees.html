@@ -13,7 +13,7 @@
             <input type="hidden" name="decision" value="accept">
             <button type="submit" class="text-sm bg-clay-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-clay-700 transition">Qabul qilish</button>
           </form>
-          <form method="post" action="{% url 'architects:employee_decision' employee.pk %}">
+          <form method="post" action="{% url 'architects:employee_decision' employee.pk %}" onsubmit="return confirm('Ishonchingiz komilmi? So\'rov rad etiladi.');">
             {% csrf_token %}
             <input type="hidden" name="decision" value="reject">
             <button type="submit" class="text-sm border border-charcoal-300 text-charcoal-700 font-medium rounded-lg px-4 py-2 hover:border-charcoal-400 transition">Rad etish</button>

@@ -81,8 +81,7 @@ class ArchitectRespondTests(TestCase):
     def test_architect_rejects_offer(self):
         response = self.client.post(reverse("offers:respond", args=[self.offer.pk]), {"decision": "reject"})
         self.assertEqual(response.status_code, 302)
-        self.offer.refresh_from_db()
-        self.assertEqual(self.offer.status, Offer.Status.REJECTED)
+        self.assertFalse(Offer.objects.filter(pk=self.offer.pk).exists())     # declined invitations vanish completely
 
 
 class OfferAcceptRaceTests(TestCase):

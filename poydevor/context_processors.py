@@ -33,4 +33,7 @@ def unread_notifications(request):
     if user is None or not user.is_authenticated:
         return {}
     from notifications.models import Notification
+    if getattr(user, "role", None) == "architect":
+        from offers.services import notify_overdue_assignments
+        notify_overdue_assignments(user)          # deadlines have no clock of their own: check when someone looks
     return {"unread_notifications_count": Notification.objects.filter(user=user, is_read=False).count()}

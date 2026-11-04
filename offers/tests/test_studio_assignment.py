@@ -13,6 +13,7 @@ from offers.services import (
     claim_assignment,
     mark_assignment_done,
     send_offer,
+    set_deadline,
 )
 from wallet.models import Wallet
 from wallet.services import topup_coins
@@ -451,3 +452,74 @@ class BusyWorkerTests(TestCase):
         self.assertContains(page, "2 ta ish")
         self.assertContains(page, "Toshkent")
         self.assertContains(page, "Samarqand")
+
+
+class DeclineAndOverdueNewsTests(TestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(phone="+998901111111", password="x", first_name="Aziz", last_name="K", role=User.Role.USER)
+        self.owner = make_studio()
+        self.worker = make_employee(self.owner, "Worker1")
+        self.worker.approval_status = ArchitectProfile.ApprovalStatus.APPROVED
+        self.worker.save()
+
+    def order(self, place):
+        return Application.objects.create(owner=self.client_user, rooms_count=2, location=place)
+
+    def test_declining_an_invitation_removes_it_from_the_table_and_tells_the_client(self):
+        offer = send_offer(self.order("Buxoro"), self.owner, source=Offer.Source.USER_INVITED)
+        self.client.force_login(self.owner.user)
+        page = self.client.get("/studio/dashboard/?tab=orders")
+        self.assertContains(page, "Buxoro")
+        self.assertContains(page, "Ishonchingiz komilmi")          # asked first
+        response = self.client.post(f"/ariza/{offer.pk}/javob/", {"decision": "reject"})
+        self.assertRedirects(response, "/studio/dashboard/?tab=orders", fetch_redirect_response=False)
+        self.assertFalse(Offer.objects.filter(pk=offer.pk).exists())
+        self.assertEqual(self.client.get("/studio/dashboard/?tab=orders").context["order_rows"], [])
+        self.assertTrue(Notification.objects.filter(user=self.client_user, text__contains="rad etdi").exists())
+
+    def test_a_clients_rejection_also_leaves_the_architects_table(self):
+        from offers.services import reject_offer
+        offer = send_offer(self.order("Nukus"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        reject_offer(offer)
+        self.client.force_login(self.owner.user)
+        self.assertEqual(self.client.get("/studio/dashboard/?tab=orders").context["order_rows"], [])
+
+    def test_a_missed_deadline_notifies_the_studio_and_the_worker_once(self):
+        from offers.services import notify_overdue_assignments
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assignment = StudioAssignment.objects.get(offer=offer)
+        assign_worker(assignment, self.worker, deadline="2000-01-01")
+        self.assertEqual(notify_overdue_assignments(), 1)
+        self.assertEqual(notify_overdue_assignments(), 0)                 # only once
+        self.assertTrue(Notification.objects.filter(user=self.owner.user, text__contains="muddatni o'tkazib yubordi").exists())
+        self.assertTrue(Notification.objects.filter(user=self.worker.user, text__contains="Muddat o'tib ketdi").exists())
+        set_deadline(assignment, "2000-02-02")                            # a new deadline re-arms it
+        self.assertEqual(notify_overdue_assignments(), 1)
+
+    def test_a_finished_job_is_not_reported_late(self):
+        from offers.services import notify_overdue_assignments
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assignment = StudioAssignment.objects.get(offer=offer)
+        assign_worker(assignment, self.worker, deadline="2000-01-01")
+        mark_assignment_done(assignment)
+        self.assertEqual(notify_overdue_assignments(), 0)
+
+    def test_opening_any_page_triggers_the_check_for_that_person(self):
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assign_worker(StudioAssignment.objects.get(offer=offer), self.worker, deadline="2000-01-01")
+        self.client.force_login(self.owner.user)
+        page = self.client.get("/studio/dashboard/?tab=room")
+        self.assertEqual(page.context["tab_badges"].get("orders"), 1)     # the red number shows on the tab
+        self.assertContains(self.client.get("/studio/dashboard/?tab=orders"), "muddatni o")
+
+    def test_finishing_a_job_notifies_the_studio(self):
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assignment = StudioAssignment.objects.get(offer=offer)
+        assign_worker(assignment, self.worker)
+        self.client.force_login(self.worker.user)
+        self.client.post(f"/employee/buyurtmalar/{assignment.pk}/bajarildi/")
+        self.assertTrue(Notification.objects.filter(user=self.owner.user, text__contains="bajardi").exists())

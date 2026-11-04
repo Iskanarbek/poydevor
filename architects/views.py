@@ -315,7 +315,7 @@ def _workspace(request, profile, tabs, default_tab, title):
         context["employees"] = employees
         # One table for everything the studio applied for or was invited to, with its state.
         offers = list(
-            profile.offers.exclude(status=Offer.Status.COMPLETED)
+            profile.offers.exclude(status__in=[Offer.Status.COMPLETED, Offer.Status.REJECTED])
             .select_related("application", "application__owner", "application__interior_style")
             .order_by("-created_at")
         )
@@ -325,7 +325,7 @@ def _workspace(request, profile, tabs, default_tab, title):
         assignments = {
             a.offer_id: a for a in StudioAssignment.objects.filter(offer__in=offers).select_related("worker__user")
         }
-        rank = {Offer.Status.ACCEPTED: 0, Offer.Status.PENDING: 1, Offer.Status.REJECTED: 2}
+        rank = {Offer.Status.ACCEPTED: 0, Offer.Status.PENDING: 1}
         for offer in offers:
             offer.assignment = assignments.get(offer.pk)
         offers.sort(key=lambda o: rank.get(o.status, 3))

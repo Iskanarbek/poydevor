@@ -18,6 +18,7 @@ from offers.services import (
     accept_invitation,
     accept_offer,
     complete_offer,
+    decline_invitation,
     finish_by_architect,
     reject_offer,
     send_offer,
@@ -129,8 +130,10 @@ def respond(request, offer_pk):
             except OfferAlreadyDecidedError:
                 return redirect(dashboard_url(offer.architect, "orders"))
         else:
-            reject_offer(offer)
-            messages.success(request, "Buyurtma rad etildi.")
+            architect = offer.architect
+            decline_invitation(offer)
+            messages.success(request, "Taklif rad etildi va jadvaldan olib tashlandi.")
+            return redirect(dashboard_url(architect, "orders"))
     return redirect(dashboard_url(offer.architect, "orders"))
 
 

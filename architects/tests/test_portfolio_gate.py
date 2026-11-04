@@ -195,8 +195,7 @@ class CannotOrderUntilCompleteTests(TestCase):
     def test_declining_an_invitation_is_still_possible(self):
         offer = Offer.objects.create(application=self.application, architect=self.architect, source=Offer.Source.USER_INVITED)
         self.client.post(reverse("offers:respond", args=[offer.pk]), {"decision": "reject"})
-        offer.refresh_from_db()
-        self.assertEqual(offer.status, Offer.Status.REJECTED)
+        self.assertFalse(Offer.objects.filter(pk=offer.pk).exists())
 
     def test_market_tab_is_locked(self):
         page = self.client.get("/freelancer/dashboard/?tab=market")

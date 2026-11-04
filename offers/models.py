@@ -62,6 +62,8 @@ class StudioAssignment(models.Model):
     deadline = models.DateField(null=True, blank=True)
     assigned_at = models.DateTimeField(null=True, blank=True)
     done_at = models.DateTimeField(null=True, blank=True)
+    # Set once the "deadline passed" news was sent; cleared whenever the deadline or the worker changes.
+    overdue_notified_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

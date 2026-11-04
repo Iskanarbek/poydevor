@@ -74,26 +74,28 @@
                     <input type="hidden" name="decision" value="accept">
                     <button type="submit" class="rounded-lg bg-clay-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-clay-700">Qabul qilish — {{ invite_cost }} tanga</button>
                   </form>
-                  <form method="post" action="{% url 'offers:respond' offer.pk %}">{% csrf_token %}
+                  <form method="post" action="{% url 'offers:respond' offer.pk %}" onsubmit="return confirm('Ishonchingiz komilmi? Taklif rad etiladi va jadvaldan butunlay o\'chiriladi.');">{% csrf_token %}
                     <input type="hidden" name="decision" value="reject">
                     <button type="submit" class="rounded-lg border border-charcoal-300 px-3 py-1.5 text-xs font-medium text-charcoal-700 hover:border-charcoal-400">Rad etish</button>
                   </form>
                 </div>
               {% elif offer.status == 'accepted' and a %}
-                <form method="post" action="{% url 'architects:assignment_assign' a.pk %}" class="mb-2 flex flex-wrap items-center gap-2">
-                  {% csrf_token %}
-                  <select name="worker" class="rounded-lg border border-charcoal-200 px-2 py-1.5 text-xs">
-                    <option value="">{% if a.worker %}Boshqa xodimga berish…{% else %}Xodim tanlang…{% endif %}</option>
-                    {% for e in employees %}
-                      {% if e.pk != a.worker_id %}<option value="{{ e.pk }}">{{ e }}</option>{% endif %}
-                    {% endfor %}
-                  </select>
-                  <input type="date" name="deadline" value="{{ a.deadline|date:'Y-m-d' }}" class="rounded-lg border border-charcoal-200 px-2 py-1.5 text-xs">
-                  <button type="submit" class="rounded-lg bg-clay-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-clay-700">Saqlash</button>
-                </form>
-                <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
-                  <button type="submit" class="rounded-lg px-3 py-1.5 text-xs font-medium text-white {% if a.status == 'done' %}bg-green-600 hover:bg-green-700{% else %}bg-charcoal-700 hover:bg-charcoal-900{% endif %}">Yakunlash</button>
-                </form>
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <form method="post" action="{% url 'architects:assignment_assign' a.pk %}" class="flex flex-wrap items-center gap-1.5">
+                    {% csrf_token %}
+                    <select name="worker" class="!w-36 !rounded-lg !px-2 !py-1 !text-xs">
+                      <option value="">{% if a.worker %}Boshqa xodim…{% else %}Xodim tanlang…{% endif %}</option>
+                      {% for e in employees %}
+                        {% if e.pk != a.worker_id %}<option value="{{ e.pk }}">{{ e }}</option>{% endif %}
+                      {% endfor %}
+                    </select>
+                    <input type="date" name="deadline" value="{{ a.deadline|date:'Y-m-d' }}" class="!w-32 !rounded-lg !px-2 !py-1 !text-xs">
+                    <button type="submit" class="rounded-lg bg-clay-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-clay-700">Saqlash</button>
+                  </form>
+                  <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
+                    <button type="submit" class="rounded-lg px-2.5 py-1 text-xs font-medium text-white {% if a.status == 'done' %}bg-green-600 hover:bg-green-700{% else %}bg-charcoal-700 hover:bg-charcoal-900{% endif %}">Yakunlash</button>
+                  </form>
+                </div>
               {% elif offer.status == 'accepted' %}
                 <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
                   <button type="submit" class="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700">Yakunlash</button>
