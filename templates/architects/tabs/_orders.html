@@ -20,6 +20,11 @@
             <td class="px-4 py-3">
               <p class="font-medium text-charcoal-900">{{ a.offer.application.location }} — {{ a.offer.application.rooms_count }} xona</p>
               <p class="text-xs text-charcoal-500">Mijoz: {{ a.offer.application.owner.phone }}</p>
+              {% if a.offer.source == 'user_invited' %}
+                <span class="mt-1 inline-block rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">Mijoz sizga yubordi</span>
+              {% else %}
+                <span class="mt-1 inline-block rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-700">Siz ariza yuborgansiz</span>
+              {% endif %}
             </td>
             <td class="px-4 py-3 text-charcoal-700">
               {{ a.worker|default:"—" }}

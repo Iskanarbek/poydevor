@@ -255,7 +255,7 @@ class WorkspaceDemandsPortfolioTests(TestCase):
         from architects.models import Studio
         Studio.objects.create(
             owner=profile, name="ArcDes", founded_on="2020-05-15", founders="A", responsible_person="A",
-            responsible_birth_date="1992-08-12", email="a@a.uz", phone="+998901234567", staff_count=3, projects_count=4,
+            responsible_birth_date="1992-08-12", phone="+998901234567", staff_count=3, projects_count=4,
         )
         self.client.force_login(profile.user)
         page = self.client.get("/studio/dashboard/")

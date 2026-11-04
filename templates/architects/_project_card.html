@@ -8,7 +8,12 @@
     {% if own and not project.images.all %}<p class="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">Rasm yo'q — kamida bitta rasm qo'shing</p>{% endif %}
     {% if show_architect %}
       <div class="mt-2 flex items-center justify-between gap-3 text-sm">
-        <span class="truncate text-charcoal-700">{{ project.architect.display_name }}</span>
+        <span class="flex min-w-0 items-center gap-2 text-charcoal-700">
+          {% if project.architect.avatar %}
+            <img src="{{ project.architect.avatar.url }}" alt="" class="h-6 w-6 shrink-0 {% if project.architect.kind == 'studio_owner' %}rounded-md bg-white object-contain{% else %}rounded-full object-cover{% endif %}">
+          {% endif %}
+          <span class="truncate">{{ project.architect.display_name }}</span>
+        </span>
         <span class="flex shrink-0 items-center gap-1 text-amber-400">
           {% for i in "12345" %}{% if forloop.counter <= project.architect.rating %}★{% else %}☆{% endif %}{% endfor %}
           <span class="ml-0.5 text-charcoal-500">{{ project.architect.rating }}</span>

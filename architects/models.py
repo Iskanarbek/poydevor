@@ -251,10 +251,9 @@ class Studio(models.Model):
     founded_on = models.DateField()
     founders = models.CharField(max_length=255, blank=True, default="")
     responsible_person = models.CharField(max_length=150)
-    responsible_birth_date = models.DateField()
-    email = models.EmailField(blank=True)
+    responsible_birth_date = models.DateField(null=True, blank=True)
     phone = models.CharField(max_length=20)
-    staff_count = models.PositiveIntegerField()
+    staff_count = models.PositiveIntegerField(default=0)
     projects_count = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 

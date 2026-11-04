@@ -3,6 +3,7 @@ from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Max, Q
@@ -44,7 +45,7 @@ Approval = ArchitectProfile.ApprovalStatus
 
 STUDIO_TABS = [
     ("employees", "Xodimlar ro'yxati"),
-    ("orders", "Buyurtmalar taqsimoti"),
+    ("orders", "Qabul qilingan buyurtmalar"),
     ("finished", "Tugatilgan ishlar"),
     ("ongoing", "Davom etayotgan ishlar"),
     ("market", "E'lonlar bozori"),
@@ -162,6 +163,8 @@ def _register(request, form_class, template, save):
         form = form_class(request.POST, request.FILES, user=user)
         if form.is_valid():
             profile = save(form.cleaned_data, user)
+            if user is not None:
+                update_session_auth_hash(request, profile.user)   # the new password must not log them out
             if form.cleaned_data.get("avatar"):
                 profile.avatar = form.cleaned_data["avatar"]
                 profile.save(update_fields=["avatar"])

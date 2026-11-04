@@ -1,8 +1,9 @@
-from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth import login as auth_login, logout as auth_logout, update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from accounts.forms import LoginForm, SignupForm
+from accounts.forms import LoginForm, SetPasswordForm, SignupForm
 
 PHONE_BACKEND = "accounts.backends.PhoneBackend"
 
@@ -63,3 +64,22 @@ def logout_view(request):
         auth_logout(request)
         return redirect("accounts:welcome")
     return render(request, "accounts/logout_confirm.html")
+
+
+@login_required
+def set_password(request):
+    """Architects who signed up before passwords existed are sent here right after logging in
+    (see PasswordRequiredMiddleware); any architect can come back to change theirs."""
+    if request.user.role != request.user.Role.ARCHITECT:
+        return redirect("dashboard")
+    first_time = not request.user.has_usable_password()
+    if request.method == "POST":
+        form = SetPasswordForm(request.POST)
+        if form.is_valid():
+            request.user.set_password(form.cleaned_data["password"])
+            request.user.save(update_fields=["password"])
+            update_session_auth_hash(request, request.user)
+            return redirect("dashboard")
+    else:
+        form = SetPasswordForm()
+    return render(request, "accounts/set_password.html", {"form": form, "first_time": first_time})

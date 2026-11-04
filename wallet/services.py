@@ -93,6 +93,12 @@ def credit_order(order: PaymentOrder) -> bool:
     order.status = PaymentOrder.Status.PAID
     order.paid_at = timezone.now()
     order.save(update_fields=["status", "paid_at"])
+    from architects.navigation import dashboard_url
+    from notifications.services import notify
+    notify(
+        wallet.architect, f"To'lov qabul qilindi: hisobingizga {order.coins} tanga qo'shildi.",
+        dashboard_url(wallet.architect, "store"),
+    )
     return True
 
 

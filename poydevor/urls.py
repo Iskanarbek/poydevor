@@ -56,6 +56,7 @@ urlpatterns = [
     path('', include('wallet.urls')),
     path('', include('offers.urls')),
     path('', include('reviews.urls')),
+    path('', include('notifications.urls')),
 ]
 
 # Django normally only serves /media/ this way when DEBUG=True (this view

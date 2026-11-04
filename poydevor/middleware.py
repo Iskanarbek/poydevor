@@ -56,3 +56,25 @@ class NoStorePagesMiddleware:
             response["Cache-Control"] = "no-store, no-cache, must-revalidate, private, max-age=0"
             response["Pragma"] = "no-cache"
         return response
+
+
+class PasswordRequiredMiddleware:
+    """Architects who registered before passwords existed have none. They may still log in with
+    their phone number, but every page sends them to "create your password" until they do."""
+
+    ALLOWED = ("/parol/", "/chiqish/")
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        user = getattr(request, "user", None)
+        if (
+            settings.REQUIRE_ARCHITECT_PASSWORD
+            and user is not None and user.is_authenticated and user.role == user.Role.ARCHITECT
+            and not user.has_usable_password() and request.path not in self.ALLOWED
+            and not request.path.startswith((settings.STATIC_URL, settings.MEDIA_URL))
+        ):
+            from django.shortcuts import redirect
+            return redirect("accounts:set_password")
+        return self.get_response(request)

@@ -84,7 +84,7 @@ class ArchitectProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Studio)
 class StudioAdmin(admin.ModelAdmin):
-    list_display = ["name", "responsible_person", "phone", "staff_count", "projects_count", "owner"]
+    list_display = ["name", "responsible_person", "phone", "projects_count", "owner"]
     search_fields = ["name", "responsible_person", "phone"]
 
 

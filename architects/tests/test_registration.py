@@ -44,8 +44,8 @@ class MediaRootMixin:
 STUDIO_DATA = {
     "studio_name": "ArcDes Studio Tashkent", "founded_year": 2020,
     "responsible_person": "Alisher Qodirov",
-    "responsible_birth_date": "1992-08-12", "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
-    "staff_count": 15, "projects_count": 45,
+    "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
+    "password": "1", "password_confirm": "1", "projects_count": 45,
 }
 
 
@@ -70,7 +70,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
 
         user = User.objects.get(phone="+998901234567")
         self.assertEqual(user.role, User.Role.ARCHITECT)
-        self.assertFalse(user.has_usable_password())
+        self.assertTrue(user.has_usable_password())          # architects sign in with a password
         self.assertEqual(int(self.client.session["_auth_user_id"]), user.pk)
 
         profile = user.architect_profile
@@ -112,7 +112,7 @@ class StudioRegistrationTests(MediaRootMixin, TestCase):
 class FreelancerRegistrationTests(MediaRootMixin, TestCase):
     DATA = {
         "full_name": "Jasur Axmedov", "birth_year": 1995, "phone": "+998 97 555 44 33",
-        "telegram_username": "jasur_arch", "projects_count": 18,
+        "telegram_username": "jasur_arch", "password": "1", "password_confirm": "1", "projects_count": 18,
     }
 
     def test_registration_needs_no_files_and_goes_straight_into_the_account(self):
@@ -163,14 +163,14 @@ class EmployeeRegistrationTests(MediaRootMixin, TestCase):
         self.owner = ArchitectProfile.objects.create(user=owner_user, kind=Kind.STUDIO_OWNER)
         self.studio = Studio.objects.create(
             owner=self.owner, name="ArcDes", founded_on="2020-05-15", founders="A", responsible_person="A",
-            responsible_birth_date="1992-08-12", email="a@a.uz", phone="+998901234567",
+            responsible_birth_date="1992-08-12", phone="+998901234567",
             staff_count=3, projects_count=4,
         )
 
     def register(self, studio=None):
         return self.client.post(reverse("architects:register_employee"), {
             "full_name": "Sardor Murodov", "birth_year": 1998, "phone": "+998 93 987 65 43",
-            "telegram_username": "sardor_m1", "studio": (studio or self.studio).pk, "avatar": avatar(),
+            "telegram_username": "sardor_m1", "password": "1", "password_confirm": "1", "studio": (studio or self.studio).pk, "avatar": avatar(),
         })
 
     def test_registration_creates_pending_employee_of_the_studio(self):
@@ -227,7 +227,7 @@ class EmployeeRegistrationTests(MediaRootMixin, TestCase):
         other = ArchitectProfile.objects.create(user=other_user, kind=Kind.STUDIO_OWNER)
         Studio.objects.create(
             owner=other, name="Other", founded_on="2020-01-01", founders="O", responsible_person="O",
-            responsible_birth_date="1990-01-01", email="o@o.uz", phone="+998907777777", staff_count=1, projects_count=1,
+            responsible_birth_date="1990-01-01", phone="+998907777777", staff_count=1, projects_count=1,
         )
         self.client.force_login(other_user)
         response = self.client.post(
@@ -314,7 +314,7 @@ class DashboardRoutingTests(TestCase):
         if kind == Kind.STUDIO_OWNER:
             Studio.objects.create(
                 owner=profile, name="ArcDes", founded_on="2020-05-15", founders="A", responsible_person="A",
-                responsible_birth_date="1992-08-12", email="a@a.uz", phone=phone, staff_count=3, projects_count=4,
+                responsible_birth_date="1992-08-12", phone=phone, staff_count=3, projects_count=4,
             )
         return user, profile
 
@@ -407,7 +407,7 @@ class RemoveEmployeeTests(TestCase):
         self.owner = ArchitectProfile.objects.create(user=owner_user, kind=Kind.STUDIO_OWNER)
         self.studio = Studio.objects.create(
             owner=self.owner, name="ArcDes", founded_on="2020-05-15", founders="A", responsible_person="A",
-            responsible_birth_date="1992-08-12", email="a@a.uz", phone="+998901234567", staff_count=3, projects_count=4,
+            responsible_birth_date="1992-08-12", phone="+998901234567", staff_count=3, projects_count=4,
         )
         emp_user = User.objects.create_user(phone="+998939876543", first_name="Sardor", last_name="M", role=User.Role.ARCHITECT)
         self.employee = ArchitectProfile.objects.create(user=emp_user, kind=Kind.STUDIO_EMPLOYEE, studio=self.studio)
@@ -440,7 +440,7 @@ class RemoveEmployeeTests(TestCase):
         other_profile = ArchitectProfile.objects.create(user=other, kind=Kind.STUDIO_OWNER)
         Studio.objects.create(
             owner=other_profile, name="Other", founded_on="2020-01-01", founders="O", responsible_person="O",
-            responsible_birth_date="1990-01-01", email="o@o.uz", phone="+998907777777", staff_count=1, projects_count=1,
+            responsible_birth_date="1990-01-01", phone="+998907777777", staff_count=1, projects_count=1,
         )
         self.client.force_login(other)
         self.assertEqual(self.client.post(self.url).status_code, 404)

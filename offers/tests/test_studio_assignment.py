@@ -27,7 +27,7 @@ def make_studio(name="ArcDes"):
     owner = ArchitectProfile.objects.create(user=owner_user, kind=Kind.STUDIO_OWNER)
     Studio.objects.create(
         owner=owner, name=name, founded_on="2020-01-01", founders="X", responsible_person="X",
-        responsible_birth_date="1990-01-01", email="s@s.uz", phone="+998901234567",
+        responsible_birth_date="1990-01-01", phone="+998901234567",
         staff_count=5, projects_count=5,
     )
     wallet = Wallet.objects.create(architect=owner)

@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils.html import escape
 
@@ -231,3 +231,41 @@ class ErrorPagesTests(TestCase):
         from django.template import loader
         html = loader.get_template("errors/500.html").render({})
         self.assertIn('href="/welcome/"', html)
+
+
+class ArchitectPasswordTests(TestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(phone="+998901111111", first_name="M", last_name="B", role=User.Role.USER)
+        self.arch = User.objects.create_user(phone="+998902222222", first_name="A", last_name="R", role=User.Role.ARCHITECT)
+        self.arch.set_password("1")
+        self.arch.save()
+
+    def login(self, phone, password=""):
+        return self.client.post(reverse("accounts:login"), {"phone": phone, "password": password})
+
+    def test_an_architect_needs_the_right_password(self):
+        self.assertEqual(self.login("+998902222222").status_code, 200)
+        self.assertEqual(self.login("+998902222222", "2").status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+        self.assertEqual(self.login("+998902222222", "1").status_code, 302)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.arch.pk)
+
+    def test_a_client_still_signs_in_with_the_phone_alone(self):
+        self.assertEqual(self.login("+998901111111").status_code, 302)
+
+    def test_any_password_is_allowed_even_one_character(self):
+        from accounts.forms import SetPasswordForm
+        self.assertTrue(SetPasswordForm({"password": "1", "password_confirm": "1"}).is_valid())
+        self.assertFalse(SetPasswordForm({"password": "1", "password_confirm": "2"}).is_valid())
+
+    @override_settings(REQUIRE_ARCHITECT_PASSWORD=True)
+    def test_an_old_architect_without_a_password_must_create_one_first(self):
+        old = User.objects.create_user(phone="+998903333333", first_name="O", last_name="D", role=User.Role.ARCHITECT)
+        self.assertFalse(old.has_usable_password())
+        self.assertEqual(self.login("+998903333333").status_code, 302)          # may still get in...
+        self.assertRedirects(self.client.get(reverse("applications:dashboard")), reverse("accounts:set_password"), fetch_redirect_response=False)
+        self.client.post(reverse("accounts:set_password"), {"password": "x", "password_confirm": "x"})
+        old.refresh_from_db()
+        self.assertTrue(old.check_password("x"))
+        self.assertEqual(self.client.get(reverse("accounts:set_password")).status_code, 200)   # still signed in
+        self.assertNotEqual(self.client.get(reverse("applications:dashboard")).url if self.client.get(reverse("applications:dashboard")).status_code == 302 else "", reverse("accounts:set_password"))

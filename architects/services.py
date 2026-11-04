@@ -5,6 +5,8 @@ from django.db import transaction
 from accounts.models import User
 from architects.models import ArchitectProfile, Studio
 from wallet.models import Wallet
+from architects.navigation import dashboard_url
+from notifications.services import notify
 from wallet.services import grant_signup_bonus
 
 
@@ -13,17 +15,17 @@ def split_full_name(full_name: str) -> tuple[str, str]:
     return first, last.strip()
 
 
-def _account_for(phone: str, full_name: str, user: User | None) -> User:
+def _account_for(phone: str, full_name: str, user: User | None, password: str) -> User:
     """The login account behind a registration.
 
-    A brand-new person gets a passwordless account (they sign in with their
-    phone number). A signed-in architect who never finished registering keeps
-    their existing account and just gets a profile attached.
+    A brand-new person gets an account with the password they chose (architects sign in
+    with phone + password). A signed-in architect who never finished registering keeps
+    their existing account, gets the password set and a profile attached.
     """
     first_name, last_name = split_full_name(full_name)
     if user is None:
         user = User(phone=phone, role=User.Role.ARCHITECT)
-        user.set_unusable_password()
+    user.set_password(password)
     user.first_name, user.last_name = first_name, last_name
     user.save()
     return user
@@ -36,13 +38,12 @@ def _account_for(phone: str, full_name: str, user: User | None) -> User:
 
 @transaction.atomic
 def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["responsible_person"], user)
+    account = _account_for(data["phone"], data["responsible_person"], user, data["password"])
     profile = ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.STUDIO_OWNER,
         approval_status=ArchitectProfile.ApprovalStatus.PENDING,   # switched to approved just below
         portfolio_exempt=False,
-        birth_year=data["responsible_birth_date"].year,
         telegram_username=data["telegram_username"],
         claimed_projects_count=data["projects_count"],
     )
@@ -51,9 +52,7 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
         name=data["studio_name"],
         founded_on=date(data["founded_year"], 1, 1),
         responsible_person=data["responsible_person"],
-        responsible_birth_date=data["responsible_birth_date"],
         phone=data["phone"],
-        staff_count=data["staff_count"],
         projects_count=data["projects_count"],
     )
     set_approval(profile, ArchitectProfile.ApprovalStatus.APPROVED)
@@ -62,8 +61,8 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
 
 @transaction.atomic
 def register_employee(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["full_name"], user)
-    return ArchitectProfile.objects.create(
+    account = _account_for(data["phone"], data["full_name"], user, data["password"])
+    employee = ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.STUDIO_EMPLOYEE,
         approval_status=ArchitectProfile.ApprovalStatus.PENDING,
@@ -72,11 +71,16 @@ def register_employee(data: dict, user: User | None = None) -> ArchitectProfile:
         birth_year=data["birth_year"],
         telegram_username=data["telegram_username"],
     )
+    notify(
+        data["studio"].owner, f"{account.first_name} {account.last_name} studiyangizga qo'shilmoqchi. Tasdiqlang yoki rad eting.",
+        dashboard_url(data["studio"].owner, "employees"),
+    )
+    return employee
 
 
 @transaction.atomic
 def register_freelancer(data: dict, user: User | None = None) -> ArchitectProfile:
-    account = _account_for(data["phone"], data["full_name"], user)
+    account = _account_for(data["phone"], data["full_name"], user, data["password"])
     profile = ArchitectProfile.objects.create(
         user=account,
         kind=ArchitectProfile.Kind.FREELANCER,
@@ -104,6 +108,11 @@ def decide_verification(profile: ArchitectProfile, status: str, note: str = "") 
         profile.portfolio_verified_at = timezone.now()
         update_fields.append("portfolio_verified_at")
     profile.save(update_fields=update_fields)
+    if status == ArchitectProfile.VerificationStatus.VERIFIED:
+        notify(profile, "Portfolioingiz tasdiqlandi! Endi e'lonlarda qatnasha olasiz.", dashboard_url(profile, "market"))
+    elif status == ArchitectProfile.VerificationStatus.REJECTED:
+        reason = f" Sabab: {note}" if note else ""
+        notify(profile, f"Portfolioingiz tasdiqlanmadi.{reason}", dashboard_url(profile, "room"))
 
 
 @transaction.atomic
@@ -122,3 +131,9 @@ def set_approval(profile: ArchitectProfile, status: str) -> None:
     ):
         wallet, _ = Wallet.objects.get_or_create(architect=profile)
         grant_signup_bonus(wallet)
+    if profile.kind == ArchitectProfile.Kind.STUDIO_EMPLOYEE and profile.studio_id:
+        studio_name = profile.studio.name
+        if status == ArchitectProfile.ApprovalStatus.APPROVED:
+            notify(profile, f"{studio_name} studiyasi sizni qabul qildi. Buyurtmalarni ko'rishingiz mumkin.", dashboard_url(profile, "open"))
+        elif status == ArchitectProfile.ApprovalStatus.REJECTED:
+            notify(profile, f"{studio_name} studiyasi arizangizni rad etdi.", "")

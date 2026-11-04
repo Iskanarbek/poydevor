@@ -8,6 +8,10 @@
     {% else %}
       <a href="{% url 'dashboard' %}" class="{{ link }}">Boshqaruv paneli</a>
     {% endif %}
+    <a href="{% url 'notifications:list' %}" class="relative inline-flex items-center gap-1.5 {{ link }}" aria-label="Bildirishnomalar">
+      <svg class="icon"><use href="#i-bell"/></svg>{% if mobile %}Bildirishnomalar{% endif %}
+      {% if unread_notifications_count %}<span class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-clay-600 px-1.5 text-[11px] font-semibold leading-5 text-white">{{ unread_notifications_count }}</span>{% endif %}
+    </a>
     {% if user.is_staff %}
       <a href="{% url 'staff_home' %}" class="{{ link }}">Admin panel</a>
     {% endif %}

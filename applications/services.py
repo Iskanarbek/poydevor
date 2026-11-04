@@ -42,6 +42,12 @@ def delete_application(application: Application, auto: bool = False) -> int:
                 wallet, _ = Wallet.objects.get_or_create(architect=offer.architect)
                 # Offers made before the amount was recorded cost the standard fee.
                 refund_offer_coins(wallet, paid)
+                from architects.navigation import dashboard_url
+                from notifications.services import notify
+                notify(
+                    offer.architect, f"Mijoz e'lonni o'chirdi ({application.location}). {paid} tanga hisobingizga qaytarildi.",
+                    dashboard_url(offer.architect, "store"),
+                )
                 refunded += 1
             offer.status = Offer.Status.REJECTED
             offer.decided_at = now

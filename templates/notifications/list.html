@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Bildirishnomalar — Poydevor{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6 flex items-center justify-between gap-3">
+    <h1 class="font-serif text-2xl font-semibold text-charcoal-900">Bildirishnomalar</h1>
+    {% if unread_notifications_count %}
+      <form method="post" action="{% url 'notifications:mark_all_read' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-ghost !py-2 !text-sm">Hammasini o'qilgan deb belgilash</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div class="space-y-3">
+    {% for n in notifications %}
+      <a href="{% url 'notifications:open' n.pk %}" class="lift flex items-start gap-3 rounded-2xl border p-4 shadow-sm transition {% if n.is_read %}border-charcoal-100 bg-white{% else %}border-clay-200 bg-clay-50{% endif %}">
+        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full {% if n.is_read %}bg-cream-100 text-charcoal-400{% else %}bg-clay-600 text-white{% endif %}"><svg class="icon"><use href="#i-bell"/></svg></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm {% if n.is_read %}text-charcoal-600{% else %}font-medium text-charcoal-900{% endif %}">{{ n.text }}</span>
+          <span class="mt-1 block text-xs text-charcoal-400">{{ n.created_at|date:"d.m.Y H:i" }}</span>
+        </span>
+        {% if not n.is_read %}<span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-clay-600"></span>{% endif %}
+      </a>
+    {% empty %}
+      <div class="rounded-2xl border border-charcoal-100 bg-white p-10 text-center text-sm text-charcoal-500">Hozircha bildirishnomalar yo'q.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

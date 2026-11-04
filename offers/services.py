@@ -1,9 +1,15 @@
+from datetime import date
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from django.urls import reverse
+
 from applications.models import Application
 from architects.models import ArchitectProfile
+from architects.navigation import dashboard_url
+from notifications.services import notify
 from offers.models import Offer, StudioAssignment
 from wallet.models import Wallet
 from wallet.services import spend_coins
@@ -11,6 +17,16 @@ from wallet.services import spend_coins
 OFFER_COST = settings.OFFER_COST_COINS
 INVITE_ACCEPT_COST = settings.INVITE_ACCEPT_COST_COINS
 MAX_ACTIVE_OFFERS_PER_APPLICATION = 3
+
+
+def _day(value) -> str:
+    """A deadline as dd.mm.yyyy (it may arrive as a date or as the raw ISO text)."""
+    if isinstance(value, str):
+        try:
+            value = date.fromisoformat(value)
+        except ValueError:
+            return value
+    return value.strftime("%d.%m.%Y")
 
 
 class MaxArchitectsReachedError(Exception):
@@ -47,9 +63,21 @@ def send_offer(application: Application, architect, source: str) -> Offer:
         spend_coins(architect.wallet, OFFER_COST)
         coins_spent = OFFER_COST
 
-    return Offer.objects.create(
+    offer = Offer.objects.create(
         application=application, architect=architect, source=source, coins_spent=coins_spent,
     )
+    place = application.location
+    if source == Offer.Source.USER_INVITED:
+        notify(
+            architect, f"Mijoz sizga loyiha yubordi: {place}. Qabul qilish yoki rad etishingiz mumkin.",
+            dashboard_url(architect, "market"),
+        )
+    else:
+        notify(
+            application.owner, f"{architect.display_name} e'loningizga ariza yubordi: {place}.",
+            reverse("applications:detail", args=[application.pk]),
+        )
+    return offer
 
 
 @transaction.atomic
@@ -64,14 +92,43 @@ def accept_offer(offer: Offer) -> None:
     offer.decided_at = timezone.now()
     offer.save(update_fields=["status", "decided_at"])
 
+    others = list(
+        offer.application.offers.filter(status=Offer.Status.PENDING).exclude(pk=offer.pk)
+        .select_related("architect__user")
+    )
     offer.application.offers.filter(status=Offer.Status.PENDING).exclude(pk=offer.pk).update(
         status=Offer.Status.REJECTED, decided_at=timezone.now(),
     )
+    place = offer.application.location
+    for other in others:
+        notify(
+            other.architect, f"Mijoz boshqa arxitektorni tanladi: {place}.", dashboard_url(other.architect, "market"),
+        )
+    if offer.source == Offer.Source.ARCHITECT_APPLIED:      # the client accepted the architect's application
+        notify(
+            offer.architect, f"Arizangiz qabul qilindi: {place}. Mijoz bilan bog'lanishingiz mumkin.",
+            dashboard_url(offer.architect, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market"),
+        )
+    else:                                                    # the architect accepted the client's invitation
+        notify(
+            offer.application.owner, f"{offer.architect.display_name} taklifingizni qabul qildi: {place}.",
+            reverse("applications:detail", args=[offer.application_id]),
+        )
 
     # A studio's win is a job for its employees: open it up so any of them can
     # claim it, or so the owner can hand it to someone specific.
     if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER:
-        StudioAssignment.objects.get_or_create(offer=offer)
+        _, created = StudioAssignment.objects.get_or_create(offer=offer)
+        if created:
+            staff = ArchitectProfile.objects.filter(
+                kind=ArchitectProfile.Kind.STUDIO_EMPLOYEE, studio=offer.architect.studio_owned,
+                approval_status=ArchitectProfile.ApprovalStatus.APPROVED,
+            )
+            for employee in staff:
+                notify(
+                    employee, f"Studiyaga yangi buyurtma keldi: {place}. Ochiq buyurtmalardan olishingiz mumkin.",
+                    dashboard_url(employee, "open"),
+                )
 
 
 @transaction.atomic
@@ -90,6 +147,14 @@ def reject_offer(offer: Offer) -> None:
     offer.status = Offer.Status.REJECTED
     offer.decided_at = timezone.now()
     offer.save(update_fields=["status", "decided_at"])
+    place = offer.application.location
+    if offer.source == Offer.Source.ARCHITECT_APPLIED:      # the client turned the architect down
+        notify(offer.architect, f"Arizangiz rad etildi: {place}.", dashboard_url(offer.architect, "market"))
+    else:                                                    # the architect declined the client's invitation
+        notify(
+            offer.application.owner, f"{offer.architect.display_name} taklifingizni rad etdi: {place}.",
+            reverse("applications:detail", args=[offer.application_id]),
+        )
 
 
 @transaction.atomic
@@ -104,6 +169,10 @@ def complete_offer(offer: Offer) -> None:
     architect = offer.architect
     architect.completed_projects_count += 1
     architect.save(update_fields=["completed_projects_count"])
+    notify(
+        architect, f"Mijoz loyihani yakunlandi deb belgiladi: {offer.application.location}.",
+        dashboard_url(architect, "finished"),
+    )
 
 
 # --- studio ↔ employee order assignment -------------------------------------
@@ -128,6 +197,9 @@ def assign_worker(assignment: StudioAssignment, worker: ArchitectProfile, deadli
         assignment.deadline = deadline
         fields.append("deadline")
     assignment.save(update_fields=fields)
+    place = assignment.offer.application.location
+    when = f" Muddat: {_day(assignment.deadline)}." if assignment.deadline else ""
+    notify(worker, f"Sizga buyurtma biriktirildi: {place}.{when}", dashboard_url(worker, "tasks"))
 
 
 @transaction.atomic
@@ -140,12 +212,22 @@ def claim_assignment(assignment: StudioAssignment, worker: ArchitectProfile) -> 
     )
     if not updated:
         raise AssignmentAlreadyTakenError("Bu buyurtma allaqachon biriktirilgan")
+    notify(
+        assignment.offer.architect, f"{worker} buyurtmani oldi: {assignment.offer.application.location}.",
+        dashboard_url(assignment.offer.architect, "orders"),
+    )
 
 
 @transaction.atomic
 def set_deadline(assignment: StudioAssignment, deadline) -> None:
     assignment.deadline = deadline
     assignment.save(update_fields=["deadline"])
+    if assignment.worker and deadline:
+        notify(
+            assignment.worker,
+            f"Buyurtma muddati belgilandi: {assignment.offer.application.location} — {_day(deadline)}.",
+            dashboard_url(assignment.worker, "tasks"),
+        )
 
 
 @transaction.atomic
@@ -153,3 +235,8 @@ def mark_assignment_done(assignment: StudioAssignment) -> None:
     assignment.status = StudioAssignment.Status.DONE
     assignment.done_at = timezone.now()
     assignment.save(update_fields=["status", "done_at"])
+    if assignment.worker:
+        notify(
+            assignment.offer.architect, f"{assignment.worker} buyurtmani bajardi: {assignment.offer.application.location}.",
+            dashboard_url(assignment.offer.architect, "orders"),
+        )

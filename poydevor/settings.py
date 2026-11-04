@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 
 import django
@@ -95,6 +96,7 @@ INSTALLED_APPS = [
     'wallet',
     'offers',
     'reviews',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -109,6 +111,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'poydevor.middleware.PasswordRequiredMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -128,6 +131,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'poydevor.context_processors.architect_wallet',
+                'poydevor.context_processors.unread_notifications',
             ],
         },
     },
@@ -237,6 +241,11 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'accounts.backends.PhoneBackend',
 ]
+
+# Architects from before passwords existed are sent to "create your password" after logging in.
+# The test suite builds architects without passwords and switches this off (tests that cover it
+# turn it back on).
+REQUIRE_ARCHITECT_PASSWORD = not (len(sys.argv) > 1 and sys.argv[1] == "test")
 
 # Flash messages live in the session, so they vanish on logout and can never be shown to the
 # next person who signs in on the same browser (the default also uses a cookie).

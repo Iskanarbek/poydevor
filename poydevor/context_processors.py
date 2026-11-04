@@ -25,3 +25,12 @@ def architect_wallet(request):
     if profile is None or not hasattr(profile, "wallet"):
         return {}
     return {"architect_wallet": profile.wallet}
+
+
+def unread_notifications(request):
+    """The number on the bell in the top bar."""
+    user = getattr(request, "user", None)
+    if user is None or not user.is_authenticated:
+        return {}
+    from notifications.models import Notification
+    return {"unread_notifications_count": Notification.objects.filter(user=user, is_read=False).count()}
