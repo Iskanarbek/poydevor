@@ -347,7 +347,7 @@ class DashboardRoutingTests(TestCase):
         user, profile = self.make(Kind.STUDIO_OWNER)
         set_approval(profile, Approval.APPROVED)
         self.client.force_login(user)
-        for tab in ("employees", "finished", "ongoing", "market", "room", "store"):
+        for tab in ("employees", "finished", "orders", "market", "room", "store"):
             with self.subTest(tab=tab):
                 response = self.client.get(reverse("architects:studio_dashboard"), {"tab": tab})
                 self.assertEqual(response.status_code, 200)

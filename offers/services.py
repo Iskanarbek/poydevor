@@ -158,7 +158,19 @@ def reject_offer(offer: Offer) -> None:
 
 
 @transaction.atomic
-def complete_offer(offer: Offer) -> None:
+def finish_by_architect(offer: Offer) -> None:
+    """The architect (or studio) presses "Yakunlash": the job is over and moves to finished
+    projects. A studio's assignment is closed too."""
+    assignment = getattr(offer, "studio_assignment", None)
+    if assignment is not None and assignment.status != StudioAssignment.Status.DONE:
+        assignment.status = StudioAssignment.Status.DONE
+        assignment.done_at = timezone.now()
+        assignment.save(update_fields=["status", "done_at"])
+    complete_offer(offer, by_architect=True)
+
+
+@transaction.atomic
+def complete_offer(offer: Offer, by_architect: bool = False) -> None:
     offer.status = Offer.Status.COMPLETED
     offer.completed_at = timezone.now()
     offer.save(update_fields=["status", "completed_at"])
@@ -169,10 +181,16 @@ def complete_offer(offer: Offer) -> None:
     architect = offer.architect
     architect.completed_projects_count += 1
     architect.save(update_fields=["completed_projects_count"])
-    notify(
-        architect, f"Mijoz loyihani yakunlandi deb belgiladi: {offer.application.location}.",
-        dashboard_url(architect, "finished"),
-    )
+    if by_architect:
+        notify(
+            offer.application.owner, f"{architect.display_name} loyihani yakunladi: {offer.application.location}.",
+            reverse("applications:detail", args=[offer.application_id]),
+        )
+    else:
+        notify(
+            architect, f"Mijoz loyihani yakunlandi deb belgiladi: {offer.application.location}.",
+            dashboard_url(architect, "finished"),
+        )
 
 
 # --- studio ↔ employee order assignment -------------------------------------
@@ -189,6 +207,7 @@ def assign_worker(assignment: StudioAssignment, worker: ArchitectProfile, deadli
     """The studio owner hands this order to a specific employee (whether it was
     open or already assigned to someone else)."""
     _check_same_studio(assignment, worker)
+    previous = assignment.worker
     assignment.worker = worker
     assignment.status = StudioAssignment.Status.ASSIGNED
     assignment.assigned_at = timezone.now()
@@ -200,6 +219,9 @@ def assign_worker(assignment: StudioAssignment, worker: ArchitectProfile, deadli
     place = assignment.offer.application.location
     when = f" Muddat: {_day(assignment.deadline)}." if assignment.deadline else ""
     notify(worker, f"Sizga buyurtma biriktirildi: {place}.{when}", dashboard_url(worker, "tasks"))
+    if previous is not None and previous.pk != worker.pk:
+        # The job leaves the previous worker's list; they are told why.
+        notify(previous, f"Buyurtma boshqa xodimga berildi: {place}.", dashboard_url(previous, "tasks"))
 
 
 @transaction.atomic

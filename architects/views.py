@@ -45,9 +45,8 @@ Approval = ArchitectProfile.ApprovalStatus
 
 STUDIO_TABS = [
     ("employees", "Xodimlar ro'yxati"),
-    ("orders", "Qabul qilingan buyurtmalar"),
+    ("orders", "Buyurtmalar"),
     ("finished", "Tugatilgan ishlar"),
-    ("ongoing", "Davom etayotgan ishlar"),
     ("market", "E'lonlar bozori"),
     ("room", "Mening xonam"),
     ("store", "Store"),
@@ -299,8 +298,6 @@ def _workspace(request, profile, tabs, default_tab, title):
         context["progress"] = profile.portfolio_progress(context["projects"])
     elif tab == "finished":
         context["offers"] = _offers(profile, Offer.Status.COMPLETED)
-    elif tab == "ongoing":
-        context["offers"] = _offers(profile, Offer.Status.ACCEPTED)
     elif tab == "employees":
         studio = profile.studio_owned
         context["studio"] = studio
@@ -311,12 +308,24 @@ def _workspace(request, profile, tabs, default_tab, title):
         employees = list(studio.employees.filter(approval_status=Approval.APPROVED).select_related("user"))
         context["studio"] = studio
         context["employees"] = employees
-        context["assignments"] = list(
-            StudioAssignment.objects.filter(offer__architect=profile)
-            .select_related("offer__application", "offer__application__owner", "worker__user")
+        # One table for everything the studio applied for or was invited to, with its state.
+        offers = list(
+            profile.offers.exclude(status=Offer.Status.COMPLETED)
+            .select_related("application", "application__owner")
             .order_by("-created_at")
         )
-        context["worker_board"] = _worker_board(employees, context["assignments"])
+        for offer in offers:
+            if offer.status == Offer.Status.ACCEPTED:
+                StudioAssignment.objects.get_or_create(offer=offer)      # older accepted offers may lack one
+        assignments = {
+            a.offer_id: a for a in StudioAssignment.objects.filter(offer__in=offers).select_related("worker__user")
+        }
+        rank = {Offer.Status.ACCEPTED: 0, Offer.Status.PENDING: 1, Offer.Status.REJECTED: 2}
+        for offer in offers:
+            offer.assignment = assignments.get(offer.pk)
+        offers.sort(key=lambda o: rank.get(o.status, 3))
+        context["order_rows"] = offers
+        context["worker_board"] = _worker_board(employees, [a for a in assignments.values()])
     return render(request, "architects/workspace.html", context)
 
 

@@ -9,4 +9,5 @@ urlpatterns = [
     path("ariza/<int:offer_pk>/javob/", views.respond, name="respond"),
     path("ariza/<int:offer_pk>/foydalanuvchi-javob/", views.user_respond, name="user_respond"),
     path("ariza/<int:offer_pk>/yakunlash/", views.mark_complete, name="complete"),
+    path("ariza/<int:offer_pk>/arxitektor-yakunlash/", views.architect_finish, name="architect_finish"),
 ]

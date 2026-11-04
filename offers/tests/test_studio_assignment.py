@@ -3,6 +3,7 @@ from django.test import TestCase
 from accounts.models import User
 from applications.models import Application
 from architects.models import ArchitectProfile, Studio
+from notifications.models import Notification
 from offers.models import Offer, StudioAssignment
 from offers.services import (
     AssignmentAlreadyTakenError,
@@ -251,3 +252,93 @@ class EmployeePanelTests(TestCase):
         self.assignments[0].refresh_from_db()
         self.assertLess(self.assignments[0].days_left, 0)
         self.assertIsNone(self.assignments[1].days_left)
+
+
+class StudioOrdersTableTests(TestCase):
+    """One table for everything the studio applied for / was invited to, with assigning,
+    reassigning, deadlines and the "Yakunlash" button."""
+
+    def setUp(self):
+        self.client_user = User.objects.create_user(phone="+998901111111", password="x", first_name="Aziz", last_name="K", role=User.Role.USER)
+        self.owner = make_studio()
+        self.worker1 = make_employee(self.owner, "Worker1")
+        self.worker2 = make_employee(self.owner, "Worker2")
+        for w in (self.worker1, self.worker2):
+            w.approval_status = ArchitectProfile.ApprovalStatus.APPROVED
+            w.save()
+        self.client.force_login(self.owner.user)
+
+    def order(self, place):
+        return Application.objects.create(owner=self.client_user, rooms_count=3, location=place)
+
+    def table(self):
+        return self.client.get("/studio/dashboard/?tab=orders")
+
+    def test_there_is_no_separate_ongoing_tab_and_no_stray_template_text(self):
+        page = self.table()
+        self.assertNotContains(page, "Davom etayotgan ishlar")
+        self.assertNotContains(page, "{#")
+        self.assertNotContains(page, "monitoring table")
+
+    def test_every_state_shows_in_the_one_table(self):
+        waiting = send_offer(self.order("Samarqand"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        invited = send_offer(self.order("Buxoro"), self.owner, source=Offer.Source.USER_INVITED)
+        accepted = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(accepted)
+        page = self.table()
+        for text in ("Samarqand", "Buxoro", "Toshkent", "Mijoz javobi kutilmoqda", "Javobingiz kutilmoqda", "xodim tanlang"):
+            self.assertContains(page, text)
+        self.assertEqual(len(page.context["order_rows"]), 3)
+
+    def test_assign_set_deadline_reassign_and_the_old_worker_loses_the_job(self):
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assignment = StudioAssignment.objects.get(offer=offer)
+        url = f"/studio/buyurtmalar/{assignment.pk}/biriktirish/"
+        self.client.post(url, {"worker": self.worker1.pk, "deadline": "2030-06-01"})
+        self.client.force_login(self.worker1.user)
+        self.assertContains(self.client.get("/employee/workspace/?tab=tasks"), "Toshkent")
+        # the owner changes the deadline, then hands the job to the other worker
+        self.client.force_login(self.owner.user)
+        self.client.post(url, {"deadline": "2030-07-01"})
+        assignment.refresh_from_db()
+        self.assertEqual((str(assignment.deadline), assignment.worker), ("2030-07-01", self.worker1))
+        self.client.post(url, {"worker": self.worker2.pk, "deadline": "2030-07-15"})
+        self.client.force_login(self.worker1.user)
+        self.assertNotContains(self.client.get("/employee/workspace/?tab=tasks"), "Toshkent")    # it disappeared
+        self.assertTrue(Notification.objects.filter(user=self.worker1.user, text__contains="boshqa xodimga").exists())
+        self.client.force_login(self.worker2.user)
+        self.assertContains(self.client.get("/employee/workspace/?tab=tasks"), "Toshkent")       # the new one sees it
+
+    def test_finish_button_moves_the_project_to_finished_and_tells_the_client(self):
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        assignment = StudioAssignment.objects.get(offer=offer)
+        self.client.post(f"/studio/buyurtmalar/{assignment.pk}/biriktirish/", {"worker": self.worker1.pk})
+        response = self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/")
+        self.assertRedirects(response, "/studio/dashboard/?tab=finished", fetch_redirect_response=False)
+        offer.refresh_from_db()
+        assignment.refresh_from_db()
+        self.assertEqual((offer.status, assignment.status), (Offer.Status.COMPLETED, StudioAssignment.Status.DONE))
+        self.assertContains(self.client.get("/studio/dashboard/?tab=finished"), "Toshkent")
+        self.assertNotContains(self.client.get("/studio/dashboard/?tab=orders"), "Toshkent")     # no longer in the working table
+        self.assertTrue(Notification.objects.filter(user=self.client_user, text__contains="yakunladi").exists())
+
+    def test_only_the_owner_of_an_accepted_offer_can_finish_it(self):
+        offer = send_offer(self.order("Toshkent"), self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        self.assertEqual(self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/").status_code, 404)   # not accepted yet
+        accept_offer(offer)
+        self.client.force_login(self.client_user)
+        self.assertEqual(self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/").status_code, 404)   # someone else
+
+    def test_a_freelancer_can_finish_from_their_table_too(self):
+        from offers.models import Offer as O
+        free_user = User.objects.create_user(phone="+998909998877", password="x", first_name="Solo", last_name="F", role=User.Role.ARCHITECT)
+        free = ArchitectProfile.objects.create(user=free_user)
+        Wallet.objects.create(architect=free, balance=5)
+        offer = send_offer(self.order("Nukus"), free, source=O.Source.ARCHITECT_APPLIED)
+        accept_offer(offer)
+        self.client.force_login(free_user)
+        self.assertContains(self.client.get("/freelancer/dashboard/?tab=market"), "Yakunlash")
+        self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/")
+        self.assertContains(self.client.get("/freelancer/dashboard/?tab=finished"), "Nukus")

@@ -17,6 +17,7 @@ from offers.services import (
     accept_invitation,
     accept_offer,
     complete_offer,
+    finish_by_architect,
     reject_offer,
     send_offer,
 )
@@ -154,3 +155,15 @@ def mark_complete(request, offer_pk):
     if request.method == "POST":
         complete_offer(offer)
     return redirect("applications:detail", pk=offer.application.pk)
+
+
+@login_required
+def architect_finish(request, offer_pk):
+    """"Yakunlash" in the architect's (or studio's) table: the job is finished and moves to
+    the finished projects."""
+    offer = get_object_or_404(Offer, pk=offer_pk, architect__user=request.user, status=Offer.Status.ACCEPTED)
+    if request.method == "POST":
+        finish_by_architect(offer)
+        messages.success(request, "Loyiha yakunlandi va tugatilgan ishlarga o'tdi.")
+        return redirect(dashboard_url(offer.architect, "finished"))
+    return redirect(dashboard_url(offer.architect, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market"))

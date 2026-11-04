@@ -3,7 +3,7 @@
     <svg class="icon mt-0.5"><use href="#i-coin"/></svg>
     <span>
       Loyihada qatnashish uchun {{ offer_cost }} tanga kerak, sizda {{ wallet.balance }} tanga bor.
-      Tanga to'lov tizimi ulangandan keyin <a href="?tab=store" class="font-medium underline">Store</a> orqali sotib olinadi.
+      Tangani <a href="?tab=store" class="font-medium underline">Store</a> orqali sotib olishingiz mumkin.
     </span>
   </div>
 {% endif %}
@@ -61,6 +61,14 @@
             <svg class="icon text-clay-600"><use href="#i-phone"/></svg>{{ offer.application.owner.phone }}
           </a>
         </div>
+      {% endif %}
+
+      {% if offer.status == 'accepted' %}
+        <form method="post" action="{% url 'offers:architect_finish' offer.pk %}" class="mb-1">
+          {% csrf_token %}
+          <button type="submit" class="text-sm bg-green-600 text-white font-medium rounded-lg px-4 py-2 hover:bg-green-700 transition">Yakunlash</button>
+          <span class="ml-2 text-xs text-charcoal-500">Ish tugagach bosing: loyiha «Tugallangan loyihalar»ga o'tadi.</span>
+        </form>
       {% endif %}
 
       {% if offer.status == 'pending' and offer.source == 'user_invited' %}
