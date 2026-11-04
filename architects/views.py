@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.views import login_without_password
 from applications.models import Application
-from architects.gallery import gallery_context
+from architects.gallery import filter_open_orders, gallery_context
 from notifications.services import workspace_notices
 from architects.forms import (
     ArchitectProfileForm,
@@ -234,10 +234,11 @@ def _offers(profile, *statuses):
     )
 
 
-def _market_context(profile):
+def _market_context(profile, request):
     open_applications = Application.objects.filter(status=Application.Status.OPEN).select_related("interior_style").annotate(
         pending_offers_count=Count("offers", filter=Q(offers__status=Offer.Status.PENDING)),
     )
+    open_applications, filter_context = filter_open_orders(request, open_applications)
     # Broader than the DB's partial unique constraint (which only blocks a second
     # PENDING offer): an accepted offer is included here too so the "already
     # applied" UI state also covers applications this architect has already won.
@@ -249,6 +250,7 @@ def _market_context(profile):
         ).values_list("application_id", flat=True)
     )
     return {
+        **filter_context,
         "open_applications": open_applications,
         "already_applied_application_ids": already_applied_application_ids,
         "max_active_offers": MAX_ACTIVE_OFFERS_PER_APPLICATION,
@@ -291,7 +293,7 @@ def _workspace(request, profile, tabs, default_tab, title):
     wallet = context["wallet"]
     context["projects_left"] = wallet.balance // settings.OFFER_COST_COINS if wallet else 0
     if tab == "market":
-        context.update(_market_context(profile))
+        context.update(_market_context(profile, request))
         if context["portfolio_locked"]:
             context["open_applications"] = []
     elif tab == "store":

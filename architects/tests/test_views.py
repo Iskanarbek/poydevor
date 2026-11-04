@@ -637,6 +637,55 @@ class GalleryFilterTests(TestCase):
     def test_chips_keep_the_other_filters_and_can_be_cleared(self):
         response = self.client.get(reverse("architects:project_gallery"), {"service": "interior", "price": "0-500"})
         self.assertContains(response, "5000 va undan ko&#x27;p")
-        self.assertContains(response, "Filtrlarni tozalash")
+        self.assertContains(response, "Tozalash")
         urls = [o["url"] for g in response.context["filter_groups"] for o in g["options"]]
         self.assertTrue(any("service=interior" in u and "price=5000-up" in u for u in urls))
+
+
+    def test_the_filter_box_is_closed_until_a_filter_is_chosen(self):
+        closed = self.client.get(reverse("architects:project_gallery")).content.decode()
+        self.assertIn("Filtr", closed)
+        self.assertNotIn("<details class=\"group mb-6 mt-5 rounded-2xl border border-charcoal-100 bg-white shadow-sm\" open", closed)
+        opened = self.client.get(reverse("architects:project_gallery"), {"service": "interior"}).content.decode()
+        self.assertIn("shadow-sm\" open", opened)
+
+
+class MarketFilterTests(TestCase):
+    """The same filters in the architects' "E'lonlar bozori"."""
+
+    def setUp(self):
+        from applications.models import Application
+        user = User.objects.create_user(phone="+998901230000", first_name="Nodir", last_name="K", role=User.Role.ARCHITECT)
+        self.architect = ArchitectProfile.objects.create(user=user, portfolio_exempt=True)
+        client = User.objects.create_user(phone="+998901230001", first_name="Aziz", last_name="K", role=User.Role.USER)
+        self.loft = Style.objects.create(name="Loft")
+
+        def order(place, service, obj, low, high, style=None):
+            return Application.objects.create(
+                owner=client, location=place, rooms_count=2, service_type=service, object_type=obj,
+                estimate_min=low, estimate_max=high, interior_style=style,
+            )
+        order("Toshkent", "interior", "apartment", 400, 700, self.loft)
+        order("Samarqand", "architecture", "yard", 1500, 2600)
+        order("Buxoro", "interior", "restaurant", 6000, 9000)
+        order("Eski", "interior", "office", None, None)
+        self.client.force_login(user)
+
+    def places(self, **params):
+        page = self.client.get("/freelancer/dashboard/", {"tab": "market", **params})
+        return {a.location for a in page.context["open_applications"]}
+
+    def test_filters(self):
+        self.assertEqual(self.places(), {"Toshkent", "Samarqand", "Buxoro", "Eski"})
+        self.assertEqual(self.places(service="architecture"), {"Samarqand"})
+        self.assertEqual(self.places(object="restaurant"), {"Buxoro"})
+        self.assertEqual(self.places(style=self.loft.pk), {"Toshkent"})
+        self.assertEqual(self.places(price="1000-2000"), {"Samarqand"})        # its $1500–2600 overlaps $1000–2000
+        self.assertEqual(self.places(price="5000-up"), {"Buxoro"})              # "$5000 va undan ko'p"
+        self.assertEqual(self.places(service="interior", price="0-500"), {"Toshkent"})
+
+    def test_the_panel_is_there_closed_and_keeps_the_tab(self):
+        page = self.client.get("/freelancer/dashboard/", {"tab": "market"})
+        self.assertContains(page, "Filtr")
+        urls = [o["url"] for g in page.context["filter_groups"] for o in g["options"]]
+        self.assertTrue(all("tab=market" in u for u in urls))

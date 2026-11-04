@@ -14,6 +14,7 @@
     <p class="text-sm text-charcoal-500">Loyihani ochib, batafsil ko'ring — qatnashish {{ offer_cost }} tanga turadi.</p>
   </div>
 </div>
+{% include "architects/_filter_panel.html" %}
 <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-3 mb-14">
   {% if portfolio_locked %}
     <div class="md:col-span-2 lg:col-span-3 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50 px-6 py-10 text-center text-amber-900">
@@ -30,6 +31,6 @@
       {% include "architects/_application_card.html" with applied=False %}
     {% endif %}
   {% empty %}
-    <p class="text-sm text-charcoal-500 md:col-span-2 lg:col-span-3">Hozircha ochiq e'lonlar yo'q.</p>
+    <p class="text-sm text-charcoal-500 md:col-span-2 lg:col-span-3">{% if filtered %}Bu filtrlar bo'yicha e'lon topilmadi. <a href="{{ clear_url }}" class="text-clay-700 hover:underline">Filtrlarni tozalash</a>{% else %}Hozircha ochiq e'lonlar yo'q.{% endif %}</p>
   {% endfor %}
 </div>
