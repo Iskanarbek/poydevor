@@ -23,6 +23,10 @@ from poydevor import staff_panel
 from poydevor.views import dashboard_redirect, home, internal_expire_orders, internal_setup
 from wallet.admin_views import revenue_dashboard
 
+handler404 = 'poydevor.views.not_found'
+handler500 = 'poydevor.views.server_error'
+handler403 = 'poydevor.views.permission_denied'
+
 urlpatterns = [
     # Our own staff panel — separate from Django's built-in /admin/ (kept
     # below for low-level data fixes, but staff use this one day to day).

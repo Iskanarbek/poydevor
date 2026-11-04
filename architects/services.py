@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.db import transaction
 
 from accounts.models import User
@@ -47,8 +49,7 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
     Studio.objects.create(
         owner=profile,
         name=data["studio_name"],
-        founded_on=data["founded_on"],
-        founders=data["founders"],
+        founded_on=date(data["founded_year"], 1, 1),
         responsible_person=data["responsible_person"],
         responsible_birth_date=data["responsible_birth_date"],
         phone=data["phone"],

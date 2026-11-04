@@ -30,7 +30,7 @@
       {% if form.description.errors %}<p class="mt-1 text-sm text-red-600">{{ form.description.errors|striptags }}</p>{% endif %}
     </div>
     <div>
-      <label for="{{ form.attachment.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.attachment.label }} <span class="text-clay-600">*</span></label>
+      <label for="{{ form.attachment.id_for_label }}" class="mb-1 block text-sm font-medium text-charcoal-700">{{ form.attachment.label }}</label>
       {% if project.attachment %}
         <p class="mb-2 flex items-center gap-2 text-sm text-charcoal-600"><svg class="icon text-clay-600"><use href="#i-doc"/></svg>Hozirgi fayl: <a href="{{ project.attachment.url }}" target="_blank" rel="noopener" class="text-clay-700 hover:underline">{{ project.attachment_name }}</a></p>
         <p class="mb-1 text-xs text-charcoal-400">Almashtirish uchun yangi fayl tanlang, aks holda eskisi qoladi.</p>

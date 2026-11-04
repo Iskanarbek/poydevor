@@ -34,3 +34,25 @@ class MediaSecurityHeadersMiddleware:
                 response["Content-Disposition"] = "attachment"
                 response["Content-Security-Policy"] = "sandbox; default-src 'none'"
         return response
+
+
+class NoStorePagesMiddleware:
+    """Never let a browser keep a copy of a page.
+
+    Every page here depends on who is signed in. When someone logs out and another person
+    (or the same person with another account) logs in, the browser's Back button, its
+    "restore previous page" and its cache could otherwise show the earlier account's page,
+    or a stale redirect, instead of the page that was asked for. Photos, PDFs and the
+    site's own static files are left cacheable.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        path = request.path
+        if not (path.startswith(settings.MEDIA_URL) or path.startswith(settings.STATIC_URL)):
+            response["Cache-Control"] = "no-store, no-cache, must-revalidate, private, max-age=0"
+            response["Pragma"] = "no-cache"
+        return response

@@ -129,10 +129,15 @@
 
         <div class="border-t border-charcoal-100 px-5 py-4 sm:px-6">
         {% if offer.status == 'accepted' or offer.status == 'completed' %}
-          <div class="text-sm text-charcoal-600 mb-3">
-            <p>Telefon: {{ offer.architect.user.phone }}</p>
+          <p class="mb-2 text-xs font-medium uppercase tracking-wider text-charcoal-400">Arxitektor bilan bog'lanish</p>
+          <div class="mb-4 flex flex-wrap gap-2 text-sm">
+            <a href="tel:{{ offer.architect.user.phone }}" class="inline-flex items-center gap-2 rounded-full border border-charcoal-200 bg-cream-50 px-4 py-2 font-medium text-charcoal-800 transition hover:border-clay-500">
+              <svg class="icon text-clay-600"><use href="#i-phone"/></svg>{{ offer.architect.user.phone }}
+            </a>
             {% if offer.architect.telegram_username %}
-              <p>Telegram: @{{ offer.architect.telegram_username }}</p>
+              <a href="https://t.me/{{ offer.architect.telegram_username }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-full border border-charcoal-200 bg-cream-50 px-4 py-2 font-medium text-charcoal-800 transition hover:border-clay-500">
+                <svg class="icon text-clay-600"><use href="#i-arrow"/></svg>Telegram: @{{ offer.architect.telegram_username }}
+              </a>
             {% endif %}
           </div>
         {% endif %}

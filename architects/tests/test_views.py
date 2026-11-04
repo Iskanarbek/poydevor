@@ -185,11 +185,11 @@ class ProjectCreateViewTests(TestCase):
         self.assertEqual(project.cover, project.images.first())          # the first photo is the cover
         self.assertTrue(project.attachment.name.endswith(".pdf"))
 
-    def test_description_is_optional_but_a_photo_and_a_file_are_not(self):
+    def test_description_and_file_are_optional_but_a_photo_is_not(self):
         self.assertEqual(self.post().status_code, 302)                     # no description
         no_file = self.client.post(self.url, {"title": "Fayzsiz", "style": self.style.id, "images": [self.gif("a.gif")]})
-        self.assertTrue(no_file.context["form"].errors.get("attachment"))
-        self.assertFalse(PortfolioProject.objects.filter(title="Fayzsiz").exists())
+        self.assertEqual(no_file.status_code, 302)
+        self.assertTrue(PortfolioProject.objects.filter(title="Fayzsiz").exists())
         no_photo = self.client.post(self.url, {"title": "Rasmsiz", "style": self.style.id})
         self.assertEqual(no_photo.status_code, 200)
         self.assertTrue(no_photo.context["form"].errors.get("images"))
@@ -197,7 +197,7 @@ class ProjectCreateViewTests(TestCase):
 
     def test_title_and_type_are_required(self):
         response = self.client.post(self.url, {"images": [self.gif("a.gif")]})
-        self.assertEqual(set(response.context["form"].errors), {"title", "style", "attachment"})
+        self.assertEqual(set(response.context["form"].errors), {"title", "style"})
 
     def test_orders_are_assigned_automatically(self):
         self.post("Birinchi loyiha")
@@ -532,10 +532,10 @@ class ProjectEditDeleteTests(TestCase):
         self.assertContains(page, reverse("architects:project_edit", args=[self.project.pk]))
         self.assertContains(page, reverse("architects:project_delete", args=[self.project.pk]))
 
-    def test_a_project_can_be_edited_and_a_file_is_needed_when_it_has_none(self):
+    def test_a_project_can_be_edited_with_or_without_a_file(self):
         url = reverse("architects:project_edit", args=[self.project.pk])
         data = {"title": "Yangi nom", "style": self.style.pk, "description": "Yangi tavsif"}
-        self.assertTrue(self.client.post(url, data).context["form"].errors.get("attachment"))
+        self.assertEqual(self.client.post(url, data).status_code, 302)   # no file is fine
         import shutil, tempfile
         from django.test import override_settings
         media = tempfile.mkdtemp()

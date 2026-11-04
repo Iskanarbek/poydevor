@@ -249,7 +249,7 @@ class Studio(models.Model):
     owner = models.OneToOneField(ArchitectProfile, on_delete=models.CASCADE, related_name="studio_owned")
     name = models.CharField(max_length=150)
     founded_on = models.DateField()
-    founders = models.CharField(max_length=255)
+    founders = models.CharField(max_length=255, blank=True, default="")
     responsible_person = models.CharField(max_length=150)
     responsible_birth_date = models.DateField()
     email = models.EmailField(blank=True)

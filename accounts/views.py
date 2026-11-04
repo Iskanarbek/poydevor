@@ -1,5 +1,6 @@
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.shortcuts import redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from accounts.forms import LoginForm, SignupForm
 
@@ -30,15 +31,27 @@ def signup(request):
     return render(request, "accounts/signup.html", {"form": form})
 
 
+def _next_url(request):
+    """The page a visitor was heading to before being sent to the login screen, if it is
+    one of ours (never an outside address)."""
+    target = request.POST.get("next") or request.GET.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return target
+    return ""
+
+
 def login_view(request):
+    next_url = _next_url(request)
     if request.method == "POST":
         form = LoginForm(request.POST)
         if form.is_valid():
             auth_login(request, form.cleaned_data["user"])
-            return redirect("dashboard")
+            return redirect(next_url or "dashboard")
     else:
+        if request.user.is_authenticated:
+            return redirect(next_url or "dashboard")
         form = LoginForm()
-    return render(request, "accounts/login.html", {"form": form})
+    return render(request, "accounts/login.html", {"form": form, "next": next_url})
 
 
 def logout_view(request):

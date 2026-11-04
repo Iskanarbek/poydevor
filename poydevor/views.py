@@ -63,3 +63,26 @@ def internal_expire_orders(request):
     if not secret or not hmac.compare_digest(given.encode(), secret.encode()):
         return HttpResponseForbidden("Forbidden")
     return HttpResponse(f"removed: {expire_stale_applications()}\n", content_type="text/plain")
+
+
+def csrf_failure(request, reason=""):
+    """A form was sent from a page that was opened before the visitor switched accounts (or
+    after the session ended). Instead of a bare 403, say what happened and offer a way on."""
+    from django.shortcuts import render
+    return render(request, "errors/session_expired.html", status=403)
+
+
+def not_found(request, exception=None):
+    from django.shortcuts import render
+    return render(request, "errors/404.html", status=404)
+
+
+def permission_denied(request, exception=None):
+    from django.shortcuts import render
+    return render(request, "errors/403.html", status=403)
+
+
+def server_error(request):
+    """No database or context here (something is already broken), so this page stands alone."""
+    from django.template import loader
+    return HttpResponse(loader.get_template("errors/500.html").render({}), status=500)

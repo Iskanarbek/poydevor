@@ -73,7 +73,7 @@ class RegistrationForm(forms.Form):
     )
     phone = NewPhoneField()
     telegram_username = forms.CharField(
-        label="Telegram akkauntingiz", max_length=50,
+        label="Telegram akkauntingiz (ixtiyoriy)", max_length=50, required=False,
         widget=forms.TextInput(attrs={"placeholder": "@username"}),
         help_text="Mijoz siz bilan Telegram orqali bog'lanadi.",
     )
@@ -86,6 +86,8 @@ class RegistrationForm(forms.Form):
 
     def clean_telegram_username(self):
         value = self.cleaned_data["telegram_username"].strip()
+        if not value:
+            return ""
         value = re.sub(r"^(?:https?://)?(?:t\.me/|telegram\.me/)", "", value).lstrip("@").rstrip("/")
         if not re.fullmatch(r"[A-Za-z0-9_]{5,32}", value):
             raise forms.ValidationError("Telegram username noto'g'ri. Masalan: @poydevor_uz (5–32 ta harf, raqam yoki _).")
@@ -114,15 +116,17 @@ class StudioRegistrationForm(RegistrationForm):
         help_text="Mijozlar studiyangizni shu logotip va nom bilan ko'radi.",
     )
     studio_name = forms.CharField(label="Studio nomi", max_length=150)
-    founded_on = forms.DateField(label="Qachon asos solingan", widget=forms.DateInput(attrs={"type": "date"}))
-    founders = forms.CharField(label="Asoschilar", max_length=255)
+    founded_year = forms.IntegerField(
+        label="Qaysi yilda asos solingan", min_value=1900, max_value=date.today().year,
+        widget=forms.NumberInput(attrs={"placeholder": "2018"}),
+    )
     responsible_person = forms.CharField(label="Mas'ul shaxs F.I.Sh.", max_length=150)
     responsible_birth_date = forms.DateField(label="Tug'ilgan sanasi", widget=forms.DateInput(attrs={"type": "date"}))
     staff_count = forms.IntegerField(label="Studiyada nechta odam ishlaydi", min_value=1)
     projects_count = forms.IntegerField(label="Qancha loyiha bajarilgan", min_value=0)
 
     field_order = [
-        "avatar", "studio_name", "founded_on", "founders", "responsible_person", "responsible_birth_date",
+        "avatar", "studio_name", "founded_year", "responsible_person", "responsible_birth_date",
         "phone", "telegram_username", "staff_count", "projects_count",
     ]
 
@@ -188,7 +192,7 @@ class PortfolioProjectEditForm(forms.ModelForm):
             "title": "Loyiha nomi",
             "style": "Loyiha turi (uslubi)",
             "description": "Loyiha tavsifi (ixtiyoriy)",
-            "attachment": "Loyiha fayli",
+            "attachment": "Loyiha fayli (ixtiyoriy)",
         }
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Masalan: Ikki qavatli zamonaviy uy"}),
@@ -205,9 +209,8 @@ class PortfolioProjectEditForm(forms.ModelForm):
         self.fields["style"].required = True
         self.fields["style"].empty_label = "Turini tanlang"
         self.fields["description"].required = False
-        # A new project needs its file; an existing one already has it.
-        self.fields["attachment"].required = not (self.instance.pk and self.instance.attachment)
-        self.fields["attachment"].error_messages["required"] = "Loyiha faylini yuklang."
+        # The project file is optional.
+        self.fields["attachment"].required = False
 
     def clean_attachment(self):
         upload = self.cleaned_data.get("attachment")

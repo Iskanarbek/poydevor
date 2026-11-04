@@ -150,3 +150,84 @@ class LogoutConfirmationTests(TestCase):
         self.client.logout()
         response = self.client.get(reverse("accounts:logout"))
         self.assertRedirects(response, reverse("accounts:welcome"), fetch_redirect_response=False)
+
+
+# --- switching accounts, redirects and error pages ---
+
+class SwitchingAccountsTests(TestCase):
+    def setUp(self):
+        self.client_user = User.objects.create_user(
+            phone="+998901111111", first_name="Mijoz", last_name="Bir", role=User.Role.USER,
+        )
+        self.other = User.objects.create_user(
+            phone="+998902222222", first_name="Mijoz", last_name="Ikki", role=User.Role.USER,
+        )
+
+    def log_in(self, phone, **extra):
+        return self.client.post(reverse("accounts:login"), {"phone": phone, **extra})
+
+    def test_login_goes_where_the_visitor_was_heading(self):
+        target = reverse("applications:dashboard")
+        response = self.client.get(target)
+        self.assertRedirects(response, f"{reverse('accounts:login')}?next={target}", fetch_redirect_response=False)
+        page = self.client.get(response.url)
+        self.assertContains(page, f'name="next" value="{target}"')
+        self.assertRedirects(self.log_in("+998901111111", next=target), target, fetch_redirect_response=False)
+
+    def test_login_never_follows_an_address_outside_the_site(self):
+        for bad in ("https://evil.example/", "//evil.example/", "javascript:alert(1)"):
+            with self.subTest(next=bad):
+                self.client.logout()
+                self.assertRedirects(self.log_in("+998901111111", next=bad), reverse("dashboard"), fetch_redirect_response=False)
+
+    def test_logout_then_login_as_someone_else_lands_on_their_own_page(self):
+        self.log_in("+998901111111")
+        self.client.post(reverse("accounts:logout"))
+        self.assertRedirects(self.client.get(reverse("applications:dashboard")), f"{reverse('accounts:login')}?next={reverse('applications:dashboard')}", fetch_redirect_response=False)
+        self.log_in("+998902222222")
+        page = self.client.get(reverse("applications:dashboard"))
+        self.assertEqual(page.status_code, 200)
+        self.assertEqual(int(self.client.session["_auth_user_id"]), self.other.pk)
+
+    def test_the_login_screen_does_not_show_for_someone_already_signed_in(self):
+        self.log_in("+998901111111")
+        self.assertRedirects(self.client.get(reverse("accounts:login")), reverse("dashboard"), fetch_redirect_response=False)
+
+    def test_pages_are_never_cached_by_the_browser(self):
+        self.log_in("+998901111111")
+        for url in (reverse("applications:dashboard"), reverse("accounts:welcome"), reverse("dashboard")):
+            with self.subTest(url=url):
+                self.assertIn("no-store", self.client.get(url)["Cache-Control"])
+
+    def test_static_files_stay_cacheable(self):
+        from poydevor.middleware import NoStorePagesMiddleware
+        from django.http import HttpResponse
+        from django.test import RequestFactory
+        middleware = NoStorePagesMiddleware(lambda request: HttpResponse("x"))
+        self.assertFalse(middleware(RequestFactory().get("/static/a.css")).has_header("Cache-Control"))
+        self.assertFalse(middleware(RequestFactory().get("/media/a.jpg")).has_header("Cache-Control"))
+
+    def test_flash_messages_do_not_travel_to_the_next_account(self):
+        from django.conf import settings
+        self.assertIn("session", settings.MESSAGE_STORAGE)
+
+
+class ErrorPagesTests(TestCase):
+    def test_unknown_address_shows_our_own_404_with_a_way_back(self):
+        response = self.client.get("/bunday-sahifa-yoq/")
+        self.assertEqual(response.status_code, 404)
+        self.assertTemplateUsed(response, "errors/404.html")
+        self.assertContains(response, "Sahifa topilmadi", status_code=404)
+        self.assertContains(response, 'href="/welcome/"', status_code=404)
+
+    def test_a_stale_form_after_switching_accounts_gets_a_friendly_page_not_a_bare_403(self):
+        client = self.client_class(enforce_csrf_checks=True)
+        response = client.post(reverse("accounts:login"), {"phone": "+998901111111"})
+        self.assertEqual(response.status_code, 403)
+        self.assertContains(response, "Sessiya yangilandi", status_code=403)
+        self.assertContains(response, 'href="/welcome/"', status_code=403)
+
+    def test_500_page_stands_alone_and_links_home(self):
+        from django.template import loader
+        html = loader.get_template("errors/500.html").render({})
+        self.assertIn('href="/welcome/"', html)

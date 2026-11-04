@@ -42,8 +42,8 @@ class MediaRootMixin:
 
 
 STUDIO_DATA = {
-    "studio_name": "ArcDes Studio Tashkent", "founded_on": "2020-05-15",
-    "founders": "Alisher Qodirov, Nodir Karimov", "responsible_person": "Alisher Qodirov",
+    "studio_name": "ArcDes Studio Tashkent", "founded_year": 2020,
+    "responsible_person": "Alisher Qodirov",
     "responsible_birth_date": "1992-08-12", "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
     "staff_count": 15, "projects_count": 45,
 }
@@ -475,15 +475,12 @@ class NoEmailTelegramAndStudioLogoTests(MediaRootMixin, TestCase):
                 self.assertNotContains(page, 'name="email"')
                 self.assertContains(page, 'name="telegram_username"')
 
-    def test_telegram_is_required_and_cleaned(self):
+    def test_telegram_is_optional_but_must_be_valid_when_given(self):
         url = reverse("architects:register_freelancer")
         data = {**FreelancerRegistrationTests.DATA}
-        bad = self.client.post(url, {**data, "telegram_username": "", "avatar": avatar()})
-        self.assertTrue(bad.context["form"].errors.get("telegram_username"))
         short = self.client.post(url, {**data, "telegram_username": "ab", "avatar": avatar()})
         self.assertTrue(short.context["form"].errors.get("telegram_username"))
         self.assertFalse(ArchitectProfile.objects.exists())
-        self.client.post(url, {**data, "telegram_username": "https://t.me/@jasur_arch", "avatar": avatar()}) 
         self.client.post(url, {**data, "telegram_username": "@jasur_arch", "avatar": avatar()})
         self.assertEqual(ArchitectProfile.objects.get().telegram_username, "jasur_arch")
         self.assertEqual(ArchitectProfile.objects.get().user.email, "")
@@ -501,3 +498,8 @@ class NoEmailTelegramAndStudioLogoTests(MediaRootMixin, TestCase):
         self.assertTrue(profile.avatar.name)
         self.assertEqual(profile.display_name, "ArcDes Studio Tashkent")
         self.assertEqual(profile.telegram_username, "arcdes_uz")
+
+    def test_a_freelancer_can_register_without_telegram(self):
+        data = {**FreelancerRegistrationTests.DATA, "telegram_username": ""}
+        self.client.post(reverse("architects:register_freelancer"), data)
+        self.assertEqual(ArchitectProfile.objects.get().telegram_username, "")

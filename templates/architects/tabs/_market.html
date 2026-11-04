@@ -55,7 +55,12 @@
       </div>
 
       {% if offer.status == 'accepted' or offer.status == 'completed' %}
-        <p class="text-sm text-charcoal-600 mb-3">Foydalanuvchi telefoni: {{ offer.application.owner.phone }}</p>
+        <p class="mb-1 text-xs font-medium uppercase tracking-wider text-charcoal-400">Mijoz bilan bog'lanish</p>
+        <div class="mb-3">
+          <a href="tel:{{ offer.application.owner.phone }}" class="inline-flex items-center gap-2 rounded-full border border-charcoal-200 bg-cream-50 px-4 py-2 text-sm font-medium text-charcoal-800 transition hover:border-clay-500">
+            <svg class="icon text-clay-600"><use href="#i-phone"/></svg>{{ offer.application.owner.phone }}
+          </a>
+        </div>
       {% endif %}
 
       {% if offer.status == 'pending' and offer.source == 'user_invited' %}

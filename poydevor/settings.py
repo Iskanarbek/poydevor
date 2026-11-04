@@ -103,6 +103,7 @@ MIDDLEWARE = [
     # so no separate nginx static-files config is required to get a working site.
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'poydevor.middleware.MediaSecurityHeadersMiddleware',
+    'poydevor.middleware.NoStorePagesMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -236,6 +237,11 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'accounts.backends.PhoneBackend',
 ]
+
+# Flash messages live in the session, so they vanish on logout and can never be shown to the
+# next person who signs in on the same browser (the default also uses a cookie).
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+CSRF_FAILURE_VIEW = 'poydevor.views.csrf_failure'
 
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'dashboard'
