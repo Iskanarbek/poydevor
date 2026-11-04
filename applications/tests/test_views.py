@@ -5,6 +5,25 @@ from accounts.models import User
 from applications.models import Application
 
 
+def jpeg_upload(name="uy.jpg"):
+    import io
+    from django.core.files.uploadedfile import SimpleUploadedFile
+    from PIL import Image
+    buffer = io.BytesIO()
+    Image.new("RGB", (6, 6), "blue").save(buffer, "JPEG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
+
+
+def order_data(**overrides):
+    """A complete, valid "post an order" form (every question answered, estimate agreed to)."""
+    data = {
+        "size_m2": 120, "object_type": "yard", "service_type": "interior", "rooms_count": 4,
+        "location": "Toshkent", "plan_pdf": jpeg_upload(), "price_confirmed": "on",
+    }
+    data.update(overrides)
+    return data
+
+
 class PostApplicationViewTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -14,21 +33,52 @@ class PostApplicationViewTests(TestCase):
         self.client.force_login(self.user)
 
     def test_post_application_known_size(self):
-        response = self.client.post(reverse("applications:post"), {
-            "size_unknown": "", "size_m2": 100, "rooms_count": 3,
-            "location": "Toshkent", "budget": "", "interior_style": "",
-        })
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(Application.objects.count(), 1)
-
-    def test_post_application_unknown_size(self):
-        response = self.client.post(reverse("applications:post"), {
-            "size_unknown": "on", "size_m2": "", "rooms_count": 5,
-            "location": "Buxoro", "budget": "", "interior_style": "",
-        })
-        self.assertEqual(response.status_code, 302)
+        response = self.client.post(reverse("applications:post"), order_data())
+        self.assertRedirects(response, reverse("applications:dashboard"), fetch_redirect_response=False)   # back to the home page
         app = Application.objects.get()
-        self.assertIsNone(app.size_m2)
+        self.assertEqual((app.size_m2, app.object_type, app.service_type), (120, "yard", "interior"))
+        self.assertEqual((app.estimate_min, app.estimate_max), (1500, 2750))      # the estimate is stored
+
+    def test_every_question_is_required(self):
+        for missing in ("size_m2", "object_type", "service_type", "rooms_count", "location", "plan_pdf", "price_confirmed"):
+            with self.subTest(missing=missing):
+                data = order_data()
+                del data[missing]
+                response = self.client.post(reverse("applications:post"), data)
+                self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.context["form"].errors.get(missing))
+        self.assertFalse(Application.objects.exists())
+
+    def test_the_estimate_is_computed_by_the_server_not_taken_from_the_browser(self):
+        self.client.post(reverse("applications:post"), order_data(estimate_min=1, estimate_max=2))
+        self.assertEqual(Application.objects.get().estimate_min, 1500)
+
+    def test_own_style_is_saved_when_other_is_chosen(self):
+        self.client.post(reverse("applications:post"), order_data(interior_style="other", custom_style="Skandinav"))
+        app = Application.objects.get()
+        self.assertEqual((app.interior_style, app.style_label), (None, "Skandinav"))
+
+    def test_choosing_other_without_writing_a_style_is_refused(self):
+        response = self.client.post(reverse("applications:post"), order_data(interior_style="other"))
+        self.assertTrue(response.context["form"].errors.get("custom_style"))
+
+    def test_a_listed_style_drops_any_typed_text(self):
+        from architects.models import Style
+        style = Style.objects.create(name="Loft")
+        self.client.post(reverse("applications:post"), order_data(interior_style=style.pk, custom_style="x"))
+        app = Application.objects.get()
+        self.assertEqual((app.interior_style, app.custom_style), (style, ""))
+
+    def test_the_live_estimate_endpoint(self):
+        url = reverse("applications:price_estimate")
+        ok = self.client.get(url, {"size": 120, "object_type": "yard", "service_type": "interior", "rooms": 4, "location": "Toshkent"})
+        self.assertEqual(ok.json(), {"ok": True, "min": 1500, "max": 2750})
+        self.assertEqual(self.client.get(url, {"size": 120}).json(), {"ok": False})
+
+    def test_posting_page_has_no_auto_delete_warning(self):
+        page = self.client.get(reverse("applications:post"))
+        self.assertNotContains(page, "avtomatik o'chiriladi")
+        self.assertNotContains(page, "Hali ham izlayapman")
 
 
 class DashboardViewTests(TestCase):
@@ -38,6 +88,19 @@ class DashboardViewTests(TestCase):
             first_name="Aziz", last_name="Karimov", role=User.Role.USER,
         )
         self.client.force_login(self.user)
+
+    def test_home_page_has_create_button_the_gallery_and_no_expiry_warnings(self):
+        response = self.client.get(reverse("applications:dashboard"))
+        self.assertContains(response, "Buyurtma yaratish")
+        self.assertContains(response, "buyurtmangizni shu arxitektorga yuboring")
+        self.assertNotContains(response, "avtomatik")
+        self.assertNotContains(response, "Hali ham izlayapman")
+        self.assertIn("projects", response.context)
+
+    def test_clients_menu_says_bosh_sahifa_and_has_no_separate_gallery_link(self):
+        response = self.client.get(reverse("applications:dashboard"))
+        self.assertContains(response, "Bosh sahifa")
+        self.assertNotContains(response, ">Barcha loyihalar<")
 
     def test_dashboard_lists_own_applications(self):
         Application.objects.create(owner=self.user, rooms_count=2, location="Andijon")
@@ -173,207 +236,12 @@ class ApplicationDescriptionTests(TestCase):
     def test_client_can_describe_what_needs_doing(self):
         user = User.objects.create_user(phone="+998901234567", first_name="A", last_name="B", role=User.Role.USER)
         self.client.force_login(user)
-        response = self.client.post(reverse("applications:post"), {
-            "size_m2": 120, "rooms_count": 4, "location": "Toshkent",
-            "description": "Zamonaviy uy loyihasi kerak.",
-        })
+        response = self.client.post(reverse("applications:post"), order_data(description="Zamonaviy uy loyihasi kerak."))
         self.assertEqual(response.status_code, 302)
         application = Application.objects.get()
         self.assertEqual(application.description, "Zamonaviy uy loyihasi kerak.")
         detail = self.client.get(reverse("applications:detail", args=[application.pk]))
         self.assertContains(detail, "Zamonaviy uy loyihasi kerak.")
-
-
-class OrderExpiryTests(TestCase):
-    """Open orders with no accepted architect vanish after 31 days unless confirmed."""
-
-    def setUp(self):
-        from architects.models import ArchitectProfile
-        from offers.models import Offer
-        from offers.services import send_offer
-        from wallet.models import Wallet
-        self.owner = User.objects.create_user(phone="+998907654321", first_name="M", last_name="R", role=User.Role.USER)
-        self.application = Application.objects.create(owner=self.owner, rooms_count=3, location="Toshkent")
-        user = User.objects.create_user(phone="+998901111110", first_name="A", last_name="R", role=User.Role.ARCHITECT)
-        self.architect = ArchitectProfile.objects.create(user=user, bio="x")
-        self.wallet = Wallet.objects.create(architect=self.architect, balance=20)
-        send_offer(self.application, self.architect, source=Offer.Source.ARCHITECT_APPLIED)  # 20 -> 10
-        self.client.force_login(self.owner)
-
-    def age(self, days, application=None):
-        from datetime import timedelta
-        from django.utils import timezone
-        application = application or self.application
-        Application.objects.filter(pk=application.pk).update(last_confirmed_at=timezone.now() - timedelta(days=days))
-
-    def balance(self):
-        self.wallet.refresh_from_db()
-        return self.wallet.balance
-
-    def test_a_new_order_has_31_days(self):
-        self.application.refresh_from_db()
-        self.assertEqual(self.application.days_left, 31)
-        self.assertFalse(self.application.expiring_soon)
-
-    def test_owner_is_warned_when_posting_and_on_the_order_page(self):
-        self.assertContains(self.client.get(reverse("applications:post")), "31 kun ichida")
-        page = self.client.get(reverse("applications:detail", args=[self.application.pk]))
-        self.assertContains(page, "31 kundan keyin avtomatik")
-        self.assertContains(page, "Hali ham izlayapman")
-
-    def test_dashboard_shows_the_countdown_and_turns_red_in_the_last_week(self):
-        self.age(20)
-        page = self.client.get(reverse("applications:dashboard"))
-        self.assertContains(page, "11 kundan keyin avtomatik")
-        self.assertNotContains(page, "bg-red-600")            # no urgent button yet
-        self.age(26)
-        page = self.client.get(reverse("applications:dashboard"))
-        self.assertContains(page, "5 kundan keyin avtomatik")
-        self.assertContains(page, "Hali ham izlayapman")
-
-    def test_order_is_deleted_after_31_days_and_architect_is_refunded(self):
-        from applications.services import expire_stale_applications
-        from offers.models import Offer
-        from wallet.models import CoinTransaction
-        self.age(32)
-        self.assertEqual(expire_stale_applications(), 1)
-        self.application.refresh_from_db()
-        self.assertIsNotNone(self.application.deleted_at)
-        self.assertTrue(self.application.auto_deleted)
-        self.assertEqual(self.application.status, Application.Status.CANCELLED)
-        self.assertEqual(self.balance(), 20)   # the 10 coins came back
-        self.assertEqual(CoinTransaction.objects.filter(reason=CoinTransaction.Reason.OFFER_REFUND).count(), 1)
-        self.assertEqual(Offer.objects.get().status, Offer.Status.REJECTED)
-        self.assertEqual(expire_stale_applications(), 0)   # nothing more to do, no double refund
-        self.assertEqual(self.balance(), 20)
-
-    def test_confirming_restarts_the_31_days(self):
-        from applications.services import expire_stale_applications
-        self.age(30)
-        response = self.client.post(reverse("applications:renew", args=[self.application.pk]))
-        self.assertEqual(response.status_code, 302)
-        self.application.refresh_from_db()
-        self.assertEqual(self.application.days_left, 31)
-        self.age(-0)  # untouched
-        self.assertEqual(expire_stale_applications(), 0)
-        self.assertEqual(self.balance(), 19)   # architect keeps waiting, still paid
-
-    def test_only_the_owner_can_confirm(self):
-        other = User.objects.create_user(phone="+998907777770", first_name="O", last_name="T", role=User.Role.USER)
-        self.client.force_login(other)
-        self.assertEqual(self.client.post(reverse("applications:renew", args=[self.application.pk])).status_code, 404)
-
-    def test_orders_with_an_accepted_architect_never_expire(self):
-        from applications.services import expire_stale_applications
-        from offers.models import Offer
-        from offers.services import accept_offer
-        accept_offer(Offer.objects.get())
-        self.age(100)
-        self.assertEqual(expire_stale_applications(), 0)
-        self.application.refresh_from_db()
-        self.assertIsNone(self.application.deleted_at)
-
-    def test_viewing_the_dashboard_cleans_up_and_tells_the_owner(self):
-        self.age(40)
-        page = self.client.get(reverse("applications:dashboard"))
-        self.assertContains(page, "avtomatik o'chirildi")
-        self.assertContains(page, "Toshkent")     # named in the notice
-        self.assertEqual(self.balance(), 20)      # refunded during that page load
-
-    def test_architect_market_never_shows_or_lets_you_take_an_expired_order(self):
-        self.age(40)
-        self.client.force_login(self.architect.user)
-        market = self.client.get("/freelancer/dashboard/?tab=market")
-        self.assertNotIn(self.application.pk, [a.pk for a in market.context["open_applications"]])
-        self.assertContains(market, "Rad etildi")   # their own history shows the offer as rejected
-        self.assertEqual(self.balance(), 20)
-        self.assertEqual(self.client.get(reverse("offers:architect_apply", args=[self.application.pk])).status_code, 404)
-
-    def test_management_command_expires_orders(self):
-        from django.core.management import call_command
-        self.age(40)
-        call_command("expire_applications")
-        self.application.refresh_from_db()
-        self.assertTrue(self.application.auto_deleted)
-        self.assertEqual(self.balance(), 20)
-
-
-class ExpireOrdersEndpointTests(TestCase):
-    def test_disabled_without_a_secret(self):
-        from django.test import override_settings
-        with override_settings(CRON_SECRET=""):
-            self.assertEqual(self.client.get("/internal/expire-orders/").status_code, 403)
-            self.assertEqual(self.client.get("/internal/expire-orders/?token=").status_code, 403)
-
-    def test_needs_the_right_secret_and_accepts_bearer_or_token(self):
-        from django.test import override_settings
-        with override_settings(CRON_SECRET="s3cret"):
-            self.assertEqual(self.client.get("/internal/expire-orders/?token=nope").status_code, 403)
-            self.assertEqual(self.client.get("/internal/expire-orders/", HTTP_AUTHORIZATION="Bearer wrong").status_code, 403)
-            ok = self.client.get("/internal/expire-orders/", HTTP_AUTHORIZATION="Bearer s3cret")
-            self.assertContains(ok, "removed: 0")
-            self.assertEqual(self.client.get("/internal/expire-orders/?token=s3cret").status_code, 200)
-
-
-class ConfirmButtonLockTests(TestCase):
-    """"Hali ham izlayapman" unlocks 15 days after posting; pressing it restarts the 31 days."""
-
-    def setUp(self):
-        self.owner = User.objects.create_user(phone="+998907654321", first_name="M", last_name="R", role=User.Role.USER)
-        self.application = Application.objects.create(owner=self.owner, rooms_count=3, location="Toshkent")
-        self.client.force_login(self.owner)
-        self.detail = reverse("applications:detail", args=[self.application.pk])
-        self.renew = reverse("applications:renew", args=[self.application.pk])
-
-    def age(self, days):
-        from datetime import timedelta
-        from django.utils import timezone
-        Application.objects.filter(pk=self.application.pk).update(last_confirmed_at=timezone.now() - timedelta(days=days))
-        self.application.refresh_from_db()
-
-    def test_button_is_locked_for_the_first_15_days(self):
-        self.age(3)
-        page = self.client.get(self.detail)
-        self.assertContains(page, "disabled")
-        self.assertContains(page, "Tugma 12 kundan keyin bosiladigan bo")
-        self.assertFalse(page.context["application"].can_renew)
-
-    def test_pressing_it_too_early_changes_nothing(self):
-        self.age(10)
-        before = self.application.last_confirmed_at
-        response = self.client.post(self.renew, follow=True)
-        self.application.refresh_from_db()
-        self.assertEqual(self.application.last_confirmed_at, before)      # timer untouched
-        self.assertContains(response, "5 kundan keyin ochiladi")
-
-    def test_button_unlocks_after_15_days_and_resets_the_timer(self):
-        self.age(15)
-        page = self.client.get(self.detail)
-        self.assertTrue(page.context["application"].can_renew)
-        self.assertNotContains(page, "bosiladigan bo")
-        self.client.post(self.renew)
-        self.application.refresh_from_db()
-        self.assertEqual(self.application.days_left, 31)
-        self.assertFalse(self.application.can_renew)                       # locked again for 15 days
-
-    def test_dashboard_shows_the_button_only_once_it_can_be_pressed(self):
-        self.age(5)
-        self.assertNotContains(self.client.get(reverse("applications:dashboard")), "Hali ham izlayapman")
-        self.age(16)
-        self.assertContains(self.client.get(reverse("applications:dashboard")), "Hali ham izlayapman")
-
-    def test_the_warning_is_short_and_never_talks_about_coins(self):
-        for url in (self.detail, reverse("applications:post")):
-            with self.subTest(url=url):
-                page = self.client.get(url)
-                self.assertContains(page, "avtomatik o'chiriladi")
-                self.assertContains(page, "Hali ham izlayapman")
-                self.assertNotContains(page, "tanga")
-                self.assertNotContains(page, "qaytariladi")
-        self.age(35)   # the notice after an automatic deletion is just as plain
-        page = self.client.get(reverse("applications:dashboard"))
-        self.assertContains(page, "avtomatik o'chirildi")
-        self.assertNotContains(page, "tanga")
 
 
 class HouseImageTests(TestCase):
@@ -397,13 +265,11 @@ class HouseImageTests(TestCase):
 
     def post(self, upload):
         from django.core.files.uploadedfile import SimpleUploadedFile
-        return self.client.post(reverse("applications:post"), {
-            "size_m2": 100, "rooms_count": 3, "location": "Toshkent", "plan_pdf": upload,
-        })
+        return self.client.post(reverse("applications:post"), order_data(plan_pdf=upload))
 
     def test_label_says_house_picture_not_plan(self):
         page = self.client.get(reverse("applications:post"))
-        self.assertContains(page, "Uy rasmi (ixtiyoriy)")
+        self.assertContains(page, "Uy rasmi yoki kadastr")
         self.assertNotContains(page, "rejasi")
         self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"')   # PDF or JPG only
 

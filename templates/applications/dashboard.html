@@ -1,23 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Mening buyurtmalarim — Poydevor{% endblock %}
+{% block title %}Bosh sahifa — Poydevor{% endblock %}
 
 {% block content %}
-<div class="flex justify-between items-center mb-8">
-  <h1 class="font-serif text-2xl font-semibold text-charcoal-900">Mening buyurtmalarim</h1>
-  <a href="{% url 'applications:post' %}" class="rounded-lg bg-clay-600 text-white text-sm font-medium px-4 py-2.5 hover:bg-clay-700 transition">
-    Yangi e'lon joylashtirish
-  </a>
-</div>
-
-{% if recently_expired %}
-  <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
-    <p class="font-semibold">Ba'zi e'lonlaringiz avtomatik o'chirildi</p>
-    <p class="mt-1">{{ lifetime_days }} kun ichida arxitektor tanlanmagani va tasdiqlanmagani uchun quyidagilar o'chirildi:
-      {% for a in recently_expired %}<b>{{ a.location }}</b>{% if not forloop.last %}, {% endif %}{% endfor %}.
-      Kerak bo'lsa, yangi e'lon joylashtiring.</p>
+<section class="relative mb-10 overflow-hidden rounded-3xl bg-charcoal-900 px-6 py-8 text-white sm:px-10">
+  <div class="absolute inset-0 blueprint opacity-60"></div>
+  <div class="relative flex flex-wrap items-center justify-between gap-5">
+    <div class="max-w-lg">
+      <p class="mb-1 text-[11px] uppercase tracking-[.22em] text-clay-300">Bosh sahifa</p>
+      <h1 class="font-serif text-2xl font-semibold sm:text-3xl">Yangi buyurtma bering</h1>
+      <p class="mt-2 text-sm text-white/70">Loyihangiz haqida bir necha savolga javob bering — arxitektorlar sizga taklif yuboradi.</p>
+    </div>
+    <a href="{% url 'applications:post' %}" class="btn-clay !py-3 !px-6">Buyurtma yaratish <svg class="icon"><use href="#i-arrow"/></svg></a>
   </div>
-{% endif %}
+</section>
+
+<h2 class="font-serif text-xl font-semibold text-charcoal-900 mb-4">Mening buyurtmalarim</h2>
 
 {% if applications %}
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -36,21 +34,6 @@
           </div>
           <p class="text-sm text-charcoal-500">{{ application.rooms_count }} xona</p>
         </a>
-        {% if application.status == 'open' %}
-          <div class="mt-3 rounded-lg px-3 py-2 text-xs {% if application.expiring_soon %}bg-red-50 text-red-700{% else %}bg-cream-100 text-charcoal-600{% endif %}">
-            <p class="flex items-center gap-1.5 font-medium">
-              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              {% if application.days_left == 0 %}Bugun o'chiriladi{% else %}{{ application.days_left }} kundan keyin avtomatik o'chiriladi{% endif %}
-            </p>
-            {% if application.can_renew %}
-              <form method="post" action="{% url 'applications:renew' application.pk %}" class="mt-2">
-                {% csrf_token %}
-                <input type="hidden" name="back" value="dashboard">
-                <button type="submit" class="rounded-md px-3 py-1.5 text-xs font-medium text-white transition {% if application.expiring_soon %}bg-red-600 hover:bg-red-700{% else %}bg-clay-600 hover:bg-clay-700{% endif %}">Hali ham izlayapman</button>
-              </form>
-            {% endif %}
-          </div>
-        {% endif %}
         <a href="{% url 'applications:delete' application.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
           <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> O'chirish
         </a>
@@ -58,6 +41,13 @@
     {% endfor %}
   </div>
 {% else %}
-  <p class="text-sm text-charcoal-500">Sizda hali e'lonlar yo'q.</p>
+  <p class="text-sm text-charcoal-500">Sizda hali buyurtmalar yo'q.</p>
 {% endif %}
+
+<section class="mt-14">
+  <h2 class="font-serif text-xl font-semibold text-charcoal-900">Arxitektorlar loyihalari</h2>
+  <p class="mt-1 text-sm text-charcoal-500">Bu yerda barcha arxitektorlarning ishlari. Yoqqanini tanlang va buyurtmangizni shu arxitektorga yuboring.</p>
+  {% url 'applications:dashboard' as home_url %}
+  {% include "architects/_gallery_section.html" with base_url=home_url %}
+</section>
 {% endblock %}

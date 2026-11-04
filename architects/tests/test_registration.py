@@ -43,7 +43,7 @@ class MediaRootMixin:
 
 STUDIO_DATA = {
     "studio_name": "ArcDes Studio Tashkent", "founded_year": 2020,
-    "responsible_person": "Alisher Qodirov",
+    "responsible_person": "Alisher Qodirov", "responsible_birth_date": "1992-08-12",
     "telegram_username": "@arcdes_uz", "phone": "+998 90 123 45 67",
     "password": "1", "password_confirm": "1", "projects_count": 45,
 }

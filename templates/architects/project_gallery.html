@@ -13,24 +13,6 @@
   </a>
 </div>
 
-<div class="flex flex-wrap gap-2 mb-8 mt-6">
-  <a href="{% url 'architects:project_gallery' %}"
-     class="rounded-full border px-4 py-1.5 text-sm transition {% if not selected_style %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
-    Barchasi
-  </a>
-  {% for style in styles %}
-    <a href="?style={{ style.id }}"
-       class="rounded-full border px-4 py-1.5 text-sm transition {% if selected_style == style.id|stringformat:'s' %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
-      {{ style.name }}
-    </a>
-  {% endfor %}
-</div>
-
-<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-  {% for project in projects %}
-    {% include "architects/_project_card.html" with project=project show_architect=True %}
-  {% empty %}
-    <p class="text-sm text-charcoal-500">Hozircha loyihalar topilmadi.</p>
-  {% endfor %}
-</div>
+{% url 'architects:project_gallery' as gallery_url %}
+{% include "architects/_gallery_section.html" with base_url=gallery_url %}
 {% endblock %}

@@ -4,7 +4,6 @@ from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.models import Application
-from applications.services import expire_stale_applications
 from architects.models import ArchitectProfile
 from architects.navigation import dashboard_url, portfolio_url
 from offers.models import Offer
@@ -64,7 +63,6 @@ def send_from_architect_profile(request, architect_pk):
 def architect_apply(request, application_pk):
     """GET shows an open project in full so an architect can judge whether it
     suits them; POST takes it, spending the coins."""
-    expire_stale_applications()
     application = get_object_or_404(
         Application.objects.select_related("interior_style"), pk=application_pk, status=Application.Status.OPEN,
     )

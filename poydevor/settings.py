@@ -304,14 +304,4 @@ CLICK = {
 }
 
 
-# Orders (e'lonlar)
-# An open order nobody was accepted on is deleted after this many days unless its
-# owner confirms they are still searching (see applications/services.py).
-ORDER_LIFETIME_DAYS = 31
-ORDER_WARNING_DAYS = 7
-# The "Hali ham izlayapman" button stays locked until this many days after the order
-# was posted or last confirmed; pressing it then restarts the ORDER_LIFETIME_DAYS countdown.
-ORDER_RENEW_AFTER_DAYS = 15
-
-# Secret for the daily clean-up endpoint (/internal/expire-orders/); unset = endpoint disabled.
-CRON_SECRET = _env("CRON_SECRET")
+# Orders (e'lonlar) stay until their owner deletes them: there is no automatic expiry.

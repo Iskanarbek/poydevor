@@ -170,7 +170,7 @@ class ProjectCreateViewTests(TestCase):
 
     def post(self, title="Birinchi loyiha", **extra):
         data = {
-            "title": title, "style": self.style.id, "images": [self.gif("a.gif"), self.gif("b.gif")],
+            "title": title, "object_type": "yard", "service_type": "interior", "style": self.style.id, "images": [self.gif("a.gif"), self.gif("b.gif")],
             "attachment": SimpleUploadedFile("taqdimot.pdf", b"%PDF-1.4", content_type="application/pdf"),
         }
         data.update(extra)
@@ -187,17 +187,17 @@ class ProjectCreateViewTests(TestCase):
 
     def test_description_and_file_are_optional_but_a_photo_is_not(self):
         self.assertEqual(self.post().status_code, 302)                     # no description
-        no_file = self.client.post(self.url, {"title": "Fayzsiz", "style": self.style.id, "images": [self.gif("a.gif")]})
+        no_file = self.client.post(self.url, {"title": "Fayzsiz", "object_type": "yard", "service_type": "interior", "style": self.style.id, "images": [self.gif("a.gif")]})
         self.assertEqual(no_file.status_code, 302)
         self.assertTrue(PortfolioProject.objects.filter(title="Fayzsiz").exists())
-        no_photo = self.client.post(self.url, {"title": "Rasmsiz", "style": self.style.id})
+        no_photo = self.client.post(self.url, {"title": "Rasmsiz", "object_type": "yard", "service_type": "interior", "style": self.style.id})
         self.assertEqual(no_photo.status_code, 200)
         self.assertTrue(no_photo.context["form"].errors.get("images"))
         self.assertFalse(PortfolioProject.objects.filter(title="Rasmsiz").exists())   # nothing half-created
 
     def test_title_and_type_are_required(self):
         response = self.client.post(self.url, {"images": [self.gif("a.gif")]})
-        self.assertEqual(set(response.context["form"].errors), {"title", "style"})
+        self.assertEqual(set(response.context["form"].errors), {"title", "object_type", "service_type"})
 
     def test_orders_are_assigned_automatically(self):
         self.post("Birinchi loyiha")
@@ -400,7 +400,8 @@ class CoverPhotoTests(TestCase):
 
 
 class ArchitectAndProjectCardContentTests(TestCase):
-    """Cards show only: image, title, type, architect name and rating."""
+    """Project cards show: photos, title, service/object type, style, price, a short description,
+    and the architect's photo/logo, name and rating."""
 
     def setUp(self):
         user = User.objects.create_user(phone="+998901235555", first_name="Nodir", last_name="Karimov", role=User.Role.ARCHITECT)
@@ -408,6 +409,7 @@ class ArchitectAndProjectCardContentTests(TestCase):
         style = Style.objects.create(name="Zamonaviy")
         self.project = PortfolioProject.objects.create(
             architect=self.profile, title="Panorama uyi", style=style, description="JUDA UZUN TAVSIF", order=1,
+            object_type="yard", service_type="interior", price_usd=1500,
         )
         PortfolioImage.objects.create(project=self.project, image="portfolio/p.jpg", order=0)
 
@@ -415,8 +417,15 @@ class ArchitectAndProjectCardContentTests(TestCase):
         page = self.client.get(reverse("architects:project_gallery"))
         for expected in ("Panorama uyi", "Zamonaviy", "Nodir Karimov", "4,50"):
             self.assertContains(page, expected)
-        self.assertNotContains(page, "JUDA UZUN TAVSIF")                 # no description on the card
+        for expected in ("JUDA UZUN TAVSIF", "$1500", "Interyer dizayni", "Hovli / Uchastka"):
+            self.assertContains(page, expected)                           # description, price and both types are on the card
         self.assertContains(page, reverse("architects:project_detail", args=[self.project.pk]))
+
+    def test_a_projects_own_style_shows_on_the_card(self):
+        self.project.style = None
+        self.project.custom_style = "Skandinav"
+        self.project.save()
+        self.assertContains(self.client.get(reverse("architects:project_gallery")), "Skandinav")
 
     def test_architect_card(self):
         page = self.client.get(reverse("architects:list"))
@@ -440,8 +449,7 @@ class ArchitectAndProjectCardContentTests(TestCase):
     def test_typography_title_then_type(self):
         html = self.client.get(reverse("architects:project_gallery")).content.decode()
         self.assertIn("text-lg font-semibold", html.split("Panorama uyi</h3>")[0].rsplit("<h3", 1)[1])
-        style_tag = html.split("Zamonaviy</p>")[0].rsplit("<p", 1)[1]
-        self.assertIn("text-[15px]", style_tag)
+        style_tag = html.split("Zamonaviy</span>")[0].rsplit("<span", 1)[1]
         self.assertIn("font-medium", style_tag)
 
     def test_every_page_has_the_full_size_viewer_available(self):
@@ -495,7 +503,7 @@ class ProjectDetailPageTests(TestCase):
     def test_architect_page_lists_project_cards_that_open_the_details(self):
         page = self.client.get(reverse("architects:detail", args=[self.profile.pk]))
         self.assertContains(page, reverse("architects:project_detail", args=[self.project.pk]))
-        self.assertNotContains(page, "Batafsil tavsif shu yerda.")        # descriptions live only on the detail page
+        self.assertContains(page, "Batafsil tavsif shu yerda.")           # a short description is on the card too
 
     def test_owner_sees_their_own_project_with_tools(self):
         self.client.force_login(self.profile.user)
@@ -534,7 +542,7 @@ class ProjectEditDeleteTests(TestCase):
 
     def test_a_project_can_be_edited_with_or_without_a_file(self):
         url = reverse("architects:project_edit", args=[self.project.pk])
-        data = {"title": "Yangi nom", "style": self.style.pk, "description": "Yangi tavsif"}
+        data = {"title": "Yangi nom", "object_type": "office", "service_type": "architecture", "style": self.style.pk, "description": "Yangi tavsif"}
         self.assertEqual(self.client.post(url, data).status_code, 302)   # no file is fine
         import shutil, tempfile
         from django.test import override_settings
@@ -547,7 +555,7 @@ class ProjectEditDeleteTests(TestCase):
         self.project.refresh_from_db()
         self.assertEqual((self.project.title, self.project.description), ("Yangi nom", "Yangi tavsif"))
         # Later edits keep the file unless a new one is chosen.
-        self.client.post(url, {"title": "Yana nom", "style": self.style.pk})
+        self.client.post(url, {"title": "Yana nom", "object_type": "office", "service_type": "architecture", "style": self.style.pk})
         self.project.refresh_from_db()
         self.assertEqual(self.project.title, "Yana nom")
         self.assertTrue(self.project.attachment.name.endswith(".pdf"))

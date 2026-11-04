@@ -180,7 +180,7 @@ class UploadFormsUseTheCheckTests(TestCase):
         style = Style.objects.create(name="Zamonaviy")
 
         def check(name, content):
-            form = PortfolioProjectEditForm({"title": "Uy", "style": style.pk}, {"attachment": upload(name, content)})
+            form = PortfolioProjectEditForm({"title": "Uy", "object_type": "yard", "service_type": "interior", "style": style.pk}, {"attachment": upload(name, content)})
             return form.is_valid(), form.errors.get("attachment")
 
         self.assertTrue(check("reja.pdf", PDF)[0])
@@ -200,7 +200,10 @@ class UploadFormsUseTheCheckTests(TestCase):
 
     def test_order_house_file_takes_only_real_pdf_or_jpg(self):
         from applications.forms import ApplicationForm
-        base = {"size_m2": 80, "rooms_count": 3, "location": "Toshkent"}
+        base = {
+            "size_m2": 80, "rooms_count": 3, "location": "Toshkent", "object_type": "apartment",
+            "service_type": "interior", "price_confirmed": "on",
+        }
         for name, content in [("uy.pdf", PDF), ("uy.jpg", JPEG)]:
             form = ApplicationForm(base, {"plan_pdf": upload(name, content)})
             self.assertTrue(form.is_valid(), form.errors)

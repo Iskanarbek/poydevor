@@ -46,12 +46,14 @@ def register_studio(data: dict, user: User | None = None) -> ArchitectProfile:
         portfolio_exempt=False,
         telegram_username=data["telegram_username"],
         claimed_projects_count=data["projects_count"],
+        birth_year=data["responsible_birth_date"].year,
     )
     Studio.objects.create(
         owner=profile,
         name=data["studio_name"],
         founded_on=date(data["founded_year"], 1, 1),
         responsible_person=data["responsible_person"],
+        responsible_birth_date=data["responsible_birth_date"],
         phone=data["phone"],
         projects_count=data["projects_count"],
     )

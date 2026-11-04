@@ -90,7 +90,7 @@
         {% endwith %}
         <div class="p-4">
           <h3 class="font-serif text-base font-semibold text-charcoal-900">{{ project.title }}</h3>
-          {% if project.style %}<p class="text-sm text-charcoal-600">{{ project.style }}</p>{% endif %}
+          {% if project.style_label %}<p class="text-sm text-charcoal-600">{{ project.style_label }}</p>{% endif %}
           {% if project.description %}<p class="mt-1 text-sm text-charcoal-500">{{ project.description|truncatewords:20 }}</p>{% endif %}
         </div>
       </div>

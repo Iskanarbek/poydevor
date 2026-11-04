@@ -1,0 +1,21 @@
+{# Style chips + project cards. Needs: projects, styles, selected_style, base_url (where the chips point). #}
+<div class="flex flex-wrap gap-2 mb-6 mt-5">
+  <a href="{{ base_url }}"
+     class="rounded-full border px-4 py-1.5 text-sm transition {% if not selected_style %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
+    Barchasi
+  </a>
+  {% for style in styles %}
+    <a href="{{ base_url }}?style={{ style.id }}"
+       class="rounded-full border px-4 py-1.5 text-sm transition {% if selected_style == style.id|stringformat:'s' %}bg-clay-600 text-white border-clay-600{% else %}border-charcoal-300 text-charcoal-700 hover:border-charcoal-400{% endif %}">
+      {{ style.name }}
+    </a>
+  {% endfor %}
+</div>
+
+<div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  {% for project in projects %}
+    {% include "architects/_project_card.html" with project=project show_architect=True %}
+  {% empty %}
+    <p class="text-sm text-charcoal-500">Hozircha loyihalar topilmadi.</p>
+  {% endfor %}
+</div>

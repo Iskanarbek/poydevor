@@ -77,9 +77,11 @@ class LoginForm(forms.Form):
         label="Telefon raqami", max_length=32,
         widget=forms.TextInput(attrs={"type": "tel", "placeholder": "+998 90 123 45 67", "autocomplete": "tel"}),
     )
-    # Architects sign in with phone + password; clients with their phone number alone.
+    # Clients sign in with their phone number alone, so this field is hidden until the number turns
+    # out to belong to an architect (then the form comes back asking for the password).
+    needs_password = False
     password = forms.CharField(
-        label="Parol (faqat arxitektorlar uchun)", required=False, strip=False,
+        label="Parol", required=False, strip=False,
         widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
     )
 
@@ -102,8 +104,12 @@ class LoginForm(forms.Form):
                 # An architect who has a password must give it. (Architects from before passwords
                 # existed have none yet: they get in and are asked to create one straight away.)
                 if user.role == user.Role.ARCHITECT and user.has_usable_password():
-                    if not user.check_password(cleaned.get("password") or ""):
-                        raise forms.ValidationError("Parol noto'g'ri. Arxitektorlar telefon raqami va parol bilan kiradi.")
+                    given = cleaned.get("password") or ""
+                    if not user.check_password(given):
+                        self.needs_password = True
+                        raise forms.ValidationError(
+                            "Parol noto'g'ri." if given else "Arxitektorlar telefon raqami va parol bilan kiradi. Parolingizni kiriting.",
+                        )
                 cleaned["user"] = user
                 return cleaned
         raise forms.ValidationError("Bu telefon raqami bilan hisob topilmadi.")

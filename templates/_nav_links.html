@@ -1,11 +1,13 @@
 {# Shared by the desktop bar and the mobile menu. `mobile` switches the layout. #}
 {% with link="text-charcoal-600 hover:text-charcoal-900 transition" %}
   <a href="{% url 'architects:list' %}" class="{{ link }}">Arxitektorlar</a>
-  <a href="{% url 'architects:project_gallery' %}" class="{{ link }}">Barcha loyihalar</a>
+  {% if user.is_authenticated and user.role == 'user' %}
+    <a href="{% url 'applications:dashboard' %}" class="{{ link }}">Bosh sahifa</a>
+  {% else %}
+    <a href="{% url 'architects:project_gallery' %}" class="{{ link }}">Barcha loyihalar</a>
+  {% endif %}
   {% if user.is_authenticated %}
-    {% if user.role == 'user' %}
-      <a href="{% url 'applications:dashboard' %}" class="{{ link }}">Mening buyurtmalarim</a>
-    {% else %}
+    {% if user.role != 'user' %}
       <a href="{% url 'dashboard' %}" class="{{ link }}">Boshqaruv paneli</a>
     {% endif %}
     <a href="{% url 'notifications:list' %}" class="relative inline-flex items-center gap-1.5 {{ link }}" aria-label="Bildirishnomalar">

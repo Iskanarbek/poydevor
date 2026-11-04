@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.views import login_without_password
 from applications.models import Application
-from applications.services import expire_stale_applications
+from architects.gallery import gallery_context
 from architects.forms import (
     ArchitectProfileForm,
     EmployeeRegistrationForm,
@@ -269,7 +269,6 @@ def _store_context(profile):
 
 
 def _workspace(request, profile, tabs, default_tab, title):
-    expire_stale_applications()
     tab_keys = [key for key, _ in tabs]
     tab = request.GET.get("tab")
     if tab not in tab_keys:
@@ -683,17 +682,4 @@ def public_detail(request, pk):
 
 
 def project_gallery(request):
-    projects = (
-        PortfolioProject.objects.visible()
-        .select_related("architect__user", "architect__studio_owned", "style")
-        .prefetch_related("images")
-    )
-    style_id = request.GET.get("style")
-    if style_id:
-        projects = projects.filter(style_id=style_id)
-    styles = Style.objects.all()
-    return render(request, "architects/project_gallery.html", {
-        "projects": projects,
-        "styles": styles,
-        "selected_style": style_id,
-    })
+    return render(request, "architects/project_gallery.html", gallery_context(request))

@@ -20,7 +20,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from poydevor import staff_panel
-from poydevor.views import dashboard_redirect, home, internal_expire_orders, internal_setup
+from poydevor.views import dashboard_redirect, home, internal_setup
 from wallet.admin_views import revenue_dashboard
 
 handler404 = 'poydevor.views.not_found'
@@ -49,7 +49,6 @@ urlpatterns = [
     path('', home, name='home'),
     path('boshqaruv/', dashboard_redirect, name='dashboard'),
     path('internal/setup/', internal_setup, name='internal_setup'),
-    path('internal/expire-orders/', internal_expire_orders, name='internal_expire_orders'),
     path('', include('accounts.urls')),
     path('', include('architects.urls')),
     path('', include('applications.urls')),

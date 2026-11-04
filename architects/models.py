@@ -2,6 +2,28 @@ from django.conf import settings
 from django.db import models
 
 
+class ObjectType(models.TextChoices):
+    """What kind of building a project (or an order) is about."""
+    YARD = "yard", "Hovli / Uchastka"
+    APARTMENT = "apartment", "Kvartira (ko'p qavatli uydan)"
+    OFFICE = "office", "Ofis yoki Biznes markazi"
+    RESTAURANT = "restaurant", "Restoran / Kafe"
+    WEDDING_HALL = "wedding_hall", "To'yxona / Tantanalar saroyi"
+
+
+class ServiceType(models.TextChoices):
+    """What was (or has to be) done."""
+    ARCHITECTURE = "architecture", "Arxitektura loyihasi"
+    INTERIOR = "interior", "Interyer dizayni"
+
+
+# Longer wording for the forms (the short labels above are used on cards).
+SERVICE_TYPE_FORM_LABELS = {
+    ServiceType.ARCHITECTURE: "Arxitektura loyihasi (obyekt rejalashtiruvi (planirovka) + ustalar uchun chizmalar + bino fasadi)",
+    ServiceType.INTERIOR: "Interyer dizayni",
+}
+
+
 class Style(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
@@ -215,8 +237,8 @@ class ArchitectProfile(models.Model):
         """The distinct types of the visible projects (for the chips on the card)."""
         names = []
         for project in self.visible_projects:
-            if project.style and project.style.name not in names:
-                names.append(project.style.name)
+            if project.style_label and project.style_label not in names:
+                names.append(project.style_label)
         return names
 
     @property
@@ -298,7 +320,13 @@ class PortfolioProject(models.Model):
     architect = models.ForeignKey(ArchitectProfile, on_delete=models.CASCADE, related_name="projects")
     title = models.CharField(max_length=100)
     description = models.TextField(blank=True)
-    style = models.ForeignKey(Style, on_delete=models.SET_NULL, null=True, related_name="projects")
+    # The style is optional; when none of the listed ones fits, the architect writes their own.
+    style = models.ForeignKey(Style, on_delete=models.SET_NULL, null=True, blank=True, related_name="projects")
+    custom_style = models.CharField(max_length=60, blank=True)
+    object_type = models.CharField(max_length=20, choices=ObjectType.choices, blank=True)
+    service_type = models.CharField(max_length=20, choices=ServiceType.choices, blank=True)
+    # What the architect charged for it, in US dollars (optional; shown on the card).
+    price_usd = models.PositiveIntegerField(null=True, blank=True)
     order = models.PositiveIntegerField(default=0)
     # One optional file with the project (a PDF presentation, drawings, ...).
     attachment = models.FileField(upload_to="portfolio_files/", blank=True, max_length=500)
@@ -310,6 +338,11 @@ class PortfolioProject(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def style_label(self):
+        """The style as shown on cards: the chosen one, or the architect's own words."""
+        return self.style.name if self.style_id else self.custom_style
 
     @property
     def cover(self):

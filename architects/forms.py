@@ -7,7 +7,9 @@ from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 
 from accounts.forms import NewPhoneField
-from architects.models import ArchitectProfile, PortfolioImage, PortfolioProject, Studio
+from architects.models import (
+    SERVICE_TYPE_FORM_LABELS, ArchitectProfile, ObjectType, PortfolioImage, PortfolioProject, ServiceType, Studio, Style,
+)
 from poydevor.upload_safety import ACCEPT_ATTRIBUTE, validate_pdf_or_jpg
 
 PORTFOLIO_EXTENSIONS = {
@@ -134,10 +136,11 @@ class StudioRegistrationForm(RegistrationForm):
         widget=forms.NumberInput(attrs={"placeholder": "2018"}),
     )
     responsible_person = forms.CharField(label="Mas'ul shaxs F.I.Sh.", max_length=150)
+    responsible_birth_date = forms.DateField(label="Mas'ul shaxsning tug'ilgan sanasi", widget=forms.DateInput(attrs={"type": "date"}))
     projects_count = forms.IntegerField(label="Qancha loyiha bajarilgan", min_value=0)
 
     field_order = [
-        "avatar", "studio_name", "founded_year", "responsible_person",
+        "avatar", "studio_name", "founded_year", "responsible_person", "responsible_birth_date",
         "phone", "telegram_username", "password", "password_confirm", "projects_count",
     ]
 
@@ -191,25 +194,88 @@ def _check_images(files):
     return files
 
 
-class PortfolioProjectEditForm(forms.ModelForm):
+OTHER_STYLE = "other"
+
+
+class StyleSelect(forms.Select):
+    """The list of styles plus a last choice, "Boshqa", for people whose style is not listed."""
+
+    def optgroups(self, name, value, attrs=None):
+        groups = super().optgroups(name, value, attrs)
+        picked = OTHER_STYLE in [str(v) for v in value]
+        groups.append((None, [{
+            "name": name, "value": OTHER_STYLE, "label": "Boshqa (o'zim yozaman)", "selected": picked,
+            "index": str(len(groups)), "attrs": {"selected": True} if picked else {},
+            "type": self.input_type, "template_name": self.option_template_name, "wrap_label": True,
+        }], len(groups)))
+        return groups
+
+
+class StyleChoiceField(forms.ModelChoiceField):
+    widget = StyleSelect
+
+    def to_python(self, value):
+        return None if value == OTHER_STYLE else super().to_python(value)
+
+
+class OwnStyleFormMixin:
+    """An optional style that can also be written in by hand.
+
+    ``style_field`` names the model's style field. When "Boshqa" is chosen the person's own
+    words (``custom_style``) are required and saved instead of a listed style; otherwise
+    ``custom_style`` is cleared. Add ``custom_style`` to the form's Meta.fields."""
+
+    style_field = "style"
+
+    def setup_style(self, label):
+        self.fields[self.style_field] = StyleChoiceField(
+            queryset=Style.objects.all(), required=False, empty_label="Tanlamayman", label=label,
+        )
+        self.fields["custom_style"] = forms.CharField(
+            required=False, max_length=60, label="Uslubni o'zingiz yozing",
+            widget=forms.TextInput(attrs={"placeholder": "Masalan: Skandinav, Art-deko, Yaponcha..."}),
+        )
+        instance = getattr(self, "instance", None)
+        if instance is not None and instance.pk and instance.custom_style and not getattr(instance, f"{self.style_field}_id"):
+            self.initial[self.style_field] = OTHER_STYLE
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.data.get(self.add_prefix(self.style_field)) == OTHER_STYLE:
+            text = (cleaned.get("custom_style") or "").strip()
+            if not text:
+                self.add_error("custom_style", "Uslub nomini yozing.")
+            cleaned["custom_style"] = text
+            cleaned[self.style_field] = None
+        else:
+            cleaned["custom_style"] = ""
+        return cleaned
+
+
+class PortfolioProjectEditForm(OwnStyleFormMixin, forms.ModelForm):
     """The details of a portfolio project: title, type, description (optional) and its
     one file. The file is required; when editing a project that already has one, the
     old file stays unless a new one is chosen."""
 
     class Meta:
         model = PortfolioProject
-        fields = ["title", "style", "description", "attachment"]
+        fields = [
+            "title", "object_type", "service_type", "style", "custom_style", "price_usd", "description", "attachment",
+        ]
         labels = {
             "title": "Loyiha nomi",
-            "style": "Loyiha turi (uslubi)",
-            "description": "Loyiha tavsifi (ixtiyoriy)",
+            "object_type": "Obyekt turi",
+            "service_type": "Xizmat turi",
+            "price_usd": "Loyiha narxi, $ (ixtiyoriy)",
+            "description": "Nima qilingan? (ixtiyoriy)",
             "attachment": "Loyiha fayli (ixtiyoriy)",
         }
         widgets = {
             "title": forms.TextInput(attrs={"placeholder": "Masalan: Ikki qavatli zamonaviy uy"}),
+            "price_usd": forms.NumberInput(attrs={"placeholder": "Masalan: 1500", "min": 0}),
             "description": forms.Textarea(attrs={
                 "rows": 4,
-                "placeholder": "Loyiha haqida yozing: maydoni, vazifasi, qanday yechimlar qo'llanilgani...",
+                "placeholder": "Qisqa yozing: nima qildingiz, qanday yechimlar qo'lladingiz. Mijozlar buni kartochkada ko'radi.",
             }),
             # PDF or JPG only; clean_attachment checks the real content (poydevor/upload_safety.py).
             "attachment": forms.FileInput(attrs={"accept": ACCEPT_ATTRIBUTE}),
@@ -217,8 +283,16 @@ class PortfolioProjectEditForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["style"].required = True
-        self.fields["style"].empty_label = "Turini tanlang"
+        self.setup_style("Uslubi (ixtiyoriy)")
+        self.fields["object_type"] = forms.ChoiceField(
+            label="Obyekt turi", choices=[("", "Tanlang")] + list(ObjectType.choices),
+            error_messages={"required": "Obyekt turini tanlang."},
+        )
+        self.fields["service_type"] = forms.ChoiceField(
+            label="Xizmat turi", choices=[("", "Tanlang")] + [(v, SERVICE_TYPE_FORM_LABELS[v]) for v in ServiceType.values],
+            error_messages={"required": "Xizmat turini tanlang."},
+        )
+        self.fields["price_usd"].required = False
         self.fields["description"].required = False
         # The project file is optional.
         self.fields["attachment"].required = False

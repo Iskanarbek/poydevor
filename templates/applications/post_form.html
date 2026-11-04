@@ -3,17 +3,9 @@
 {% block title %}E'lon joylashtirish — Poydevor{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto" x-data="{unknown: {{ form.size_unknown.value|yesno:'true,false' }} }">
+<div class="max-w-xl mx-auto" x-data="orderForm()" x-init="init()">
   <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">Loyihangiz uchun e'lon joylashtiring</h1>
-  <p class="text-sm text-charcoal-500 mb-5">Ma'lumotlarni to'ldiring — arxitektorlar taklif yuborishadi.</p>
-
-  <div class="mb-8 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-    <svg class="icon mt-0.5 shrink-0" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-    <span>
-      <b>Muhim:</b> agar {{ lifetime_days }} kun ichida «Hali ham izlayapman» tugmasini bosib tasdiqlamasangiz,
-      e'loningiz <b>avtomatik o'chiriladi</b>. Tugma e'lon joylangandan {{ renew_after_days }} kun o'tgach bosiladigan bo'ladi.
-    </span>
-  </div>
+  <p class="text-sm text-charcoal-500 mb-6">Barcha savollarga javob bering — arxitektorlar taklif yuborishadi.</p>
 
   {% if form.non_field_errors %}
     <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
@@ -21,38 +13,61 @@
     </div>
   {% endif %}
 
-  <form method="post" enctype="multipart/form-data" class="space-y-6">
+  <form method="post" enctype="multipart/form-data" class="space-y-7" x-ref="form" data-price-url="{% url 'applications:price_estimate' %}">
     {% csrf_token %}
 
     <div>
-      <label for="{{ form.size_m2.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.size_m2.label }}</label>
-      <input type="number" name="{{ form.size_m2.html_name }}" id="{{ form.size_m2.id_for_label }}"
-             value="{{ form.size_m2.value|default_if_none:'' }}"
-             :disabled="unknown" :class="unknown ? 'opacity-50 cursor-not-allowed' : ''">
+      <label for="{{ form.size_m2.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">1-savol. {{ form.size_m2.label }}</label>
+      {{ form.size_m2 }}
       {% if form.size_m2.errors %}<p class="mt-1 text-sm text-red-600">{{ form.size_m2.errors|striptags }}</p>{% endif %}
-
-      <label class="mt-2 flex items-center gap-2 text-sm text-charcoal-600 cursor-pointer">
-        <input type="checkbox" name="{{ form.size_unknown.html_name }}" id="{{ form.size_unknown.id_for_label }}"
-               x-model="unknown" {% if form.size_unknown.value %}checked{% endif %}>
-        {{ form.size_unknown.label }}
-      </label>
     </div>
 
     <div>
-      <label for="{{ form.rooms_count.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.rooms_count.label }}</label>
-      {{ form.rooms_count }}
-      {% if form.rooms_count.errors %}<p class="mt-1 text-sm text-red-600">{{ form.rooms_count.errors|striptags }}</p>{% endif %}
+      <p class="block text-sm font-medium text-charcoal-700 mb-2">2-savol. {{ form.object_type.label }}</p>
+      <div class="grid gap-2">
+        {% for radio in form.object_type %}
+          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-charcoal-200 bg-white px-4 py-3 text-sm transition hover:border-clay-400 has-[:checked]:border-clay-600 has-[:checked]:bg-clay-50">
+            <span class="[&>input]:!w-auto [&>input]:!p-0 [&>input]:accent-[#B5562A]">{{ radio.tag }}</span>
+            <span class="text-charcoal-800">{{ radio.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.object_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.object_type.errors|striptags }}</p>{% endif %}
     </div>
 
     <div>
-      <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.location.label }}</label>
-      {{ form.location }}
-      {% if form.location.errors %}<p class="mt-1 text-sm text-red-600">{{ form.location.errors|striptags }}</p>{% endif %}
+      <p class="block text-sm font-medium text-charcoal-700 mb-2">3-savol. {{ form.service_type.label }}</p>
+      <div class="grid gap-2">
+        {% for radio in form.service_type %}
+          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-charcoal-200 bg-white px-4 py-3 text-sm transition hover:border-clay-400 has-[:checked]:border-clay-600 has-[:checked]:bg-clay-50">
+            <span class="[&>input]:!w-auto [&>input]:!p-0 [&>input]:accent-[#B5562A]">{{ radio.tag }}</span>
+            <span class="text-charcoal-800">{{ radio.choice_label }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      {% if form.service_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.service_type.errors|striptags }}</p>{% endif %}
+    </div>
+
+    <div class="grid gap-5 sm:grid-cols-2">
+      <div>
+        <label for="{{ form.rooms_count.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.rooms_count.label }}</label>
+        {{ form.rooms_count }}
+        {% if form.rooms_count.errors %}<p class="mt-1 text-sm text-red-600">{{ form.rooms_count.errors|striptags }}</p>{% endif %}
+      </div>
+      <div>
+        <label for="{{ form.location.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.location.label }}</label>
+        {{ form.location }}
+        {% if form.location.errors %}<p class="mt-1 text-sm text-red-600">{{ form.location.errors|striptags }}</p>{% endif %}
+      </div>
     </div>
 
     <div>
       <label for="{{ form.interior_style.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.interior_style.label }}</label>
-      {{ form.interior_style }}
+      <div @change="styleOther = $event.target.value === 'other'">{{ form.interior_style }}</div>
+      <div x-show="styleOther" x-cloak class="mt-2">
+        {{ form.custom_style }}
+        {% if form.custom_style.errors %}<p class="mt-1 text-sm text-red-600">{{ form.custom_style.errors|striptags }}</p>{% endif %}
+      </div>
       {% if form.interior_style.errors %}<p class="mt-1 text-sm text-red-600">{{ form.interior_style.errors|striptags }}</p>{% endif %}
     </div>
 
@@ -70,10 +85,32 @@
     </div>
 
     <div>
-      <label for="{{ form.plan_pdf.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.plan_pdf.label }}</label>
+      <label for="{{ form.plan_pdf.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.plan_pdf.label }} <span class="text-clay-600">*</span></label>
       {{ form.plan_pdf }}
-      <p class="mt-1 text-xs text-charcoal-500">Faqat JPG rasm yoki PDF (telefonda ham ochiladi, eng ko'pi 20 MB).</p>
+      <p class="mt-1 text-xs text-charcoal-500">Majburiy. Faqat JPG rasm yoki PDF (telefonda ham ochiladi, eng ko'pi 20 MB).</p>
       {% if form.plan_pdf.errors %}<p class="mt-1 text-sm text-red-600">{{ form.plan_pdf.errors|striptags }}</p>{% endif %}
+    </div>
+
+    <div class="rounded-2xl border border-clay-200 bg-clay-50 p-5">
+      <p class="mb-2 text-sm font-semibold text-charcoal-900">4-savol. Bozordagi taxminiy qiymat</p>
+      <template x-if="!ready">
+        <p class="text-sm text-charcoal-600">Narxni ko'rish uchun yuqoridagi savollarga (maydon, obyekt turi, xizmat turi, xonalar soni, manzil) javob bering.</p>
+      </template>
+      <template x-if="ready">
+        <div>
+          <p class="text-sm text-charcoal-700">Siz kiritgan ko'rsatkichlar bo'yicha ushbu loyihani amalga oshirish uchun taxminiy narx:</p>
+          <p class="my-2 font-serif text-2xl font-semibold text-clay-700">$<span x-text="min"></span> va $<span x-text="max"></span> oralig'i</p>
+          <p class="text-xs leading-relaxed text-charcoal-600">
+            Bu summa o'rtacha bozor narxlari asosida hisoblangan TAXMINIY qiymatdir. Arxitektorlar bilan muloqot jarayonida
+            yakuniy narx bo'yicha kelisha olasiz.
+          </p>
+        </div>
+      </template>
+      <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-clay-300 bg-white px-4 py-3 text-sm text-charcoal-800">
+        <span class="[&>input]:!w-auto [&>input]:!p-0 [&>input]:accent-[#B5562A]">{{ form.price_confirmed }}</span>
+        <span>Agar shu taxminiy narxga rozi bo'lsangiz, shu yerni belgilab tasdiqlang. <b>Roziman</b></span>
+      </label>
+      {% if form.price_confirmed.errors %}<p class="mt-2 text-sm text-red-600">{{ form.price_confirmed.errors|striptags }}</p>{% endif %}
     </div>
 
     <button type="submit" class="w-full rounded-lg bg-clay-600 text-white font-medium py-3 hover:bg-clay-700 transition">
@@ -81,4 +118,33 @@
     </button>
   </form>
 </div>
+
+<script>
+  function orderForm() {
+    return {
+      ready: false, min: 0, max: 0, styleOther: false, timer: null,
+      init() {
+        const form = this.$refs.form;
+        const select = form.querySelector('[name=interior_style]');
+        this.styleOther = !!select && select.value === 'other';
+        const refresh = () => { clearTimeout(this.timer); this.timer = setTimeout(() => this.refresh(), 250); };
+        form.addEventListener('input', refresh);
+        form.addEventListener('change', refresh);
+        this.refresh();
+      },
+      async refresh() {
+        const form = this.$refs.form;
+        const data = new FormData(form);
+        const params = new URLSearchParams({
+          size: data.get('size_m2') || '', object_type: data.get('object_type') || '',
+          service_type: data.get('service_type') || '', rooms: data.get('rooms_count') || '', location: data.get('location') || '',
+        });
+        try {
+          const answer = await (await fetch(form.dataset.priceUrl + '?' + params)).json();
+          this.ready = answer.ok; if (answer.ok) { this.min = answer.min; this.max = answer.max; }
+        } catch (e) { this.ready = false; }
+      },
+    };
+  }
+</script>
 {% endblock %}

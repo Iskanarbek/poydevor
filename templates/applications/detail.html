@@ -18,28 +18,6 @@
     <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> E'lonni o'chirish
   </a>
 
-  {% if application.status == 'open' %}
-    <div class="mb-6 rounded-2xl border px-5 py-4 text-sm {% if application.expiring_soon %}border-red-200 bg-red-50 text-red-800{% else %}border-amber-200 bg-amber-50 text-amber-900{% endif %}">
-      <p class="font-semibold flex items-center gap-1.5">
-        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        {% if application.days_left == 0 %}E'lon bugun avtomatik o'chiriladi!{% else %}E'lon {{ application.days_left }} kundan keyin avtomatik o'chiriladi{% endif %}
-      </p>
-      <p class="mt-1">
-        Agar {{ lifetime_days }} kun ichida «Hali ham izlayapman» tugmasini bosib tasdiqlamasangiz, e'loningiz avtomatik o'chiriladi.
-        Tasdiqlasangiz, muddat yangidan {{ lifetime_days }} kun bo'ladi.
-      </p>
-      <form method="post" action="{% url 'applications:renew' application.pk %}" class="mt-3">
-        {% csrf_token %}
-        {% if application.can_renew %}
-          <button type="submit" class="btn-clay !py-2 !text-sm">Hali ham izlayapman</button>
-        {% else %}
-          <button type="button" disabled class="btn-disabled !py-2 !text-sm">Hali ham izlayapman</button>
-          <p class="mt-2 text-xs opacity-80">Tugma {{ application.days_until_renew }} kundan keyin bosiladigan bo'ladi.</p>
-        {% endif %}
-      </form>
-    </div>
-  {% endif %}
-
   <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
     <dt class="text-charcoal-500">Maydon</dt>
     <dd class="text-charcoal-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
@@ -50,8 +28,21 @@
     <dt class="text-charcoal-500">Manzil</dt>
     <dd class="text-charcoal-900">{{ application.location }}</dd>
 
+    {% if application.object_type %}
+      <dt class="text-charcoal-500">Obyekt turi</dt>
+      <dd class="text-charcoal-900">{{ application.get_object_type_display }}</dd>
+    {% endif %}
+    {% if application.service_type %}
+      <dt class="text-charcoal-500">Xizmat turi</dt>
+      <dd class="text-charcoal-900">{{ application.get_service_type_display }}</dd>
+    {% endif %}
+    {% if application.estimate_min %}
+      <dt class="text-charcoal-500">Taxminiy narx</dt>
+      <dd class="text-charcoal-900">${{ application.estimate_min }} – ${{ application.estimate_max }}</dd>
+    {% endif %}
+
     <dt class="text-charcoal-500">Interyer uslubi</dt>
-    <dd class="text-charcoal-900">{{ application.interior_style|default:"Belgilanmagan" }}</dd>
+    <dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
 
     <dt class="text-charcoal-500">Byudjet</dt>
     <dd class="text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</dd>
@@ -84,7 +75,7 @@
           <div class="flex items-start justify-between gap-4">
             <div class="flex min-w-0 gap-4">
               {% if architect.avatar %}
-                <img src="{{ architect.avatar.url }}" alt="" class="h-16 w-16 shrink-0 rounded-full object-cover ring-4 ring-cream-50 shadow">
+                <img src="{{ architect.avatar.url }}" alt="" class="h-16 w-16 shrink-0 {% if architect.kind == 'studio_owner' %}rounded-xl bg-white object-contain{% else %}rounded-full object-cover{% endif %} ring-4 ring-cream-50 shadow">
               {% else %}
                 <span class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-charcoal-100 text-charcoal-400"><svg class="icon !h-7 !w-7"><use href="#i-user"/></svg></span>
               {% endif %}

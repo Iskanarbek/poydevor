@@ -108,7 +108,6 @@ anywhere else that can run `pip install` and a WSGI app.
 | `PAYME_KEY` | No — must be set together with the above | The matching key: **test key** while `PAYME_TEST_MODE=true`, **production key** otherwise. These are two different values in your Payme cabinet — don't mix them up. |
 | `PAYME_TEST_MODE` | No (defaults off = production) | `true` sends customers to Payme's sandbox (`test.paycom.uz`, no real money). Leave unset for real payments. |
 | `CLICK_SERVICE_ID` / `CLICK_MERCHANT_ID` / `CLICK_SECRET_KEY` | No | Click merchant cabinet. All three needed together to turn Click on. |
-| `CRON_SECRET` | No | Only if you wire up `/internal/expire-orders/` to a daily cron job (deletes orders nobody confirmed are still open, refunds the architects who applied). |
 | `BLOB_READ_WRITE_TOKEN` | No — **leave unset on a normal server** | Vercel-only: redirects uploads to Vercel Blob storage because Vercel's own filesystem can't be written to. On a real server (VPS, shared hosting) you want this **unset** — uploads then just save to local disk, which is correct and simpler. |
 
 A provider (Payme or Click) is **off** unless every one of its variables is set.

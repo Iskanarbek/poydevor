@@ -5,7 +5,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from architects.models import Style
+from architects.models import ObjectType, ServiceType, Style
 
 
 HOUSE_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
@@ -15,11 +15,6 @@ class ApplicationQuerySet(models.QuerySet):
     def visible(self):
         """Orders their owner has not deleted."""
         return self.filter(deleted_at__isnull=True)
-
-    def stale(self):
-        """Open orders whose owner hasn't confirmed they are still searching in time."""
-        cutoff = timezone.now() - timedelta(days=settings.ORDER_LIFETIME_DAYS)
-        return self.filter(status="open", deleted_at__isnull=True, last_confirmed_at__lt=cutoff)
 
 
 class Application(models.Model):
@@ -34,6 +29,13 @@ class Application(models.Model):
     rooms_count = models.PositiveSmallIntegerField()
     location = models.CharField(max_length=100)
     interior_style = models.ForeignKey(Style, on_delete=models.SET_NULL, null=True, blank=True, related_name="applications")
+    # Used when the client's style is not in the list.
+    custom_style = models.CharField(max_length=60, blank=True)
+    object_type = models.CharField(max_length=20, choices=ObjectType.choices, blank=True)
+    service_type = models.CharField(max_length=20, choices=ServiceType.choices, blank=True)
+    # The market estimate (US dollars) the client saw and agreed to when posting.
+    estimate_min = models.PositiveIntegerField(null=True, blank=True)
+    estimate_max = models.PositiveIntegerField(null=True, blank=True)
     budget = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     # What the client wants done; architects read this to decide whether the
     # project is right for them before spending coins on it.
@@ -62,34 +64,11 @@ class Application(models.Model):
         return f"{self.location} — {self.rooms_count} xona"
 
     @property
+    def style_label(self):
+        return self.interior_style.name if self.interior_style_id else self.custom_style
+
+    @property
     def plan_is_image(self):
         """The uploaded "house picture" is a photo (as opposed to a PDF)."""
         import os
         return bool(self.plan_pdf) and os.path.splitext(self.plan_pdf.name)[1].lower() in HOUSE_IMAGE_EXTENSIONS
-
-    @property
-    def expires_at(self):
-        return self.last_confirmed_at + timedelta(days=settings.ORDER_LIFETIME_DAYS)
-
-    @property
-    def days_left(self):
-        """Whole days until an open order is deleted automatically (0 = today)."""
-        return max(0, math.ceil((self.expires_at - timezone.now()).total_seconds() / 86400))
-
-    @property
-    def renewable_from(self):
-        """The moment the owner may confirm they are still searching."""
-        return self.last_confirmed_at + timedelta(days=settings.ORDER_RENEW_AFTER_DAYS)
-
-    @property
-    def can_renew(self):
-        return self.status == self.Status.OPEN and timezone.now() >= self.renewable_from
-
-    @property
-    def days_until_renew(self):
-        """Whole days before the confirm button unlocks (0 once it is available)."""
-        return max(0, math.ceil((self.renewable_from - timezone.now()).total_seconds() / 86400))
-
-    @property
-    def expiring_soon(self):
-        return self.status == self.Status.OPEN and self.days_left <= settings.ORDER_WARNING_DAYS

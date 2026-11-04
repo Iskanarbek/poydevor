@@ -1,4 +1,3 @@
-import hmac
 import io
 import os
 
@@ -48,21 +47,6 @@ def internal_setup(request):
         output.write(f"\nseed_lookups FAILED: {exc}\n")
 
     return HttpResponse(output.getvalue(), content_type="text/plain")
-
-
-def internal_expire_orders(request):
-    """Daily clean-up hook (point a cron job here): deletes expired orders and
-    refunds the architects. Protected by CRON_SECRET, sent either as
-    ``Authorization: Bearer <secret>`` (what Vercel Cron sends) or as ``?token=``.
-    Disabled while CRON_SECRET is not set."""
-    from django.conf import settings
-    from applications.services import expire_stale_applications
-
-    secret = settings.CRON_SECRET
-    given = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() or request.GET.get("token", "")
-    if not secret or not hmac.compare_digest(given.encode(), secret.encode()):
-        return HttpResponseForbidden("Forbidden")
-    return HttpResponse(f"removed: {expire_stale_applications()}\n", content_type="text/plain")
 
 
 def csrf_failure(request, reason=""):

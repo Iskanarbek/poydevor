@@ -4,7 +4,13 @@
   {% include "architects/_carousel.html" with images=project.images.all alt=project.title href=detail_url %}
   <a href="{{ detail_url }}" class="block p-4">
     <h3 class="font-serif text-lg font-semibold leading-snug text-charcoal-900">{{ project.title }}</h3>
-    {% if project.style %}<p class="text-[15px] font-medium text-charcoal-700">{{ project.style }}</p>{% endif %}
+    <div class="mt-2 flex flex-wrap gap-1.5">
+      {% if project.service_type %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ project.get_service_type_display }}</span>{% endif %}
+      {% if project.object_type %}<span class="rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ project.get_object_type_display }}</span>{% endif %}
+      {% if project.style_label %}<span class="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ project.style_label }}</span>{% endif %}
+    </div>
+    {% if project.price_usd %}<p class="mt-2 text-sm font-semibold text-charcoal-900">${{ project.price_usd }}</p>{% endif %}
+    {% if project.description %}<p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-charcoal-600">{{ project.description }}</p>{% endif %}
     {% if own and not project.images.all %}<p class="mt-2 inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">Rasm yo'q — kamida bitta rasm qo'shing</p>{% endif %}
     {% if show_architect %}
       <div class="mt-2 flex items-center justify-between gap-3 text-sm">

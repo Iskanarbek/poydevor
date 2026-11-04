@@ -14,7 +14,7 @@ def live_offers(application: Application):
 
 @transaction.atomic
 def delete_application(application: Application, auto: bool = False) -> int:
-    """Delete an order (by its owner, or automatically when it expires).
+    """Delete an order (by its owner).
     Returns how many architects were refunded.
 
     * The order disappears for the owner (the row is kept, marked deleted, so an
@@ -58,31 +58,3 @@ def delete_application(application: Application, auto: bool = False) -> int:
     application.auto_deleted = auto
     application.save(update_fields=["status", "deleted_at", "auto_deleted"])
     return refunded
-
-
-def expire_stale_applications() -> int:
-    """Delete every open order whose owner didn't confirm in time, refunding the
-    architects who paid to apply. Returns how many orders were removed.
-
-    Cheap when there is nothing to do, so it is called whenever orders are
-    listed, and also by the ``expire_applications`` command / cron endpoint.
-    """
-    removed = 0
-    for pk in list(Application.objects.stale().values_list("pk", flat=True)):
-        application = Application.objects.get(pk=pk)
-        if application in Application.objects.stale():   # re-check: it may have been confirmed meanwhile
-            delete_application(application, auto=True)
-            removed += 1
-    return removed
-
-
-def renew_application(application: Application) -> bool:
-    """The owner confirms they are still searching: restart the countdown.
-
-    Only possible once ``ORDER_RENEW_AFTER_DAYS`` have passed since the order was
-    posted or last confirmed. Returns whether the countdown was restarted."""
-    if application.deleted_at is None and application.can_renew:
-        application.last_confirmed_at = timezone.now()
-        application.save(update_fields=["last_confirmed_at"])
-        return True
-    return False
