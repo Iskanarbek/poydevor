@@ -27,7 +27,8 @@
                 {% if offer.application.object_type %}· {{ offer.application.get_object_type_display }}{% endif %}
                 {% if offer.application.service_type %}· {{ offer.application.get_service_type_display }}{% endif %}
               </p>
-              {% if offer.status == 'accepted' %}<p class="text-xs text-charcoal-500">Mijoz: {{ offer.application.owner.phone }}</p>{% endif %}
+              {% if offer.status == 'accepted' %}<p class="text-xs text-charcoal-500">Mijoz: {{ offer.application.owner.first_name }} · {{ offer.application.owner.phone }}</p>{% endif %}
+              <a href="{% url 'offers:detail' offer.pk %}" class="mt-1 inline-flex items-center gap-1 text-xs font-medium text-clay-700 hover:underline">Batafsil <svg class="icon"><use href="#i-arrow"/></svg></a>
               {% if offer.source == 'user_invited' %}
                 <span class="mt-1 inline-block rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700">Mijoz sizga yubordi</span>
               {% else %}

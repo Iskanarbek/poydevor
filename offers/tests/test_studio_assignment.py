@@ -217,7 +217,8 @@ class EmployeePanelTests(TestCase):
         self.assertContains(mine, "Toshkent")
         self.assertContains(mine, "Bajarildi")
         self.assertEqual(mine.context["emp_stats"]["active"], 1)
-        self.assertNotContains(self.page("open"), "Toshkent")
+        open_places = [a.offer.application.location for a in self.page("open").context["open_assignments"]]
+        self.assertNotIn("Toshkent", open_places)
 
     def test_overdue_job_is_flagged_and_listed_first(self):
         assign_worker(self.assignments[0], self.worker, deadline="2099-01-01")
@@ -305,7 +306,8 @@ class StudioOrdersTableTests(TestCase):
         self.assertEqual((str(assignment.deadline), assignment.worker), ("2030-07-01", self.worker1))
         self.client.post(url, {"worker": self.worker2.pk, "deadline": "2030-07-15"})
         self.client.force_login(self.worker1.user)
-        self.assertNotContains(self.client.get("/employee/workspace/?tab=tasks"), "Toshkent")    # it disappeared
+        mine = self.client.get("/employee/workspace/?tab=tasks")
+        self.assertEqual(list(mine.context["my_assignments"]), [])                                # it disappeared
         self.assertTrue(Notification.objects.filter(user=self.worker1.user, text__contains="boshqa xodimga").exists())
         self.client.force_login(self.worker2.user)
         self.assertContains(self.client.get("/employee/workspace/?tab=tasks"), "Toshkent")       # the new one sees it
@@ -321,7 +323,7 @@ class StudioOrdersTableTests(TestCase):
         assignment.refresh_from_db()
         self.assertEqual((offer.status, assignment.status), (Offer.Status.COMPLETED, StudioAssignment.Status.DONE))
         self.assertContains(self.client.get("/studio/dashboard/?tab=finished"), "Toshkent")
-        self.assertNotContains(self.client.get("/studio/dashboard/?tab=orders"), "Toshkent")     # no longer in the working table
+        self.assertEqual(self.client.get("/studio/dashboard/?tab=orders").context["order_rows"], [])   # no longer in the working table
         self.assertTrue(Notification.objects.filter(user=self.client_user, text__contains="yakunladi").exists())
 
     def test_only_the_owner_of_an_accepted_offer_can_finish_it(self):
@@ -342,3 +344,74 @@ class StudioOrdersTableTests(TestCase):
         self.assertContains(self.client.get("/freelancer/dashboard/?tab=market"), "Yakunlash")
         self.client.post(f"/ariza/{offer.pk}/arxitektor-yakunlash/")
         self.assertContains(self.client.get("/freelancer/dashboard/?tab=finished"), "Nukus")
+
+
+class OfferDetailPageTests(TestCase):
+    """The "Batafsil" page: full project details; the client's contact only after acceptance;
+    visible to the architect/studio and to the worker the job is assigned to (not the old one)."""
+
+    def setUp(self):
+        self.client_user = User.objects.create_user(phone="+998901111111", password="x", first_name="Aziz", last_name="Karimov", role=User.Role.USER)
+        self.owner = make_studio()
+        self.w1 = make_employee(self.owner, "Worker1")
+        self.w2 = make_employee(self.owner, "Worker2")
+        for w in (self.w1, self.w2):
+            w.approval_status = ArchitectProfile.ApprovalStatus.APPROVED
+            w.save()
+        self.app = Application.objects.create(
+            owner=self.client_user, rooms_count=3, location="Toshkent", size_m2=90, object_type="apartment",
+            service_type="interior", custom_style="Skandinav", estimate_min=1000, estimate_max=1800, description="Yorug' bo'lsin",
+        )
+        self.offer = send_offer(self.app, self.owner, source=Offer.Source.ARCHITECT_APPLIED)
+        self.url = f"/ariza/{self.offer.pk}/batafsil/"
+
+    def test_details_without_contact_before_acceptance(self):
+        self.client.force_login(self.owner.user)
+        page = self.client.get(self.url)
+        for text in ("Skandinav", "Kvartira", "Interyer dizayni", "$1000", "Yorug"):
+            self.assertContains(page, text)
+        self.assertNotContains(page, "+998901111111")
+        self.assertContains(page, "ariza qabul qilingach")
+
+    def test_contact_and_worker_button_after_assignment_and_the_old_worker_is_locked_out(self):
+        accept_offer(self.offer)
+        assignment = StudioAssignment.objects.get(offer=self.offer)
+        assign_worker(assignment, self.w1, deadline="2030-01-01")
+        self.client.force_login(self.owner.user)
+        self.assertContains(self.client.get(self.url), "+998901111111")
+        self.client.force_login(self.w1.user)
+        page = self.client.get(self.url)
+        self.assertContains(page, "+998901111111")                     # the worker sees the client's contact...
+        self.assertContains(page, "Bajarildi")                          # ...and can mark the job finished
+        self.client.post(f"/employee/buyurtmalar/{assignment.pk}/bajarildi/")
+        assignment.refresh_from_db()
+        self.assertEqual(assignment.status, StudioAssignment.Status.DONE)
+
+    def test_a_reassigned_worker_and_strangers_cannot_open_it(self):
+        accept_offer(self.offer)
+        assignment = StudioAssignment.objects.get(offer=self.offer)
+        assign_worker(assignment, self.w1)
+        assign_worker(assignment, self.w2)
+        self.client.force_login(self.w1.user)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        self.client.force_login(self.w2.user)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+        self.client.force_login(self.client_user)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_the_orders_table_links_to_it_and_shows_the_client_after_acceptance(self):
+        accept_offer(self.offer)
+        self.client.force_login(self.owner.user)
+        page = self.client.get("/studio/dashboard/?tab=orders")
+        self.assertContains(page, self.url)
+        self.assertContains(page, "Aziz")
+        self.assertContains(page, "+998901111111")
+
+    def test_finished_projects_show_the_details(self):
+        accept_offer(self.offer)
+        self.client.post  # noqa
+        self.client.force_login(self.owner.user)
+        self.client.post(f"/ariza/{self.offer.pk}/arxitektor-yakunlash/")
+        page = self.client.get("/studio/dashboard/?tab=finished")
+        for text in ("Skandinav", "Kvartira", "Interyer dizayni", "$1000", "Batafsil"):
+            self.assertContains(page, text)

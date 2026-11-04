@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ application.location }} — Poydevor{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <a href="{{ back_url }}" class="inline-flex items-center gap-1.5 text-sm text-charcoal-500 transition hover:text-charcoal-800">
+    <svg class="icon"><use href="#i-back"/></svg> Orqaga
+  </a>
+
+  <div class="mt-4 mb-6 flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <h1 class="font-serif text-2xl font-semibold text-charcoal-900">{{ application.location }}</h1>
+      <p class="mt-1 text-sm text-charcoal-500">
+        {% if offer.source == 'user_invited' %}Mijoz sizga yubordi{% else %}Siz ariza yuborgansiz{% endif %}
+      </p>
+    </div>
+    <span class="rounded-full px-3 py-1 text-xs font-semibold
+      {% if offer.status == 'pending' %}bg-amber-100 text-amber-700{% elif offer.status == 'accepted' %}bg-green-100 text-green-700
+      {% elif offer.status == 'completed' %}bg-charcoal-100 text-charcoal-600{% else %}bg-red-100 text-red-700{% endif %}">{{ offer.get_status_display }}</span>
+  </div>
+
+  {% if show_contact %}
+    <section class="mb-6 rounded-2xl border border-clay-200 bg-clay-50 p-5">
+      <p class="mb-2 text-xs font-medium uppercase tracking-wider text-clay-700">Mijoz bilan bog'lanish</p>
+      <p class="font-medium text-charcoal-900">{{ application.owner.first_name }} {{ application.owner.last_name }}</p>
+      <a href="tel:{{ application.owner.phone }}" class="mt-2 inline-flex items-center gap-2 rounded-full border border-clay-300 bg-white px-4 py-2 text-sm font-medium text-charcoal-800 transition hover:border-clay-500">
+        <svg class="icon text-clay-600"><use href="#i-phone"/></svg>{{ application.owner.phone }}
+      </a>
+    </section>
+  {% else %}
+    <p class="mb-6 rounded-2xl border border-charcoal-100 bg-white px-5 py-4 text-sm text-charcoal-500">Mijozning aloqa ma'lumotlari ariza qabul qilingach ko'rinadi.</p>
+  {% endif %}
+
+  {% if assignment and offer.status == 'accepted' or assignment and offer.status == 'completed' %}
+    <section class="mb-6 rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm">
+      <p class="mb-2 text-xs font-medium uppercase tracking-wider text-charcoal-400">Ish holati</p>
+      <p class="text-charcoal-900">Xodim: <b>{{ assignment.worker|default:"hali tanlanmagan" }}</b></p>
+      <p class="mt-1 text-sm {% if assignment.is_overdue %}font-semibold text-red-600{% else %}text-charcoal-600{% endif %}">
+        {% if assignment.deadline %}Muddat: {{ assignment.deadline|date:"d.m.Y" }}{% if assignment.is_overdue %} — muddati o'tgan{% endif %}{% else %}Muddat belgilanmagan{% endif %}
+      </p>
+      <p class="mt-1 text-sm text-charcoal-600">Holat: {{ assignment.get_status_display }}</p>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {% if is_worker and assignment.status == 'assigned' %}
+          <form method="post" action="{% url 'architects:assignment_done' assignment.pk %}">{% csrf_token %}
+            <button type="submit" class="btn-clay !py-2 !px-5">Bajarildi <svg class="icon"><use href="#i-check"/></svg></button>
+          </form>
+        {% endif %}
+        {% if is_owner and offer.status == 'accepted' %}
+          <form method="post" action="{% url 'offers:architect_finish' offer.pk %}">{% csrf_token %}
+            <button type="submit" class="btn-clay !py-2 !px-5">Yakunlash</button>
+          </form>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <dl class="grid grid-cols-2 gap-x-6 gap-y-4 rounded-2xl border border-charcoal-200 bg-white p-6 text-sm shadow-sm">
+    <dt class="text-charcoal-500">Maydon</dt><dd class="text-charcoal-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
+    <dt class="text-charcoal-500">Xonalar soni</dt><dd class="text-charcoal-900">{{ application.rooms_count }}</dd>
+    <dt class="text-charcoal-500">Manzil</dt><dd class="text-charcoal-900">{{ application.location }}</dd>
+    {% if application.object_type %}<dt class="text-charcoal-500">Obyekt turi</dt><dd class="text-charcoal-900">{{ application.get_object_type_display }}</dd>{% endif %}
+    {% if application.service_type %}<dt class="text-charcoal-500">Xizmat turi</dt><dd class="text-charcoal-900">{{ application.get_service_type_display }}</dd>{% endif %}
+    <dt class="text-charcoal-500">Uslub</dt><dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
+    {% if application.estimate_min %}<dt class="text-charcoal-500">Taxminiy narx</dt><dd class="text-charcoal-900">${{ application.estimate_min }} – ${{ application.estimate_max }}</dd>{% endif %}
+    <dt class="text-charcoal-500">Byudjet</dt><dd class="text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</dd>
+    {% if application.description %}
+      <dt class="text-charcoal-500">Nima qilish kerak</dt><dd class="whitespace-pre-line text-charcoal-900">{{ application.description }}</dd>
+    {% endif %}
+    <dt class="text-charcoal-500">Uy rasmi / kadastr</dt>
+    <dd class="text-charcoal-900">
+      {% if application.plan_pdf %}
+        {% if application.plan_is_image %}
+          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener"><img src="{{ application.plan_pdf.url }}" alt="Uy rasmi" class="max-h-48 rounded-lg border border-charcoal-200 object-cover"></a>
+        {% else %}
+          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener" class="underline">Faylni ochish</a>
+        {% endif %}
+      {% else %}Yuklanmagan{% endif %}
+    </dd>
+  </dl>
+</div>
+{% endblock %}

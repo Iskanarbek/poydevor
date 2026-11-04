@@ -23,7 +23,11 @@
       <div class="relative rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 hover:border-clay-400 transition">
         <a href="{% url 'applications:detail' application.pk %}" class="block">
           <div class="flex justify-between items-start mb-2">
-            <h2 class="font-serif font-medium text-charcoal-900">{{ application.location }}</h2>
+            <h2 class="font-serif font-medium text-charcoal-900">{{ application.location }}
+              {% for order_id, order_count in order_badges.items %}{% if order_id == application.pk %}
+                <span data-order-badge="{{ application.pk }}" class="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 align-middle text-[11px] font-semibold leading-5 text-white">{{ order_count }}</span>
+              {% endif %}{% endfor %}
+            </h2>
             <span class="text-xs font-medium px-2.5 py-1 rounded-full
               {% if application.status == 'open' %}bg-green-50 text-green-700
               {% elif application.status == 'in_progress' %}bg-amber-50 text-amber-700

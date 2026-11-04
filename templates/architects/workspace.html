@@ -56,6 +56,9 @@
       <a href="?tab={{ key }}"{% if key == tab %} data-active-tab{% endif %}
          class="whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition {% if key == tab %}bg-charcoal-900 text-white shadow{% else %}text-charcoal-500 hover:bg-cream-100 hover:text-charcoal-900{% endif %}">
         <span class="{% if key == tab %}text-clay-300{% else %}text-charcoal-300{% endif %} mr-1">{{ forloop.counter }}.</span>{{ label }}
+        {% for badge_key, badge_count in tab_badges.items %}{% if badge_key == key %}
+          <span data-badge="{{ key }}" class="ml-1.5 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-red-600 px-1.5 text-[11px] font-semibold leading-5 text-white">{{ badge_count }}</span>
+        {% endif %}{% endfor %}
       </a>
     {% endfor %}
   </div>
@@ -66,6 +69,13 @@
     <svg class="icon mt-0.5 shrink-0" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19zM12 10v4M12 17h.01"/></svg>
     <span><b>Portfolio to'ldirilmagan.</b> Loyihalaringiz hech kimga ko'rinmaydi va e'lonlarda qatnasha olmaysiz. Portfolioni to'ldirish uchun bosing &rarr;</span>
   </a>
+{% endif %}
+
+{% if new_here %}
+  <div class="reveal mb-6 rounded-2xl border border-clay-200 bg-clay-50 px-5 py-4 text-sm text-clay-900" style="--d:.14s">
+    <p class="mb-1.5 flex items-center gap-2 font-semibold"><span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>Yangiliklar</p>
+    <ul class="space-y-1">{% for text in new_here %}<li>{{ text }}</li>{% endfor %}</ul>
+  </div>
 {% endif %}
 
 <div class="reveal" style="--d:.18s">

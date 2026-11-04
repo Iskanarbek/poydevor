@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from applications.models import Application
@@ -167,3 +168,32 @@ def architect_finish(request, offer_pk):
         messages.success(request, "Loyiha yakunlandi va tugatilgan ishlarga o'tdi.")
         return redirect(dashboard_url(offer.architect, "finished"))
     return redirect(dashboard_url(offer.architect, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market"))
+
+
+@login_required
+def offer_detail(request, offer_pk):
+    """Everything about one project, for the architect/studio it belongs to and for the worker
+    it is assigned to. The client's contact is shown only once the offer was accepted."""
+    offer = get_object_or_404(
+        Offer.objects.select_related("application", "application__owner", "application__interior_style", "architect__user"),
+        pk=offer_pk,
+    )
+    assignment = getattr(offer, "studio_assignment", None)
+    is_owner = offer.architect.user_id == request.user.id
+    is_worker = bool(assignment and assignment.worker_id and assignment.worker.user_id == request.user.id)
+    if not (is_owner or is_worker):
+        raise Http404
+    profile = offer.architect if is_owner else assignment.worker
+    if is_worker:
+        back_url = dashboard_url(profile, "tasks")
+    else:
+        back_url = dashboard_url(profile, "orders" if offer.architect.kind == ArchitectProfile.Kind.STUDIO_OWNER else "market")
+    return render(request, "offers/offer_detail.html", {
+        "offer": offer,
+        "application": offer.application,
+        "assignment": assignment,
+        "is_owner": is_owner,
+        "is_worker": is_worker,
+        "show_contact": offer.status in (Offer.Status.ACCEPTED, Offer.Status.COMPLETED),
+        "back_url": back_url,
+    })

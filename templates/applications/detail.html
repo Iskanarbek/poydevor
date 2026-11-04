@@ -18,6 +18,13 @@
     <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> E'lonni o'chirish
   </a>
 
+  {% if new_here %}
+    <div class="mb-6 rounded-2xl border border-clay-200 bg-clay-50 px-5 py-4 text-sm text-clay-900">
+      <p class="mb-1.5 flex items-center gap-2 font-semibold"><span class="inline-block h-2 w-2 rounded-full bg-red-600"></span>Yangiliklar</p>
+      <ul class="space-y-1">{% for text in new_here %}<li>{{ text }}</li>{% endfor %}</ul>
+    </div>
+  {% endif %}
+
   <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
     <dt class="text-charcoal-500">Maydon</dt>
     <dd class="text-charcoal-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>

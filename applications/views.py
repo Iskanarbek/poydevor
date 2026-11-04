@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from applications.forms import ApplicationForm
 from architects.gallery import gallery_context
+from notifications.services import order_badges, take_url_notifications
 from applications.models import Application
 from applications.pricing import estimate_price
 from applications.services import (
@@ -54,14 +55,17 @@ def dashboard(request):
     return render(request, "applications/dashboard.html", {
         **gallery_context(request),
         "applications": applications,
+        "order_badges": order_badges(request.user),
     })
 
 
 @login_required
 def detail(request, pk):
     application = get_object_or_404(Application, pk=pk, owner=request.user, deleted_at__isnull=True)
+    news = take_url_notifications(request.user, request.path)
     return render(request, "applications/detail.html", {
         "application": application,
+        "new_here": news,
         "offers": application.offers.select_related("architect__user", "architect__studio_owned", "review")
         .prefetch_related("architect__skills", "architect__projects__images"),
     })

@@ -112,31 +112,37 @@ class StudioNotificationTests(Base):
         self.assertTrue(any("qabul qildi" in t for t in texts(employee.user)))
 
 
-class BellAndListTests(Base):
-    def test_bell_shows_the_unread_count_and_opening_marks_read(self):
+class SectionBadgeTests(Base):
+    """No notifications page: the news shows as a red number on the tab / order it belongs to."""
+
+    def test_a_tab_gets_a_number_until_it_is_opened(self):
         send_offer(self.application, self.freelancer, source=Offer.Source.USER_INVITED)
         self.client.force_login(self.freelancer.user)
-        page = self.client.get(reverse("notifications:list"))
-        self.assertEqual(page.context["unread_notifications_count"], 1)
-        n = Notification.objects.get(user=self.freelancer.user)
-        response = self.client.get(reverse("notifications:open", args=[n.pk]))
-        self.assertRedirects(response, n.url, fetch_redirect_response=False)
-        n.refresh_from_db()
-        self.assertTrue(n.is_read)
+        page = self.client.get("/freelancer/dashboard/?tab=room")
+        self.assertEqual(page.context["tab_badges"], {"market": 1})
+        self.assertContains(page, 'data-badge="market"')
+        market = self.client.get("/freelancer/dashboard/?tab=market")
+        self.assertEqual(len(market.context["new_here"]), 1)              # the news is shown on the tab itself
+        self.assertContains(market, "sizga loyiha yubordi")
+        again = self.client.get("/freelancer/dashboard/?tab=market")
+        self.assertEqual((again.context["new_here"], again.context["tab_badges"]), ([], {}))   # ...once
 
-    def test_mark_all_read(self):
-        for i in range(3):
-            Notification.objects.create(user=self.client_user, text=f"t{i}")
+    def test_there_is_no_notifications_page_or_bell(self):
+        self.assertEqual(self.client.get("/bildirishnomalar/").status_code, 404)
         self.client.force_login(self.client_user)
-        self.client.post(reverse("notifications:mark_all_read"))
-        self.assertFalse(Notification.objects.filter(user=self.client_user, is_read=False).exists())
+        self.assertNotContains(self.client.get(reverse("applications:dashboard")), "Bildirishnomalar")
 
-    def test_nobody_can_open_someone_elses_notification(self):
-        n = Notification.objects.create(user=self.client_user, text="secret")
+    def test_clients_see_a_number_on_the_order_and_it_clears_when_the_order_is_opened(self):
+        send_offer(self.application, self.freelancer, source=Offer.Source.ARCHITECT_APPLIED)
+        self.client.force_login(self.client_user)
+        home = self.client.get(reverse("applications:dashboard"))
+        self.assertEqual(home.context["order_badges"], {self.application.pk: 1})
+        self.assertContains(home, f'data-order-badge="{self.application.pk}"')
+        detail = self.client.get(reverse("applications:detail", args=[self.application.pk]))
+        self.assertContains(detail, "ariza yubordi")
+        self.assertEqual(self.client.get(reverse("applications:dashboard")).context["order_badges"], {})
+
+    def test_the_menu_shows_the_total(self):
+        send_offer(self.application, self.freelancer, source=Offer.Source.USER_INVITED)
         self.client.force_login(self.freelancer.user)
-        self.assertEqual(self.client.get(reverse("notifications:open", args=[n.pk])).status_code, 404)
-
-    def test_an_outside_address_is_never_followed(self):
-        n = Notification.objects.create(user=self.client_user, text="x", url="https://evil.example/")
-        self.client.force_login(self.client_user)
-        self.assertRedirects(self.client.get(reverse("notifications:open", args=[n.pk])), reverse("notifications:list"), fetch_redirect_response=False)
+        self.assertContains(self.client.get("/freelancer/dashboard/?tab=room"), 'data-nav-badge="1"')

@@ -63,6 +63,7 @@
         </div>
       {% endif %}
 
+      <p class="mb-2"><a href="{% url 'offers:detail' offer.pk %}" class="inline-flex items-center gap-1 text-sm font-medium text-clay-700 hover:underline">Batafsil <svg class="icon"><use href="#i-arrow"/></svg></a></p>
       {% if offer.status == 'accepted' %}
         <form method="post" action="{% url 'offers:architect_finish' offer.pk %}" class="mb-1">
           {% csrf_token %}

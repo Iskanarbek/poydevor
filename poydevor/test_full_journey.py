@@ -183,8 +183,10 @@ class FullJourneyTests(TestCase):
         self.new_visitor()
         self.assertEqual(self.log_in("+998903333333", "").status_code, 200)       # no password: refused, asked for it
         self.assertEqual(self.log_in("+998903333333", "e").status_code, 302)
-        bell = self.client.get(reverse("notifications:list"))
-        self.assertContains(bell, "Sizga buyurtma biriktirildi")
+        panel = self.client.get(reverse("architects:employee_workspace"))
+        self.assertTrue(any("Sizga buyurtma biriktirildi" in t for t in panel.context["new_here"]))   # the news shows on the tab
+        self.assertNotIn("tasks", panel.context["tab_badges"])            # opened, so no red number on it any more
+        self.assertIn("open", panel.context["tab_badges"])               # (the new-orders tab still has its own)
         self.client.post(reverse("architects:assignment_done", args=[assignment.pk]))
         self.assertTrue(any("bajardi" in t for t in self.unread("+998901111111")))
 
@@ -203,7 +205,7 @@ class FullJourneyTests(TestCase):
             page = self.client.get(url)
             self.assertNotContains(page, "avtomatik o'chiril")
             self.assertNotContains(page, "Hali ham izlayapman")
-        target = reverse("notifications:list")
+        target = reverse("applications:dashboard")
         self.new_visitor()
         self.assertRedirects(self.client.get(target), f"{reverse('accounts:login')}?next={target}", fetch_redirect_response=False)
         self.assertRedirects(self.log_in("+998904444444"), reverse("dashboard"), fetch_redirect_response=False)

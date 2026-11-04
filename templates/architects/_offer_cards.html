@@ -1,20 +1,28 @@
 <div class="space-y-4">
   {% for offer in offers %}
-    <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-5">
-      <div class="flex items-center justify-between flex-wrap gap-2">
+    {% with app=offer.application %}
+    <div class="rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p class="font-medium text-charcoal-900">{{ offer.application.location }} — {{ offer.application.rooms_count }} xona</p>
-          <p class="text-xs text-charcoal-500">
-            {% if offer.application.size_m2 %}{{ offer.application.size_m2 }} m²{% else %}Maydon noma'lum{% endif %}
-            {% if offer.application.budget %}· Byudjet: {{ offer.application.budget|floatformat:"0g" }}{% endif %}
-          </p>
+          <p class="font-medium text-charcoal-900">{{ app.location }} — {{ app.rooms_count }} xona</p>
+          <p class="text-xs text-charcoal-500">{% if app.size_m2 %}{{ app.size_m2 }} m²{% else %}Maydon noma'lum{% endif %}</p>
         </div>
-        <span class="text-xs font-medium px-2.5 py-1 rounded-full {% if offer.status == 'accepted' %}bg-green-50 text-green-700{% else %}bg-charcoal-100 text-charcoal-600{% endif %}">
-          {{ offer.get_status_display }}
-        </span>
+        <span class="rounded-full px-2.5 py-1 text-xs font-medium {% if offer.status == 'accepted' %}bg-green-50 text-green-700{% else %}bg-charcoal-100 text-charcoal-600{% endif %}">{{ offer.get_status_display }}</span>
       </div>
-      <p class="text-sm text-charcoal-600 mt-3">Mijoz telefoni: {{ offer.application.owner.phone }}</p>
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {% if app.service_type %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ app.get_service_type_display }}</span>{% endif %}
+        {% if app.object_type %}<span class="rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ app.get_object_type_display }}</span>{% endif %}
+        {% if app.style_label %}<span class="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ app.style_label }}</span>{% endif %}
+        {% if app.estimate_min %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-800">${{ app.estimate_min }}–{{ app.estimate_max }}</span>{% endif %}
+        {% if app.budget %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-800">Byudjet: {{ app.budget|floatformat:"0g" }}</span>{% endif %}
+      </div>
+      {% if app.description %}<p class="mt-3 line-clamp-2 text-sm text-charcoal-600">{{ app.description }}</p>{% endif %}
+      <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+        <span class="text-charcoal-600">Mijoz: {{ app.owner.first_name }} · {{ app.owner.phone }}</span>
+        <a href="{% url 'offers:detail' offer.pk %}" class="inline-flex items-center gap-1 font-medium text-clay-700 hover:underline">Batafsil <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
     </div>
+    {% endwith %}
   {% empty %}
     <p class="text-sm text-charcoal-500">{{ empty_message }}</p>
   {% endfor %}

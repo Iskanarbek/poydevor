@@ -15,6 +15,7 @@ from django.views.decorators.http import require_POST
 from accounts.views import login_without_password
 from applications.models import Application
 from architects.gallery import gallery_context
+from notifications.services import workspace_notices
 from architects.forms import (
     ArchitectProfileForm,
     EmployeeRegistrationForm,
@@ -227,7 +228,7 @@ def dashboard(request):
 def _offers(profile, *statuses):
     return (
         profile.offers.filter(status__in=statuses)
-        .select_related("application", "application__owner")
+        .select_related("application", "application__owner", "application__interior_style")
         .order_by("-created_at")
     )
 
@@ -285,6 +286,7 @@ def _workspace(request, profile, tabs, default_tab, title):
         # Studios and freelancers must finish their portfolio before they can take orders.
         "portfolio_locked": not profile.portfolio_ok and profile.kind != Kind.STUDIO_EMPLOYEE,
     }
+    context.update(workspace_notices(request.user, tab))
     wallet = context["wallet"]
     context["projects_left"] = wallet.balance // settings.OFFER_COST_COINS if wallet else 0
     if tab == "market":
@@ -393,6 +395,7 @@ def employee_workspace(request):
         tab = "tasks"
 
     return render(request, "architects/workspace.html", {
+        **workspace_notices(request.user, tab),
         "profile": profile,
         "title": studio.name if studio is not None else "Studiya",
         "tabs": tabs,
