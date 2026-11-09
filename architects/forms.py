@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import UploadedFile
 
 from accounts.forms import NewPhoneField
 from architects.models import (
-    SERVICE_TYPE_FORM_LABELS, ArchitectProfile, ObjectType, PortfolioImage, PortfolioProject, ServiceType, Studio, Style,
+    SERVICE_TYPE_FORM_LABELS, SINGLE_SERVICES, ArchitectProfile, ObjectType, PortfolioImage, PortfolioProject, ServiceType, Studio, Style,
 )
 from poydevor.upload_safety import ACCEPT_ATTRIBUTE, validate_pdf_or_jpg
 
@@ -195,6 +195,28 @@ def _check_images(files):
 OTHER_STYLE = "other"
 
 
+class ServiceTypeField(forms.MultipleChoiceField):
+    """Tick one or both services. Both ticked is stored as "both"."""
+
+    widget = forms.CheckboxSelectMultiple
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("choices", [(v, SERVICE_TYPE_FORM_LABELS[v]) for v in SINGLE_SERVICES])
+        super().__init__(**kwargs)
+
+    def to_python(self, value):
+        return super().to_python([value] if isinstance(value, str) else value)
+
+    def prepare_value(self, value):
+        if value == ServiceType.BOTH:
+            return [str(v) for v in SINGLE_SERVICES]
+        return [value] if isinstance(value, str) and value else value
+
+    def clean(self, value):
+        chosen = super().clean(value)
+        return ServiceType.BOTH if set(chosen) == {str(v) for v in SINGLE_SERVICES} else chosen[0]
+
+
 class StyleSelect(forms.Select):
     """The list of styles plus a last choice, "Boshqa", for people whose style is not listed."""
 
@@ -283,11 +305,15 @@ class PortfolioProjectEditForm(OwnStyleFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.setup_style("Uslubi (ixtiyoriy)")
         self.fields["object_type"] = forms.ChoiceField(
-            label="Obyekt turi", choices=[("", "Tanlang")] + list(ObjectType.choices),
+            label="Obyekt turi",
+            choices=[("", "Tanlang")] + [
+                c for c in ObjectType.choices
+                if c[0] != ObjectType.WEDDING_HALL or self.instance.object_type == ObjectType.WEDDING_HALL
+            ],
             error_messages={"required": "Obyekt turini tanlang."},
         )
-        self.fields["service_type"] = forms.ChoiceField(
-            label="Xizmat turi", choices=[("", "Tanlang")] + [(v, SERVICE_TYPE_FORM_LABELS[v]) for v in ServiceType.values],
+        self.fields["service_type"] = ServiceTypeField(
+            label="Xizmat turi (ikkalasini ham tanlash mumkin)",
             error_messages={"required": "Xizmat turini tanlang."},
         )
         self.fields["price_usd"].required = False

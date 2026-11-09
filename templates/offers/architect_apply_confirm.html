@@ -39,8 +39,8 @@
       </div>
       <div class="rounded-2xl border border-charcoal-100 bg-white p-4">
         <svg class="icon text-clay-600 mb-2"><use href="#i-budget"/></svg>
-        <p class="text-xs text-charcoal-500">Byudjet</p>
-        <p class="font-semibold text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</p>
+        <p class="text-xs text-charcoal-500">Taxminiy narx</p>
+        <p class="font-semibold text-charcoal-900">{% if application.estimate_min %}${{ application.estimate_min }} – ${{ application.estimate_max }}{% else %}Belgilanmagan{% endif %}</p>
       </div>
     </section>
 

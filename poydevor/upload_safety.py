@@ -76,6 +76,44 @@ def _check_jpg(upload, display):
         _fail(f"«{display}» buzilgan yoki haqiqiy JPG rasm emas. Boshqa rasm yuklang.")
 
 
+PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+PHOTO_ACCEPT_ATTRIBUTE = ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+_PHOTO_FORMAT = {".jpg": "JPEG", ".jpeg": "JPEG", ".png": "PNG", ".webp": "WEBP"}
+
+
+def _check_photo(upload, display, extension):
+    """A real picture of the kind its name says (JPG, PNG or WEBP)."""
+    expected = _PHOTO_FORMAT[extension]
+    upload.seek(0)
+    try:
+        with Image.open(upload) as picture:
+            picture.verify()
+            actual = picture.format
+    except Exception:  # noqa: BLE001 - anything unreadable is refused
+        actual = None
+    if actual != expected:
+        _fail(f"«{display}» buzilgan yoki haqiqiy rasm emas. Boshqa rasm yuklang.")
+
+
+def validate_pdf_or_photo(upload, max_mb=None):
+    """Like validate_pdf_or_jpg, but a photo may also be PNG or WEBP (what phones and
+    screenshots produce)."""
+    name = getattr(upload, "name", "") or ""
+    display = os.path.basename(name)
+    extension = os.path.splitext(name.strip().rstrip(". "))[1].lower()
+    if extension in (".png", ".webp"):
+        if max_mb is not None and upload.size > max_mb * 1024 * 1024:
+            _fail(f"«{display}» juda katta (eng ko'pi {max_mb} MB).")
+        if any(ch in BIDI_AND_CONTROL for ch in name):
+            _fail(f"«{display}» fayl nomida yashirin belgilar bor. Faylni qayta nomlab yuklang.")
+        try:
+            _check_photo(upload, display, extension)
+        finally:
+            upload.seek(0)
+        return upload
+    return validate_pdf_or_jpg(upload, max_mb=max_mb)
+
+
 def validate_pdf_or_jpg(upload, max_mb=None):
     """Raise forms.ValidationError (in Uzbek, with what to do) unless this is a genuine
     PDF or JPG; return the upload when it is fine."""

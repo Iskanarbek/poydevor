@@ -40,7 +40,7 @@ class PostApplicationViewTests(TestCase):
         self.assertEqual((app.estimate_min, app.estimate_max), (1500, 2750))      # the estimate is stored
 
     def test_every_question_is_required(self):
-        for missing in ("size_m2", "object_type", "service_type", "rooms_count", "location", "plan_pdf", "price_confirmed"):
+        for missing in ("size_m2", "object_type", "service_type", "rooms_count", "location", "price_confirmed"):
             with self.subTest(missing=missing):
                 data = order_data()
                 del data[missing]
@@ -271,7 +271,7 @@ class HouseImageTests(TestCase):
         page = self.client.get(reverse("applications:post"))
         self.assertContains(page, "Uy rasmi yoki kadastr")
         self.assertNotContains(page, "rejasi")
-        self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"')   # PDF or JPG only
+        self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"')   # PDF or a photo
 
     def test_a_photo_is_accepted_and_shown_as_a_picture(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
@@ -326,3 +326,43 @@ class OfferCardShowsThePortfolioTests(TestCase):
         for text in ("Nodir Karimov", "Interyer dizayni", "4,50", "Portfolioni to&#x27;liq ko&#x27;rish".replace("&#x27;", "'")):
             self.assertContains(page, text)
         self.assertContains(page, reverse("architects:detail", args=[arch.pk]))
+
+
+class BothServicesFileAndBudgetTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(phone="+998901234567", first_name="A", last_name="B", role=User.Role.USER)
+        self.client.force_login(self.user)
+
+    def test_both_services_can_be_ticked_and_are_priced_together(self):
+        data = order_data(service_type=["architecture", "interior"])
+        self.client.post(reverse("applications:post"), data)
+        app = Application.objects.get()
+        self.assertEqual(app.service_type, "both")
+        self.assertEqual(app.get_service_type_display(), "Arxitektura loyihasi + Interyer dizayni")
+        self.assertEqual((app.estimate_min, app.estimate_max), (2350, 4250))     # house: architecture + interior
+
+    def test_one_service_still_works_and_none_is_refused(self):
+        self.client.post(reverse("applications:post"), order_data(service_type="architecture"))
+        self.assertEqual(Application.objects.get().service_type, "architecture")
+        response = self.client.post(reverse("applications:post"), order_data(service_type=[]))
+        self.assertTrue(response.context["form"].errors.get("service_type"))
+
+    def test_the_house_file_is_optional_and_a_phone_photo_is_fine(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        import io
+        from PIL import Image
+        data = order_data()
+        del data["plan_pdf"]
+        self.assertEqual(self.client.post(reverse("applications:post"), data).status_code, 302)
+        buffer = io.BytesIO()
+        Image.new("RGB", (6, 6), "green").save(buffer, "PNG")
+        response = self.client.post(reverse("applications:post"), order_data(plan_pdf=SimpleUploadedFile("surat.png", buffer.getvalue(), content_type="image/png")))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Application.objects.order_by("-pk").first().plan_is_image)
+        fake = self.client.post(reverse("applications:post"), order_data(plan_pdf=SimpleUploadedFile("x.png", b"not a picture", content_type="image/png")))
+        self.assertEqual(fake.status_code, 200)
+
+    def test_there_is_no_budget_question_anywhere(self):
+        page = self.client.get(reverse("applications:post"))
+        self.assertNotContains(page, "Byudjet")
+        self.assertNotIn("budget", page.context["form"].fields)

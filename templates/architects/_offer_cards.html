@@ -14,7 +14,6 @@
         {% if app.object_type %}<span class="rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ app.get_object_type_display }}</span>{% endif %}
         {% if app.style_label %}<span class="rounded-full bg-cream-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ app.style_label }}</span>{% endif %}
         {% if app.estimate_min %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-800">${{ app.estimate_min }}–{{ app.estimate_max }}</span>{% endif %}
-        {% if app.budget %}<span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-800">Byudjet: {{ app.budget|floatformat:"0g" }}</span>{% endif %}
       </div>
       {% if app.description %}<p class="mt-3 line-clamp-2 text-sm text-charcoal-600">{{ app.description }}</p>{% endif %}
       <div class="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">

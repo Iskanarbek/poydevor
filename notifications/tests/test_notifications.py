@@ -146,3 +146,37 @@ class SectionBadgeTests(Base):
         send_offer(self.application, self.freelancer, source=Offer.Source.USER_INVITED)
         self.client.force_login(self.freelancer.user)
         self.assertContains(self.client.get("/freelancer/dashboard/?tab=room"), 'data-nav-badge="1"')
+
+
+class MarketAndWorkersListNewsTests(Base):
+    def test_a_new_order_puts_a_red_number_on_the_market_tab_of_every_architect_who_can_take_it(self):
+        from applications.services import notify_new_order
+        for profile in (self.owner, self.freelancer):
+            profile.portfolio_exempt = True
+            profile.save()
+        self.assertEqual(notify_new_order(self.application), 2)             # the studio and the freelancer, not the worker
+        self.client.force_login(self.freelancer.user)
+        page = self.client.get("/freelancer/dashboard/?tab=room")
+        self.assertEqual(page.context["tab_badges"], {"market": 1})
+        market = self.client.get("/freelancer/dashboard/?tab=market")
+        self.assertTrue(any("Yangi e'lon" in t for t in market.context["new_here"]))
+
+    def test_posting_an_order_through_the_form_notifies_them(self):
+        from architects.models import ArchitectProfile as AP
+        AP.objects.filter(pk=self.freelancer.pk).update(portfolio_exempt=True)
+        self.client.force_login(self.client_user)
+        from applications.tests.test_views import order_data
+        self.client.post(reverse("applications:post"), order_data())
+        self.assertTrue(Notification.objects.filter(user=self.freelancer.user, text__contains="Yangi e'lon").exists())
+
+    def test_a_join_request_puts_a_red_number_on_the_workers_list_tab(self):
+        self.client.post(reverse("architects:register_employee"), {
+            "full_name": "Sardor Murodov", "birth_year": 1998, "phone": "+998 93 987 65 43", "password": "1",
+            "password_confirm": "1", "studio": self.studio.pk,
+        })
+        self.client.force_login(self.owner.user)
+        page = self.client.get("/studio/dashboard/?tab=orders")
+        self.assertEqual(page.context["tab_badges"].get("employees"), 1)
+        self.assertContains(page, 'data-badge="employees"')
+        opened = self.client.get("/studio/dashboard/?tab=employees")
+        self.assertTrue(any("qo'shilmoqchi" in t for t in opened.context["new_here"]))

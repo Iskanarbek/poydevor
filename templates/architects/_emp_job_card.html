@@ -39,11 +39,6 @@
         <svg class="icon"><use href="#i-style"/></svg>{{ app.style_label }}
       </span>
     {% endif %}
-    {% if app.budget %}
-      <span class="inline-flex items-center gap-1.5 rounded-lg bg-clay-50 px-2.5 py-1.5 text-xs font-medium text-clay-800">
-        <svg class="icon"><use href="#i-budget"/></svg>{{ app.budget|floatformat:"0g" }}
-      </span>
-    {% endif %}
   </div>
 
   <p class="mb-4 flex-1 text-sm leading-relaxed text-charcoal-600">

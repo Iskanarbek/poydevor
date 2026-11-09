@@ -58,3 +58,24 @@ def delete_application(application: Application, auto: bool = False) -> int:
     application.auto_deleted = auto
     application.save(update_fields=["status", "deleted_at", "auto_deleted"])
     return refunded
+
+
+def notify_new_order(application: Application) -> int:
+    """A client just posted an order: every studio/freelancer who can take it gets a red number on
+    their "E'lonlar bozori" tab. Returns how many were told."""
+    from architects.models import ArchitectProfile
+    from architects.navigation import dashboard_url
+    from notifications.models import Notification
+
+    what = application.get_service_type_display() or "Yangi loyiha"
+    size = f", {application.size_m2} m²" if application.size_m2 else ""
+    text = f"Yangi e'lon: {application.location} — {what}{size}."
+    candidates = ArchitectProfile.objects.filter(
+        approval_status=ArchitectProfile.ApprovalStatus.APPROVED,
+    ).exclude(kind=ArchitectProfile.Kind.STUDIO_EMPLOYEE).select_related("user")
+    rows = [
+        Notification(user=profile.user, text=text, url=dashboard_url(profile, "market"))
+        for profile in candidates if profile.can_take_offers
+    ]
+    Notification.objects.bulk_create(rows)
+    return len(rows)

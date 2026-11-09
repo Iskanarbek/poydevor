@@ -14,6 +14,7 @@ from notifications.services import order_badges, take_url_notifications
 from applications.models import Application
 from applications.pricing import estimate_price
 from applications.services import (
+    notify_new_order,
     delete_application as delete_order,
     live_offers,
 )
@@ -40,6 +41,7 @@ def post_application(request):
             application = form.save(commit=False)
             application.owner = request.user
             application.save()
+            notify_new_order(application)
             messages.success(request, "E'loningiz joylandi! Arxitektorlar tez orada ariza yuborishadi.")
             return redirect("applications:dashboard")
     else:

@@ -15,6 +15,7 @@ class ServiceType(models.TextChoices):
     """What was (or has to be) done."""
     ARCHITECTURE = "architecture", "Arxitektura loyihasi"
     INTERIOR = "interior", "Interyer dizayni"
+    BOTH = "both", "Arxitektura loyihasi + Interyer dizayni"
 
 
 # Longer wording for the forms (the short labels above are used on cards).
@@ -22,6 +23,8 @@ SERVICE_TYPE_FORM_LABELS = {
     ServiceType.ARCHITECTURE: "Arxitektura loyihasi (obyekt rejalashtiruvi (planirovka) + ustalar uchun chizmalar + bino fasadi)",
     ServiceType.INTERIOR: "Interyer dizayni",
 }
+# The two real services a person can tick; ticking both is stored as ServiceType.BOTH.
+SINGLE_SERVICES = [ServiceType.ARCHITECTURE, ServiceType.INTERIOR]
 
 
 class Style(models.Model):

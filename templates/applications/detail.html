@@ -51,9 +51,6 @@
     <dt class="text-charcoal-500">Interyer uslubi</dt>
     <dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
 
-    <dt class="text-charcoal-500">Byudjet</dt>
-    <dd class="text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</dd>
-
     {% if application.description %}
       <dt class="text-charcoal-500">Nima qilish kerak</dt>
       <dd class="text-charcoal-900 whitespace-pre-line">{{ application.description }}</dd>

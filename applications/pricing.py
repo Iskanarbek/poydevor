@@ -55,7 +55,11 @@ def _round(value: float) -> int:
 
 def estimate_price(size_m2, object_type, service_type, rooms, location):
     """Return ``(low, high)`` in dollars, or None when something needed is missing/unknown."""
-    rates = RATES.get((object_type, service_type))
+    if service_type == ServiceType.BOTH:
+        first, second = (RATES.get((object_type, s)) for s in (ServiceType.ARCHITECTURE, ServiceType.INTERIOR))
+        rates = (first[0] + second[0], first[1] + second[1]) if first and second else None
+    else:
+        rates = RATES.get((object_type, service_type))
     try:
         size_m2, rooms = int(size_m2), int(rooms)
     except (TypeError, ValueError):

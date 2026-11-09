@@ -63,7 +63,6 @@
     {% if application.service_type %}<dt class="text-charcoal-500">Xizmat turi</dt><dd class="text-charcoal-900">{{ application.get_service_type_display }}</dd>{% endif %}
     <dt class="text-charcoal-500">Uslub</dt><dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
     {% if application.estimate_min %}<dt class="text-charcoal-500">Taxminiy narx</dt><dd class="text-charcoal-900">${{ application.estimate_min }} – ${{ application.estimate_max }}</dd>{% endif %}
-    <dt class="text-charcoal-500">Byudjet</dt><dd class="text-charcoal-900">{% if application.budget %}{{ application.budget|floatformat:"0g" }}{% else %}Belgilanmagan{% endif %}</dd>
     {% if application.description %}
       <dt class="text-charcoal-500">Nima qilish kerak</dt><dd class="whitespace-pre-line text-charcoal-900">{{ application.description }}</dd>
     {% endif %}
