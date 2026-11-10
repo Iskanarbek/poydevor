@@ -48,7 +48,7 @@
       {% if form.service_type.errors %}<p class="mt-1 text-sm text-red-600">{{ form.service_type.errors|striptags }}</p>{% endif %}
     </div>
 
-    <div class="grid gap-5 sm:grid-cols-2">
+    <div class="grid gap-5 sm:grid-cols-2 sm:items-end">
       <div>
         <label for="{{ form.rooms_count.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.rooms_count.label }}</label>
         {{ form.rooms_count }}
@@ -80,7 +80,7 @@
 
     <div>
       <label for="{{ form.files.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.files.label }}</label>
-      {% include "architects/_portfolio_uploader.html" with field=form.files min_files=0 max_side=2000 noun="fayl" allowed=".jpg,.jpeg,.png,.webp,.pdf" %}
+      {% include "architects/_portfolio_uploader.html" with field=form.files min_files=0 max_side=2000 noun="fayl" compact=True allowed=".jpg,.jpeg,.png,.webp,.pdf" %}
       <p class="mt-1 text-xs text-charcoal-500">Ixtiyoriy. Bir nechta rasm yoki fayl tanlashingiz mumkin (ko'pi bilan 10 ta; JPG, PNG, WEBP yoki PDF). Arxitektorlar ularni ko'radi.</p>
       {% if form.files.errors %}<p class="mt-1 text-sm text-red-600">{{ form.files.errors|striptags }}</p>{% endif %}
     </div>
