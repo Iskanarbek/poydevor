@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib import messages
+from django.db.models import Count, Q
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -10,7 +11,7 @@ from django.views.decorators.http import require_POST
 
 from applications.forms import ApplicationForm
 from architects.gallery import gallery_context
-from notifications.services import order_badges, take_url_notifications
+from notifications.services import order_badges, order_news, take_url_notifications
 from applications.models import Application
 from applications.pricing import estimate_price
 from applications.services import (
@@ -98,11 +99,14 @@ def pick_architect(request, pk):
 
 @login_required
 def dashboard(request):
-    applications = request.user.applications.visible()
+    applications = request.user.applications.visible().annotate(
+        waiting_offers=Count("offers", filter=Q(offers__status="pending")),
+    )
     return render(request, "applications/dashboard.html", {
         **gallery_context(request),
         "applications": applications,
         "order_badges": order_badges(request.user),
+        "order_news": order_news(request.user),
     })
 
 

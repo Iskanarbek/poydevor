@@ -563,3 +563,34 @@ class ChangeAudienceTests(TwoStepPublishingTests):
         self.assertEqual(self.client.get(self.change_url).status_code, 405)
         self.client.force_login(self.arch1.user)
         self.assertEqual(self.client.post(self.change_url).status_code, 404)
+
+
+class ClientSeesWhatHappenedTests(TwoStepPublishingTests):
+    def test_the_home_page_says_who_applied_and_the_order_has_a_red_number(self):
+        from offers.services import send_offer
+        self.client.post(reverse("applications:choose", args=[self.order.pk]), {"audience": "public"})
+        send_offer(self.order, self.arch1, source="architect_applied")
+        self.client.force_login(self.owner)
+        home = self.client.get(reverse("applications:dashboard"))
+        self.assertContains(home, f'data-order-badge="{self.order.pk}"')
+        self.assertContains(home, f'data-order-news="{self.order.pk}"')
+        self.assertContains(home, "ariza yubordi")
+        self.assertContains(home, "1 ta ariza kelgan")
+        self.assertContains(home, 'data-nav-badge="1"')                       # and on the menu link
+        self.client.get(reverse("applications:detail", args=[self.order.pk]))   # opening the order clears it
+        self.assertNotContains(self.client.get(reverse("applications:dashboard")), "data-order-news")
+
+    def test_an_acceptance_by_the_chosen_architect_is_announced_too(self):
+        self.client.post(reverse("offers:send", args=[self.arch1.pk]), {"application": self.order.pk})
+        from offers.models import Offer
+        offer = Offer.objects.get()
+        self.client.force_login(self.arch1.user)
+        self.client.post(reverse("offers:respond", args=[offer.pk]), {"decision": "accept"})
+        self.client.force_login(self.owner)
+        home = self.client.get(reverse("applications:dashboard"))
+        self.assertContains(home, "taklifingizni qabul qildi")
+
+    def test_the_location_label_tells_the_order_to_write_it_in(self):
+        page = self.client.get(reverse("applications:post"))
+        self.assertContains(page, "Manzil (avval shahar yoki viloyat, keyin tuman va h.k.)")
+        self.assertContains(page, "Toshkent, Chilonzor tumani")

@@ -34,7 +34,7 @@ class ApplicationForm(OwnStyleFormMixin, forms.ModelForm):
         labels = {
             "size_m2": "Obyektning umumiy maydoni qancha? (m²)",
             "rooms_count": "Xonalar soni",
-            "location": "Manzil (shahar yoki viloyat)",
+            "location": "Manzil (avval shahar yoki viloyat, keyin tuman va h.k.)",
             "description": "Nima qilish kerak? (ixtiyoriy)",
         }
         widgets = {
@@ -43,6 +43,7 @@ class ApplicationForm(OwnStyleFormMixin, forms.ModelForm):
                 "placeholder": "Masalan: 2 qavatli zamonaviy uy loyihasi, hovli va garaj bilan. Ichki dizayn ham kerak.",
             }),
             "size_m2": forms.NumberInput(attrs={"min": 1, "placeholder": "Masalan: 120"}),
+            "location": forms.TextInput(attrs={"placeholder": "Masalan: Toshkent, Chilonzor tumani"}),
         }
 
     def __init__(self, *args, **kwargs):

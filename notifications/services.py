@@ -55,6 +55,16 @@ def order_badges(user) -> dict:
     return counts
 
 
+def order_news(user) -> dict:
+    """{order id: [unread texts]} so the client's home page can say what happened ("... ariza yubordi")."""
+    news = {}
+    for url, text in _unread(user).order_by("-created_at").values_list("url", "text"):
+        match = _ORDER.match(url or "")
+        if match:
+            news.setdefault(int(match.group(1)), []).append(text)
+    return news
+
+
 def take_url_notifications(user, url: str) -> list:
     pending = list(_unread(user).filter(url=url))
     if pending:

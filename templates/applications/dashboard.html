@@ -42,6 +42,12 @@
             {% elif application.publication == 'direct' %}Yuborilgan: {{ application.sent_to.display_name|default:"arxitektor" }}
             {% else %}Hammaga ochiq{% endif %}
           </p>
+          {% if application.waiting_offers %}
+            <p class="mt-1 text-xs text-charcoal-600">{% if application.publication == 'direct' %}Arxitektor javobi kutilmoqda{% else %}{{ application.waiting_offers }} ta ariza kelgan{% endif %}</p>
+          {% endif %}
+          {% for order_id, texts in order_news.items %}{% if order_id == application.pk %}
+            <p data-order-news="{{ application.pk }}" class="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">● {{ texts.0 }}{% if texts|length > 1 %} (+{{ texts|length|add:"-1" }} ta yangilik){% endif %}</p>
+          {% endif %}{% endfor %}
         </a>
         <a href="{% url 'applications:delete' application.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
           <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> O'chirish
