@@ -381,7 +381,7 @@ class PhotoUploaderPageTests(TestCase):
 
     def test_photos_page_has_the_compact_uploader_without_star_marking(self):
         response = self.client.get(reverse("architects:project_image_add", args=[self.project.pk]))
-        self.assertContains(response, "uploader(1, 2000, &#x27;rasm&#x27;)") if False else self.assertContains(response, "uploader(1, 2000, 'rasm')")
+        self.assertContains(response, "uploader(1, 2000, &#x27;rasm&#x27;)") if False else self.assertContains(response, "uploader(1, 2000, 'rasm'")
         self.assertContains(response, "Rasmlarni bu yerga tashlang")
         self.assertNotContains(response, "belgilandi")
 

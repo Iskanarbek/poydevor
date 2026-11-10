@@ -486,3 +486,14 @@ class TwoStepPublishingTests(TestCase):
         self.client.logout()
         page = self.client.get(reverse("accounts:login"))
         self.assertContains(page, "data-eye")
+
+
+class LiveEstimateWithBothServicesTests(TestCase):
+    def test_the_estimate_endpoint_prices_both_and_the_page_sends_both(self):
+        user = User.objects.create_user(phone="+998901234500", first_name="A", last_name="B", role=User.Role.USER)
+        self.client.force_login(user)
+        url = reverse("applications:price_estimate")
+        both = self.client.get(url, {"size": 100, "object_type": "apartment", "service_type": "both", "rooms": 3, "location": "Toshkent"}).json()
+        one = self.client.get(url, {"size": 100, "object_type": "apartment", "service_type": "interior", "rooms": 3, "location": "Toshkent"}).json()
+        self.assertGreater(both["min"], one["min"])
+        self.assertContains(self.client.get(reverse("applications:post")), "getAll('service_type')")

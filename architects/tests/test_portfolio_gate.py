@@ -311,7 +311,7 @@ class PendingApplicantBuildsPortfolioTests(TestCase):
         style = Style.objects.create(name="Loft")
         url = reverse("architects:project_create")
         bad = self.client.post(url, {"title": "", "style": ""})
-        self.assertEqual(set(bad.context["form"].errors), {"title", "object_type", "service_type", "images"})
+        self.assertEqual(set(bad.context["form"].errors), {"title", "object_type", "service_type", "style", "images"})
         with override_settings(MEDIA_ROOT=media):
             good = self.client.post(url, {
                 "title": "Loft uy", "style": style.pk, "object_type": "yard", "service_type": "interior",                     # no description
@@ -327,7 +327,7 @@ class PendingApplicantBuildsPortfolioTests(TestCase):
     def test_the_form_marks_only_the_required_fields(self):
         html = self.client.get(reverse("architects:project_create")).content.decode()
         self.assertIn("Nima qilingan? (ixtiyoriy)", html)
-        self.assertEqual(html.count('<span class="text-clay-600">*</span>'), 4)   # title, object, service, photos
+        self.assertEqual(html.count('<span class="text-clay-600">*</span>'), 5)   # title, object, service, style, photos
 
     def test_pending_applicant_still_cannot_use_the_dashboard(self):
         response = self.client.get("/freelancer/dashboard/")

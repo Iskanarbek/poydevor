@@ -18,10 +18,10 @@
           <span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ profile.get_kind_display }}</span>
         </div>
         <div class="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-charcoal-500">
-          <span class="flex items-center gap-1 text-amber-400">
+          {% if profile.has_ratings %}<span class="flex items-center gap-1 text-amber-400">
             {% for i in "12345" %}{% if forloop.counter <= profile.rating %}★{% else %}☆{% endif %}{% endfor %}
             <span class="ml-1 font-medium text-charcoal-700">{{ profile.rating }}</span>
-          </span>
+          </span>{% endif %}
           <span class="flex items-center gap-1.5"><svg class="icon !h-4 !w-4"><use href="#i-layers"/></svg>{{ project_count }} ta loyiha</span>
         </div>
         {% if profile.skills.all %}

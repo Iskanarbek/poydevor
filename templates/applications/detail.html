@@ -95,10 +95,10 @@
                   <span class="rounded-full bg-clay-50 px-2.5 py-0.5 text-xs font-medium text-clay-700 ring-1 ring-inset ring-clay-200">{{ architect.get_kind_display }}</span>
                 </div>
                 <div class="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-charcoal-500">
-                  <span class="flex items-center gap-1 text-amber-400">
+                  {% if architect.has_ratings %}<span class="flex items-center gap-1 text-amber-400">
                     {% for i in "12345" %}{% if forloop.counter <= architect.rating %}★{% else %}☆{% endif %}{% endfor %}
                     <span class="ml-1 font-medium text-charcoal-700">{{ architect.rating }}</span>
-                  </span>
+                  </span>{% endif %}
                   <span>{{ architect.visible_projects|length }} ta loyiha</span>
                 </div>
                 {% if architect.skills.all %}

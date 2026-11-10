@@ -247,9 +247,13 @@ class OwnStyleFormMixin:
 
     style_field = "style"
 
-    def setup_style(self, label):
+    style_required = False      # architects must choose a style (or "Boshqa" and write it); clients need not
+
+    def setup_style(self, label, required=False):
+        self.style_required = required
         self.fields[self.style_field] = StyleChoiceField(
-            queryset=Style.objects.all(), required=False, empty_label="Tanlamayman", label=label,
+            queryset=Style.objects.all(), required=False,         # "required" is enforced in clean(): "Boshqa" has no row
+            empty_label="Uslubni tanlang" if required else "Tanlamayman", label=label,
         )
         self.fields["custom_style"] = forms.CharField(
             required=False, max_length=60, label="Uslubni o'zingiz yozing",
@@ -269,6 +273,8 @@ class OwnStyleFormMixin:
             cleaned[self.style_field] = None
         else:
             cleaned["custom_style"] = ""
+            if self.style_required and not cleaned.get(self.style_field):
+                self.add_error(self.style_field, "Uslubni tanlang (yoki «Boshqa»ni tanlab, o'zingiz yozing).")
         return cleaned
 
 
@@ -303,7 +309,7 @@ class PortfolioProjectEditForm(OwnStyleFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setup_style("Uslubi (ixtiyoriy)")
+        self.setup_style("Loyiha uslubi", required=True)
         self.fields["object_type"] = forms.ChoiceField(
             label="Obyekt turi",
             choices=[("", "Tanlang")] + list(ObjectType.choices),

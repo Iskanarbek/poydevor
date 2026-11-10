@@ -3,7 +3,7 @@ from django.db.models import Q
 from architects.models import SINGLE_SERVICES, ObjectType, PortfolioProject, ServiceType, Style
 
 # (key in the address, label, lowest, highest) in US dollars; the last one has no upper limit ("$5000+").
-SERVICES = [str(v) for v in SINGLE_SERVICES]      # a project doing "both" shows under either
+SERVICES = [str(v) for v in SINGLE_SERVICES]      # a project doing "both" shows under either of these
 PRICE_RANGES = [
     ("0-500", "$500 gacha", 0, 500),
     ("500-1000", "$500 – $1000", 500, 1000),
@@ -50,7 +50,9 @@ def gallery_context(request):
     style_id = get.get("style")
     if style_id and style_id.isdigit():
         projects, filtered = projects.filter(style_id=style_id), True
-    if get.get("service") in SERVICES:
+    if get.get("service") == ServiceType.BOTH:
+        projects, filtered = projects.filter(service_type=ServiceType.BOTH), True
+    elif get.get("service") in SERVICES:
         projects, filtered = projects.filter(Q(service_type=get["service"]) | Q(service_type=ServiceType.BOTH)), True
     if get.get("object") in ObjectType.values:
         projects, filtered = projects.filter(object_type=get["object"]), True
@@ -62,7 +64,7 @@ def gallery_context(request):
         filtered = True
 
     groups = [
-        _group(request, "Xizmat turi", "service", [(v, ServiceType(v).label) for v in SERVICES]),
+        _group(request, "Xizmat turi", "service", [(v, ServiceType(v).label) for v in SERVICES + [ServiceType.BOTH.value]]),
         _group(request, "Obyekt turi", "object", [(v, ObjectType(v).label) for v in ObjectType.values]),
         _group(request, "Narx", "price", [(key, label) for key, label, _, _ in PRICE_RANGES]),
         _group(request, "Uslub", "style", [(s.pk, s.name) for s in Style.objects.all()]),
@@ -100,7 +102,9 @@ def filter_open_orders(request, applications):
     object, price (an order matches a range when its estimated price overlaps it) and style."""
     get = request.GET
     filtered = False
-    if get.get("service") in SERVICES:
+    if get.get("service") == ServiceType.BOTH:
+        applications, filtered = applications.filter(service_type=ServiceType.BOTH), True
+    elif get.get("service") in SERVICES:
         applications, filtered = applications.filter(Q(service_type=get["service"]) | Q(service_type=ServiceType.BOTH)), True
     if get.get("object") in ObjectType.values:
         applications, filtered = applications.filter(object_type=get["object"]), True
@@ -115,7 +119,7 @@ def filter_open_orders(request, applications):
             applications = applications.filter(estimate_min__lt=high)
         filtered = True
     groups = [
-        _group(request, "Xizmat turi", "service", [(v, ServiceType(v).label) for v in SERVICES]),
+        _group(request, "Xizmat turi", "service", [(v, ServiceType(v).label) for v in SERVICES + [ServiceType.BOTH.value]]),
         _group(request, "Obyekt turi", "object", [(v, ObjectType(v).label) for v in ObjectType.values]),
         _group(request, "Narx", "price", [(key, label) for key, label, _, _ in PRICE_RANGES]),
         _group(request, "Uslub", "style", [(s.pk, s.name) for s in Style.objects.all()]),

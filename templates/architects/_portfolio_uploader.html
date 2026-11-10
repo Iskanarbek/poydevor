@@ -1,5 +1,5 @@
 {# Photo uploader. Needs: field (the hidden multi-file input), min_files. Optional: max_side (px, default 1600), compact, noun ("rasm"). #}
-<div x-data="uploader({{ min_files }}, {{ max_side|default:1600 }}, '{{ noun|default:"fayl" }}')" class="space-y-3">
+<div x-data="uploader({{ min_files }}, {{ max_side|default:1600 }}, '{{ noun|default:"fayl" }}', '{{ allowed|default:"" }}')" class="space-y-3">
   {{ field }}
   <input type="file" x-ref="picker" multiple accept="{{ field.field.widget.attrs.accept }}" class="hidden" @change="onPick($event)">
 
@@ -36,7 +36,7 @@
     <div class="h-2 overflow-hidden rounded-full bg-charcoal-100">
       <div class="h-full rounded-full transition-all duration-500" :class="remaining === 0 ? 'bg-green-500' : 'bg-clay-500'" :style="'width:' + percent + '%'"></div>
     </div>
-    <p x-show="tooFew && remaining > 0" x-cloak class="text-sm text-red-600">Ariza yuborish uchun kamida <span x-text="min"></span> ta fayl kerak.</p>
+    <p x-show="tooFew && remaining > 0 && min > 0" x-cloak class="text-sm text-red-600">Ariza yuborish uchun kamida <span x-text="min"></span> ta fayl kerak.</p>
     <p x-show="working > 0" x-cloak class="text-xs text-charcoal-500">Rasmlar yuborish uchun tayyorlanmoqda…<span x-show="wantsSubmit"> Tayyor bo'lgach ariza avtomatik yuboriladi.</span></p>
   </div>
 
@@ -101,8 +101,9 @@
       }).catch(keep);
     }
 
-    Alpine.data('uploader', function (min, maxSide, noun) {
+    Alpine.data('uploader', function (min, maxSide, noun, allowed) {
       return {
+        allowed: allowed ? allowed.split(',') : OK, native: false,
         min: min, noun: noun || 'fayl', maxSide: maxSide || 1600, items: [], notice: '', dragging: false, working: 0, wantsSubmit: false, tooFew: false,
         uploading: false, progress: 0, formError: '',
         get remaining() { return Math.max(0, this.min - this.items.length); },
@@ -110,9 +111,14 @@
         get totalMb() { return (this.items.reduce(function (sum, it) { return sum + it.file.size; }, 0) / 1048576).toFixed(1); },
         init: function () {
           var self = this, form = this.$el.closest('form');
+          this.native = form.hasAttribute('data-native-submit');   // a normal page submit (server shows the errors)
           // The form is sent in the background (no page reload), so the chosen files stay put
           // when the server reports a problem such as a phone number that is already registered.
           form.addEventListener('submit', function (e) {
+            if (self.native) {                                      // let the browser send it, once the photos are ready
+              if (self.working > 0) { e.preventDefault(); self.wantsSubmit = true; }
+              return;
+            }
             e.preventDefault();
             if (self.uploading) return;
             self.formError = '';
@@ -167,7 +173,7 @@
           list.forEach(function (f) {
             var ext = '.' + f.name.split('.').pop().toLowerCase();
             var key = f.name + '|' + f.size + '|' + f.lastModified;
-            if (OK.indexOf(ext) < 0) { rejected.push(f.name + ' (fayl turi mos emas)'); return; }
+            if (self.allowed.indexOf(ext) < 0) { rejected.push(f.name + ' (fayl turi mos emas)'); return; }
             if (f.size > MAX) { rejected.push(f.name + ' (50 MB dan katta)'); return; }
             if (self.items.some(function (it) { return it.key === key; })) return;
             self.items.push({ id: ++counter, key: key, file: f, thumb: null, ext: ext.slice(1).toUpperCase(),
@@ -198,7 +204,8 @@
           }
           if (this.working === 0 && this.wantsSubmit && this.items.length >= this.min) {
             this.wantsSubmit = false;
-            this.send(this.$el.closest('form'));
+            var target = this.$el.closest('form');
+            if (this.native) target.submit(); else this.send(target);
           }
         },
         sync: function () {

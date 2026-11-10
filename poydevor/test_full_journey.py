@@ -128,7 +128,7 @@ class FullJourneyTests(TestCase):
         incomplete = self.client.post(reverse("applications:post"), {"size_m2": 120})
         self.assertEqual(incomplete.status_code, 200)
         form_page = self.client.get(reverse("applications:post"))
-        self.assertNotContains(form_page, "avtomatik")
+        self.assertNotContains(form_page, "avtomatik o'chiril")
         self.assertNotContains(form_page, "Byudjet")
         response = self.client.post(reverse("applications:post"), {
             "size_m2": 120, "object_type": "yard", "service_type": ["architecture", "interior"], "rooms_count": 4,

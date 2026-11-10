@@ -197,7 +197,7 @@ class ProjectCreateViewTests(TestCase):
 
     def test_title_and_type_are_required(self):
         response = self.client.post(self.url, {"images": [self.gif("a.gif")]})
-        self.assertEqual(set(response.context["form"].errors), {"title", "object_type", "service_type"})
+        self.assertEqual(set(response.context["form"].errors), {"title", "object_type", "service_type", "style"})
 
     def test_orders_are_assigned_automatically(self):
         self.post("Birinchi loyiha")
@@ -485,8 +485,9 @@ class ProjectDetailPageTests(TestCase):
 
     def test_shows_the_architect_with_rating_skills_and_other_projects(self):
         page = self.client.get(self.url)
-        for expected in ("Nodir Karimov", "4,00", "3D vizualizatsiya", "E'lon yuborish", "Boshqa uy"):
+        for expected in ("Nodir Karimov", "3D vizualizatsiya", "E'lon yuborish", "Boshqa uy"):
             self.assertContains(page, expected)
+        self.assertNotContains(page, "4,00")                 # nobody rated them yet: no stars
         self.assertContains(page, reverse("architects:project_detail", args=[self.other.pk]))   # other projects, at the bottom
         client = User.objects.create_user(phone="+998901239999", first_name="Mijoz", role=User.Role.USER)
         self.client.force_login(client)
@@ -698,10 +699,11 @@ class ArchitectProjectServiceAndObjectTests(TestCase):
         user = User.objects.create_user(phone="+998901239000", first_name="N", last_name="K", role=User.Role.ARCHITECT)
         self.profile = ArchitectProfile.objects.create(user=user, portfolio_exempt=True)
         self.client.force_login(user)
+        self.style = Style.objects.create(name="Klassik")
 
     def form(self, **extra):
         from architects.forms import PortfolioProjectEditForm
-        data = {"title": "Uy", "object_type": "yard", "service_type": ["architecture", "interior"]}
+        data = {"title": "Uy", "object_type": "yard", "service_type": ["architecture", "interior"], "style": self.style.pk}
         data.update(extra)
         return PortfolioProjectEditForm(data)
 
@@ -720,7 +722,7 @@ class ArchitectProjectServiceAndObjectTests(TestCase):
         from architects.forms import PortfolioProjectEditForm
         project = PortfolioProject.objects.create(architect=self.profile, title="Eski", object_type="wedding_hall", service_type="interior")
         form = PortfolioProjectEditForm(
-            {"title": "Eski", "object_type": "wedding_hall", "service_type": ["interior"]}, instance=project,
+            {"title": "Eski", "object_type": "wedding_hall", "service_type": ["interior"], "style": self.style.pk}, instance=project,
         )
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -733,3 +735,41 @@ class ArchitectProjectServiceAndObjectTests(TestCase):
         labels = [o["label"] for g in response.context["filter_groups"] for o in g["options"]]
         self.assertIn("To'yxona", labels)
         self.assertNotIn("To'yxona / Tantanalar saroyi", labels)
+
+
+class StyleAndRatingRulesTests(TestCase):
+    def setUp(self):
+        user = User.objects.create_user(phone="+998901239111", first_name="N", last_name="K", role=User.Role.ARCHITECT)
+        self.profile = ArchitectProfile.objects.create(user=user, portfolio_exempt=True, rating="4.50")
+        self.loft = Style.objects.create(name="Loft")
+
+    def form(self, **extra):
+        from architects.forms import PortfolioProjectEditForm
+        data = {"title": "Uy", "object_type": "yard", "service_type": ["interior"]}
+        data.update(extra)
+        return PortfolioProjectEditForm(data)
+
+    def test_an_architect_must_choose_a_style_and_has_no_skip_option(self):
+        from architects.forms import PortfolioProjectEditForm
+        self.assertFalse(self.form().is_valid())
+        self.assertIn("style", self.form().errors)
+        self.assertTrue(self.form(style=self.loft.pk).is_valid())
+        self.assertTrue(self.form(style="other", custom_style="Skandinav").is_valid())
+        self.assertFalse(self.form(style="other").is_valid())                         # "Boshqa" needs the written style
+        labels = [str(c[1]) for c in PortfolioProjectEditForm().fields["style"].choices]
+        self.assertNotIn("Tanlamayman", labels)
+
+    def test_stars_appear_only_after_someone_rated(self):
+        from applications.models import Application
+        from offers.models import Offer
+        from reviews.models import Review
+        PortfolioImage.objects.create(project=PortfolioProject.objects.create(architect=self.profile, title="X", style=self.loft), image="portfolio/p.jpg", order=0)
+        for url in (reverse("architects:list"), reverse("architects:project_gallery"), reverse("architects:detail", args=[self.profile.pk])):
+            self.assertNotContains(self.client.get(url), "★")
+            self.assertNotContains(self.client.get(url), "☆")
+        client = User.objects.create_user(phone="+998901239112", first_name="M", last_name="K", role=User.Role.USER)
+        app = Application.objects.create(owner=client, rooms_count=2, location="Toshkent")
+        offer = Offer.objects.create(application=app, architect=self.profile, source="architect_applied", status="completed")
+        Review.objects.create(offer=offer, user=client, architect=self.profile, rating=5)
+        for url in (reverse("architects:list"), reverse("architects:project_gallery"), reverse("architects:detail", args=[self.profile.pk])):
+            self.assertContains(self.client.get(url), "4,50")

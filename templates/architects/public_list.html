@@ -39,10 +39,10 @@
           {% endif %}
           <div class="min-w-0">
             <h2 class="truncate font-serif text-lg font-semibold leading-snug text-charcoal-900">{{ profile.display_name }}</h2>
-            <div class="flex items-center gap-1 text-sm text-amber-400">
+            {% if profile.has_ratings %}<div class="flex items-center gap-1 text-sm text-amber-400">
               {% for i in "12345" %}{% if forloop.counter <= profile.rating %}★{% else %}☆{% endif %}{% endfor %}
               <span class="ml-0.5 text-charcoal-500">{{ profile.rating }}</span>
-            </div>
+            </div>{% endif %}
           </div>
         </div>
         {% if profile.project_styles %}

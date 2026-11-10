@@ -17,7 +17,7 @@ class ApplicationForm(OwnStyleFormMixin, forms.ModelForm):
     # Several photos / files at once (house pictures, cadastre, plans), all optional.
     files = MultipleFileField(
         required=False, label="Uy rasmi yoki kadastr (ixtiyoriy)",
-        widget=MultipleFileInput(attrs={"accept": PHOTO_ACCEPT_ATTRIBUTE, "multiple": True}),
+        widget=MultipleFileInput(attrs={"accept": PHOTO_ACCEPT_ATTRIBUTE, "hidden": True, "x-ref": "real"}),
     )
 
     price_confirmed = forms.BooleanField(

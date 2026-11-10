@@ -259,6 +259,11 @@ class ArchitectProfile(models.Model):
         return self.approval_status == self.ApprovalStatus.APPROVED
 
     @property
+    def has_ratings(self):
+        """True once at least one client rated this architect; until then no stars are shown."""
+        return len(self.reviews.all()) > 0
+
+    @property
     def can_take_offers(self):
         """Approved studios and freelancers with a finished, admin-verified portfolio
         can apply to orders and accept offers; employees never do."""

@@ -33,11 +33,12 @@
       </div>
       <div data-field="service_type">
         <span class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.service_type.label }} <span class="text-clay-600">*</span></span>
-        <div class="space-y-1.5">{% for box in form.service_type %}<label class="flex cursor-pointer items-start gap-2 text-sm text-charcoal-800"><span class="mt-0.5 [&>input]:!w-auto [&>input]:!p-0 [&>input]:accent-[#B5562A]">{{ box.tag }}</span><span>{{ box.choice_label }}</span></label>{% endfor %}</div>
+        <div class="grid gap-2">{% for box in form.service_type %}<label class="flex cursor-pointer items-center gap-3 rounded-xl border border-charcoal-200 bg-white px-4 py-3 text-sm transition hover:border-clay-400 has-[:checked]:border-clay-600 has-[:checked]:bg-clay-50"><span class="[&>input]:!w-auto [&>input]:!p-0 [&>input]:accent-[#B5562A]">{{ box.tag }}</span><span class="text-charcoal-800">{{ box.choice_label }}</span></label>{% endfor %}</div>
+        <p class="mt-1 text-xs text-charcoal-500">Bitta yoki ikkalasini ham belgilash mumkin.</p>
         {% if form.service_type.errors %}<p data-error class="mt-1 text-sm text-red-600">{{ form.service_type.errors|striptags }}</p>{% endif %}
       </div>
       <div data-field="style" x-data="{ other: false }" x-init="other = $refs.styleBox.querySelector('select').value === 'other'">
-        <label for="{{ form.style.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.style.label }}</label>
+        <label for="{{ form.style.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.style.label }} <span class="text-clay-600">*</span></label>
         <div x-ref="styleBox" @change="other = $event.target.value === 'other'">{{ form.style }}</div>
         <div x-show="other" x-cloak class="mt-2">
           {{ form.custom_style }}
