@@ -29,7 +29,7 @@
 
     <form method="post" class="grid gap-3 sm:grid-cols-2">
       {% csrf_token %}
-      <a href="{% url 'applications:detail' application.pk %}" class="btn-ghost !py-3">Bekor qilish</a>
+      <a href="{% url 'applications:dashboard' %}" class="btn-ghost !py-3">Bekor qilish</a>
       <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-red-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-red-700">Ha, o'chirish</button>
     </form>
   </div>

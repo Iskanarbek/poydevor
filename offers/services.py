@@ -147,10 +147,18 @@ def accept_invitation(offer: Offer) -> None:
 def decline_invitation(offer: Offer) -> None:
     """The architect/studio says no to a client's invitation. The client is told, and the
     invitation is removed completely (it disappears from the architect's table)."""
+    application = offer.application
+    freed = application.publication == Application.Publication.DIRECT and application.sent_to_id == offer.architect_id
     notify(
-        offer.application.owner, f"{offer.architect.display_name} taklifingizni rad etdi: {offer.application.location}.",
+        application.owner,
+        f"{offer.architect.display_name} taklifingizni rad etdi: {application.location}."
+        + (" E'lonni boshqa arxitektorga yuborishingiz yoki hammaga ochishingiz mumkin." if freed else ""),
         reverse("applications:detail", args=[offer.application_id]),
     )
+    if freed:   # the order goes back to "not sent yet" so its owner can choose again
+        application.publication = Application.Publication.DRAFT
+        application.sent_to = None
+        application.save(update_fields=["publication", "sent_to"])
     offer.delete()
 
 

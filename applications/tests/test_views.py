@@ -18,7 +18,7 @@ def order_data(**overrides):
     """A complete, valid "post an order" form (every question answered, estimate agreed to)."""
     data = {
         "size_m2": 120, "object_type": "yard", "service_type": "interior", "rooms_count": 4,
-        "location": "Toshkent", "plan_pdf": jpeg_upload(), "price_confirmed": "on",
+        "location": "Toshkent", "files": [jpeg_upload()], "price_confirmed": "on",
     }
     data.update(overrides)
     return data
@@ -34,7 +34,9 @@ class PostApplicationViewTests(TestCase):
 
     def test_post_application_known_size(self):
         response = self.client.post(reverse("applications:post"), order_data())
-        self.assertRedirects(response, reverse("applications:dashboard"), fetch_redirect_response=False)   # back to the home page
+        self.assertEqual(response.status_code, 302)
+        app = Application.objects.get()
+        self.assertRedirects(response, reverse("applications:choose", args=[app.pk]), fetch_redirect_response=False)   # next: who gets it?
         app = Application.objects.get()
         self.assertEqual((app.size_m2, app.object_type, app.service_type), (120, "yard", "interior"))
         self.assertEqual((app.estimate_min, app.estimate_max), (1500, 2750))      # the estimate is stored
@@ -240,6 +242,7 @@ class ApplicationDescriptionTests(TestCase):
         self.assertEqual(response.status_code, 302)
         application = Application.objects.get()
         self.assertEqual(application.description, "Zamonaviy uy loyihasi kerak.")
+        Application.objects.filter(pk=application.pk).update(publication="public")
         detail = self.client.get(reverse("applications:detail", args=[application.pk]))
         self.assertContains(detail, "Zamonaviy uy loyihasi kerak.")
 
@@ -263,51 +266,69 @@ class HouseImageTests(TestCase):
         self.user = User.objects.create_user(phone="+998901234567", first_name="A", last_name="B", role=User.Role.USER)
         self.client.force_login(self.user)
 
-    def post(self, upload):
-        from django.core.files.uploadedfile import SimpleUploadedFile
-        return self.client.post(reverse("applications:post"), order_data(plan_pdf=upload))
+    def post(self, *uploads):
+        return self.client.post(reverse("applications:post"), order_data(files=list(uploads)))
+
+    def open_to_all(self, application):
+        Application.objects.filter(pk=application.pk).update(publication="public")
 
     def test_label_says_house_picture_not_plan(self):
         page = self.client.get(reverse("applications:post"))
         self.assertContains(page, "Uy rasmi yoki kadastr")
         self.assertNotContains(page, "rejasi")
         self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"')   # PDF or a photo
+        self.assertContains(page, "multiple")                                                       # several at once
 
-    def test_a_photo_is_accepted_and_shown_as_a_picture(self):
+    def test_several_photos_and_files_can_be_attached_and_are_all_shown(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
-        import io
-        from PIL import Image
-        buffer = io.BytesIO()
-        Image.new("RGB", (6, 6), "blue").save(buffer, "JPEG")
-        response = self.post(SimpleUploadedFile("uy.jpg", buffer.getvalue(), content_type="image/jpeg"))
+        response = self.post(jpeg_upload("a.jpg"), jpeg_upload("b.jpg"), SimpleUploadedFile("kadastr.pdf", b"%PDF-1.4", content_type="application/pdf"))
         self.assertEqual(response.status_code, 302)
         application = Application.objects.get()
-        self.assertTrue(application.plan_is_image)
+        self.assertEqual(application.files.count(), 3)
+        self.open_to_all(application)
         detail = self.client.get(reverse("applications:detail", args=[application.pk]))
-        self.assertContains(detail, "Uy rasmi")
-        self.assertContains(detail, f'<img src="{application.plan_pdf.url}"')
-        self.assertNotContains(detail, "rejasi")
+        for f in application.files.all():
+            self.assertContains(detail, f.file.url)
+        self.assertContains(detail, "kadastr")
 
-    def test_a_pdf_is_still_accepted_and_shown_as_a_download(self):
+    def test_architects_see_all_of_them_before_applying(self):
+        from architects.models import ArchitectProfile
+        self.post(jpeg_upload("a.jpg"), jpeg_upload("b.jpg"))
+        application = Application.objects.get()
+        self.open_to_all(application)
+        arch_user = User.objects.create_user(phone="+998909990001", first_name="N", last_name="K", role=User.Role.ARCHITECT)
+        ArchitectProfile.objects.create(user=arch_user, portfolio_exempt=True)
+        self.client.force_login(arch_user)
+        page = self.client.get(reverse("offers:architect_apply", args=[application.pk]))
+        for f in application.files.all():
+            self.assertContains(page, f.file.url)
+
+    def test_too_many_files_are_refused(self):
+        response = self.post(*[jpeg_upload(f"{i}.jpg") for i in range(11)])
+        self.assertTrue(response.context["form"].errors.get("files"))
+        self.assertFalse(Application.objects.exists())
+
+    def test_a_pdf_is_accepted_and_shown_as_a_download(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
         self.post(SimpleUploadedFile("uy.pdf", b"%PDF-1.4", content_type="application/pdf"))
         application = Application.objects.get()
-        self.assertFalse(application.plan_is_image)
-        self.assertContains(self.client.get(reverse("applications:detail", args=[application.pk])), "Yuklab olish")
+        self.assertFalse(application.files.get().is_image)
+        self.open_to_all(application)
+        self.assertContains(self.client.get(reverse("applications:detail", args=[application.pk])), "uy.pdf")
 
     def test_dangerous_file_types_are_rejected(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
         response = self.post(SimpleUploadedFile("virus.exe", b"MZ", content_type="application/octet-stream"))
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context["form"].errors.get("plan_pdf"))
+        self.assertTrue(response.context["form"].errors.get("files"))
         self.assertFalse(Application.objects.exists())
 
     def test_other_picture_and_document_types_are_rejected(self):
         from django.core.files.uploadedfile import SimpleUploadedFile
-        for name in ["uy.gif", "uy.png", "uy.dwg", "uy.zip"]:
+        for name in ["uy.gif", "uy.dwg", "uy.zip"]:
             response = self.post(SimpleUploadedFile(name, self.GIF, content_type="application/octet-stream"))
             self.assertEqual(response.status_code, 200, name)
-            self.assertTrue(response.context["form"].errors.get("plan_pdf"), name)
+            self.assertTrue(response.context["form"].errors.get("files"), name)
         self.assertFalse(Application.objects.exists())
 
 
@@ -352,17 +373,116 @@ class BothServicesFileAndBudgetTests(TestCase):
         import io
         from PIL import Image
         data = order_data()
-        del data["plan_pdf"]
+        del data["files"]
         self.assertEqual(self.client.post(reverse("applications:post"), data).status_code, 302)
         buffer = io.BytesIO()
         Image.new("RGB", (6, 6), "green").save(buffer, "PNG")
-        response = self.client.post(reverse("applications:post"), order_data(plan_pdf=SimpleUploadedFile("surat.png", buffer.getvalue(), content_type="image/png")))
+        response = self.client.post(reverse("applications:post"), order_data(files=[SimpleUploadedFile("surat.png", buffer.getvalue(), content_type="image/png")]))
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Application.objects.order_by("-pk").first().plan_is_image)
-        fake = self.client.post(reverse("applications:post"), order_data(plan_pdf=SimpleUploadedFile("x.png", b"not a picture", content_type="image/png")))
+        self.assertTrue(Application.objects.order_by("-pk").first().files.get().is_image)
+        fake = self.client.post(reverse("applications:post"), order_data(files=[SimpleUploadedFile("x.png", b"not a picture", content_type="image/png")]))
         self.assertEqual(fake.status_code, 200)
 
     def test_there_is_no_budget_question_anywhere(self):
         page = self.client.get(reverse("applications:post"))
         self.assertNotContains(page, "Byudjet")
         self.assertNotIn("budget", page.context["form"].fields)
+
+
+class TwoStepPublishingTests(TestCase):
+    """A new order is saved but invisible; its owner then either opens it to everyone or sends it to
+    ONE architect, never both."""
+
+    def setUp(self):
+        from architects.models import ArchitectProfile
+        self.owner = User.objects.create_user(phone="+998901000001", first_name="Aziz", last_name="K", role=User.Role.USER)
+        a1 = User.objects.create_user(phone="+998902000001", first_name="Nodir", last_name="Y", role=User.Role.ARCHITECT)
+        a2 = User.objects.create_user(phone="+998902000002", first_name="Malika", last_name="R", role=User.Role.ARCHITECT)
+        self.arch1 = ArchitectProfile.objects.create(user=a1, portfolio_exempt=True)
+        self.arch2 = ArchitectProfile.objects.create(user=a2, portfolio_exempt=True)
+        from wallet.models import Wallet
+        Wallet.objects.create(architect=self.arch1, balance=5)
+        Wallet.objects.create(architect=self.arch2, balance=5)
+        self.client.force_login(self.owner)
+        self.client.post(reverse("applications:post"), order_data())
+        self.order = Application.objects.get()
+
+    def market_places(self, user):
+        self.client.force_login(user)
+        page = self.client.get("/freelancer/dashboard/?tab=market")
+        return {a.pk for a in page.context["open_applications"]}
+
+    def test_a_new_order_is_saved_but_invisible_to_architects(self):
+        self.assertEqual(self.order.publication, "draft")
+        self.assertNotIn(self.order.pk, self.market_places(self.arch1.user))
+        self.client.force_login(self.arch1.user)
+        self.assertEqual(self.client.get(reverse("offers:architect_apply", args=[self.order.pk])).status_code, 404)
+
+    def test_opening_a_draft_again_always_shows_the_two_options(self):
+        page = self.client.get(reverse("applications:detail", args=[self.order.pk]))
+        self.assertRedirects(page, reverse("applications:choose", args=[self.order.pk]), fetch_redirect_response=False)
+        choose = self.client.get(reverse("applications:choose", args=[self.order.pk]))
+        self.assertContains(choose, "Hammaga ochiq qilish")
+        self.assertContains(choose, "Arxitektorlarni ko")
+        home = self.client.get(reverse("applications:dashboard"))
+        self.assertContains(home, "Yuborilmagan")
+
+    def test_choosing_everyone_makes_it_public_and_tells_architects(self):
+        response = self.client.post(reverse("applications:choose", args=[self.order.pk]), {"audience": "public"})
+        self.assertRedirects(response, reverse("applications:dashboard"), fetch_redirect_response=False)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.publication, "public")
+        self.assertIn(self.order.pk, self.market_places(self.arch1.user))
+        from notifications.models import Notification
+        self.assertTrue(Notification.objects.filter(user=self.arch1.user, text__contains="Yangi e'lon").exists())
+        self.client.force_login(self.owner)
+        self.assertContains(self.client.get(reverse("applications:detail", args=[self.order.pk])), "Hammaga ochiq")
+
+    def test_sending_to_one_architect_keeps_it_out_of_the_market_and_shows_who_got_it(self):
+        self.client.get(reverse("applications:pick_architect", args=[self.order.pk]))
+        banner = self.client.get(reverse("architects:list"))
+        self.assertContains(banner, "e'loni yuborish uchun")
+        send_url = reverse("offers:send", args=[self.arch1.pk])
+        form = self.client.get(send_url)
+        self.assertEqual(form.context["preselected"], self.order.pk)
+        response = self.client.post(send_url, {"application": self.order.pk})
+        self.assertRedirects(response, reverse("applications:dashboard"), fetch_redirect_response=False)
+        self.order.refresh_from_db()
+        self.assertEqual((self.order.publication, self.order.sent_to), ("direct", self.arch1))
+        self.assertNotIn(self.order.pk, self.market_places(self.arch2.user))     # nobody else sees it
+        self.client.force_login(self.owner)
+        detail = self.client.get(reverse("applications:detail", args=[self.order.pk]))
+        self.assertContains(detail, "E'lon yuborilgan")
+        self.assertContains(detail, self.arch1.display_name)
+
+    def test_it_cannot_be_both_public_and_direct(self):
+        self.client.post(reverse("applications:choose", args=[self.order.pk]), {"audience": "public"})
+        send = self.client.post(reverse("offers:send", args=[self.arch1.pk]), {"application": self.order.pk})
+        self.assertEqual(send.status_code, 404)                                    # only unsent drafts can be sent
+        self.assertEqual(self.client.get(reverse("applications:choose", args=[self.order.pk])).status_code, 302)
+        other = Application.objects.create(owner=self.owner, rooms_count=1, location="Buxoro", publication="draft")
+        self.client.post(reverse("offers:send", args=[self.arch1.pk]), {"application": other.pk})
+        self.client.post(reverse("applications:choose", args=[other.pk]), {"audience": "public"})
+        other.refresh_from_db()
+        self.assertEqual(other.publication, "direct")                              # stays direct
+
+    def test_declining_returns_it_to_the_unsent_state_so_it_can_be_sent_again(self):
+        self.client.post(reverse("offers:send", args=[self.arch1.pk]), {"application": self.order.pk})
+        from offers.models import Offer
+        offer = Offer.objects.get()
+        self.client.force_login(self.arch1.user)
+        self.client.post(reverse("offers:respond", args=[offer.pk]), {"decision": "reject"})
+        self.order.refresh_from_db()
+        self.assertEqual((self.order.publication, self.order.sent_to), ("draft", None))
+        self.client.force_login(self.owner)
+        self.assertRedirects(self.client.get(reverse("applications:detail", args=[self.order.pk])), reverse("applications:choose", args=[self.order.pk]), fetch_redirect_response=False)
+
+    def test_cancelling_a_delete_goes_to_the_home_page_not_the_order(self):
+        page = self.client.get(reverse("applications:delete", args=[self.order.pk]))
+        self.assertContains(page, f'href="{reverse("applications:dashboard")}"')
+        self.assertNotContains(page, f'href="{reverse("applications:detail", args=[self.order.pk])}"')
+
+    def test_password_fields_get_an_eye_button(self):
+        self.client.logout()
+        page = self.client.get(reverse("accounts:login"))
+        self.assertContains(page, "data-eye")

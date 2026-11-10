@@ -79,10 +79,11 @@
     </div>
 
     <div>
-      <label for="{{ form.plan_pdf.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.plan_pdf.label }}</label>
-      {{ form.plan_pdf }}
-      <p class="mt-1 text-xs text-charcoal-500">Ixtiyoriy. Rasm (telefondan olingan surat ham bo'ladi: JPG, PNG, WEBP) yoki PDF yuklang, eng ko'pi 20 MB.</p>
-      {% if form.plan_pdf.errors %}<p class="mt-1 text-sm text-red-600">{{ form.plan_pdf.errors|striptags }}</p>{% endif %}
+      <label for="{{ form.files.id_for_label }}" class="block text-sm font-medium text-charcoal-700 mb-1">{{ form.files.label }}</label>
+      {{ form.files }}
+      <p class="mt-1 text-xs text-charcoal-500">Bir nechta rasm yoki fayl tanlashingiz mumkin (ko'pi bilan 10 ta; JPG, PNG, WEBP yoki PDF, har biri 20 MB gacha). Arxitektorlar ularni ko'radi.</p>
+      <ul id="picked-files" class="mt-2 space-y-1 text-xs text-charcoal-600"></ul>
+      {% if form.files.errors %}<p class="mt-1 text-sm text-red-600">{{ form.files.errors|striptags }}</p>{% endif %}
     </div>
 
     <div class="rounded-2xl border border-clay-200 bg-clay-50 p-5">
@@ -108,12 +109,17 @@
     </div>
 
     <button type="submit" class="w-full rounded-lg bg-clay-600 text-white font-medium py-3 hover:bg-clay-700 transition">
-      E'lonni joylashtirish
+      Saqlash va davom etish
     </button>
   </form>
 </div>
 
 <script>
+  document.addEventListener('change', function (e) {
+    if (e.target.name !== 'files') return;
+    var list = document.getElementById('picked-files'); list.innerHTML = '';
+    Array.prototype.forEach.call(e.target.files, function (f) { var li = document.createElement('li'); li.textContent = '✓ ' + f.name; list.appendChild(li); });
+  });
   function orderForm() {
     return {
       ready: false, min: 0, max: 0, styleOther: false, timer: null,

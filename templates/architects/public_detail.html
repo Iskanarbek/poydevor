@@ -3,6 +3,12 @@
 {% block title %}{{ profile.display_name }} — Poydevor{% endblock %}
 
 {% block content %}
+{% if sending_order %}
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-clay-300 bg-clay-50 px-5 py-4 text-sm text-clay-900">
+    <span><b>«{{ sending_order.location }}»</b> e'loni yuborish uchun arxitektor yoki studiyani tanlang, so'ng uning sahifasidagi <b>E'lon yuborish</b> tugmasini bosing.</span>
+    <a href="{% url 'applications:choose' sending_order.pk %}" class="text-clay-800 underline">Orqaga</a>
+  </div>
+{% endif %}
 {% include "architects/_architect_header.html" with project_count=profile.visible_projects|length show_apply=True %}
 <p class="mt-2 mb-8 text-xs text-charcoal-400">Arxitektor arizani qabul qilgandan so'ng aloqa ma'lumotlari ko'rinadi.</p>
 

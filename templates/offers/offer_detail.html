@@ -68,13 +68,7 @@
     {% endif %}
     <dt class="text-charcoal-500">Uy rasmi / kadastr</dt>
     <dd class="text-charcoal-900">
-      {% if application.plan_pdf %}
-        {% if application.plan_is_image %}
-          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener"><img src="{{ application.plan_pdf.url }}" alt="Uy rasmi" class="max-h-48 rounded-lg border border-charcoal-200 object-cover"></a>
-        {% else %}
-          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener" class="underline">Faylni ochish</a>
-        {% endif %}
-      {% else %}Yuklanmagan{% endif %}
+      {% include "applications/_attachments.html" %}
     </dd>
   </dl>
 </div>

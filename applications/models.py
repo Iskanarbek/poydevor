@@ -44,6 +44,17 @@ class Application(models.Model):
     # Blob CDN URLs when that storage backend is active (see
     # poydevor/storage_backends.py).
     plan_pdf = models.FileField(upload_to="plans/", null=True, blank=True, max_length=500)
+    class Publication(models.TextChoices):
+        DRAFT = "draft", "Hali yuborilmagan"
+        PUBLIC = "public", "Hammaga ochiq"
+        DIRECT = "direct", "Bitta arxitektorga yuborilgan"
+
+    # A new order is saved as a DRAFT nobody can see; its owner then makes it PUBLIC (every architect
+    # can apply) or sends it to ONE architect/studio (DIRECT). Never both.
+    publication = models.CharField(max_length=10, choices=Publication.choices, default=Publication.PUBLIC)
+    sent_to = models.ForeignKey(
+        "architects.ArchitectProfile", null=True, blank=True, on_delete=models.SET_NULL, related_name="direct_orders",
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
     created_at = models.DateTimeField(auto_now_add=True)
     # Set when the owner deletes the order. The row is kept so architects'
@@ -68,7 +79,37 @@ class Application(models.Model):
         return self.interior_style.name if self.interior_style_id else self.custom_style
 
     @property
+    def attachments(self):
+        """Everything the client attached: the new multi-file uploads, then the old single file."""
+        items = [(f.file, f.is_image, f.name) for f in self.files.all()]
+        if self.plan_pdf:
+            import os
+            items.append((self.plan_pdf, self.plan_is_image, os.path.basename(self.plan_pdf.name)))
+        return items
+
+    @property
     def plan_is_image(self):
         """The uploaded "house picture" is a photo (as opposed to a PDF)."""
         import os
         return bool(self.plan_pdf) and os.path.splitext(self.plan_pdf.name)[1].lower() in HOUSE_IMAGE_EXTENSIONS
+
+
+class ApplicationFile(models.Model):
+    """One of the photos/files (house pictures, cadastre, plans) the client attached to an order."""
+
+    application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name="files")
+    file = models.FileField(upload_to="plans/", max_length=500)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    @property
+    def is_image(self):
+        import os
+        return os.path.splitext(self.file.name)[1].lower() in HOUSE_IMAGE_EXTENSIONS
+
+    @property
+    def name(self):
+        import os
+        return os.path.basename(self.file.name)

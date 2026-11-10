@@ -37,6 +37,11 @@
             </span>
           </div>
           <p class="text-sm text-charcoal-500">{{ application.rooms_count }} xona</p>
+          <p class="mt-2 text-xs font-medium {% if application.publication == 'draft' %}text-amber-700{% else %}text-charcoal-500{% endif %}">
+            {% if application.publication == 'draft' %}● Yuborilmagan — kimga yuborishni tanlang
+            {% elif application.publication == 'direct' %}Yuborilgan: {{ application.sent_to.display_name|default:"arxitektor" }}
+            {% else %}Hammaga ochiq{% endif %}
+          </p>
         </a>
         <a href="{% url 'applications:delete' application.pk %}" class="mt-3 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 hover:underline">
           <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg> O'chirish

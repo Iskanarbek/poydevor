@@ -121,7 +121,7 @@ class FullJourneyTests(TestCase):
         self.client.post(reverse("architects:employee_decision", args=[employee.pk]), {"decision": "accept"})
         self.assertTrue(any("qabul qildi" in t for t in self.unread("+998903333333")))
 
-        # 5. A client signs up (phone only) and posts an order. Missing answers are refused; success goes home.
+        # 5. A client signs up (phone only) and posts an order: it is saved but nobody sees it yet.
         self.new_visitor()
         self.client.post(reverse("accounts:signup"), {"first_name": "Aziz", "last_name": "Karimov", "phone": "+998 90 444 44 44"})
         self.assertEqual(User.objects.get(phone="+998904444444").role, "user")
@@ -129,35 +129,60 @@ class FullJourneyTests(TestCase):
         self.assertEqual(incomplete.status_code, 200)
         form_page = self.client.get(reverse("applications:post"))
         self.assertNotContains(form_page, "avtomatik")
+        self.assertNotContains(form_page, "Byudjet")
         response = self.client.post(reverse("applications:post"), {
-            "size_m2": 120, "object_type": "yard", "service_type": "interior", "rooms_count": 4, "location": "Toshkent, Yunusobod",
-            "interior_style": "other", "custom_style": "Art-deko", "plan_pdf": pdf("kadastr.pdf"), "price_confirmed": "on",
+            "size_m2": 120, "object_type": "yard", "service_type": ["architecture", "interior"], "rooms_count": 4,
+            "location": "Toshkent, Yunusobod", "interior_style": "other", "custom_style": "Art-deko",
+            "files": [jpeg("uy1.jpg"), jpeg("uy2.jpg"), pdf("kadastr.pdf")], "price_confirmed": "on",
         })
-        self.assertRedirects(response, reverse("applications:dashboard"), fetch_redirect_response=False)
-        order = Application.objects.get()
-        self.assertEqual((order.estimate_min, order.estimate_max, order.style_label), (1500, 2750, "Art-deko"))
+        public_order = Application.objects.get()
+        self.assertRedirects(response, reverse("applications:choose", args=[public_order.pk]), fetch_redirect_response=False)
+        self.assertEqual(public_order.files.count(), 3)
+        self.assertEqual((public_order.service_type, public_order.estimate_min, public_order.style_label), ("both", 2350, "Art-deko"))
+        self.assertEqual(public_order.publication, "draft")
+        # leaving and coming back lands on the same two questions
+        self.assertRedirects(self.client.get(reverse("applications:detail", args=[public_order.pk])), reverse("applications:choose", args=[public_order.pk]), fetch_redirect_response=False)
+        self.assertContains(self.client.get(reverse("applications:choose", args=[public_order.pk])), "Hammaga ochiq qilish")
+        # still invisible to architects...
+        self.new_visitor()
+        self.log_in("+998902222222", "pw")
+        self.assertNotContains(self.client.get(reverse("architects:freelancer_dashboard") + "?tab=market"), "Toshkent, Yunusobod")
+        # ...until the client opens it to everyone
+        self.new_visitor()
+        self.log_in("+998904444444")
+        self.client.post(reverse("applications:choose", args=[public_order.pk]), {"audience": "public"})
         home = self.client.get(reverse("applications:dashboard"))
         self.assertContains(home, "Buyurtma yaratish")
         self.assertContains(home, "Loyiha 0")                        # the architects' projects are on the home page
         self.assertContains(home, "$1000")                            # ...with their prices
         self.assertContains(home, "Hovli / Uchastka")
         self.assertContains(home, "Skandinav")                        # ...and the architect's own style
+        # a second order goes to ONE chosen studio instead
+        self.client.post(reverse("applications:post"), {
+            "size_m2": 90, "object_type": "wedding_hall", "service_type": "architecture", "rooms_count": 2,
+            "location": "Samarqand", "price_confirmed": "on",
+        })
+        order = Application.objects.get(location="Samarqand")
+        self.client.get(reverse("applications:pick_architect", args=[order.pk]))
+        self.assertContains(self.client.get(reverse("architects:list")), "e'loni yuborish uchun")
+        self.client.post(reverse("offers:send", args=[studio_owner.pk]), {"application": order.pk})
+        order.refresh_from_db()
+        self.assertEqual((order.publication, order.sent_to), ("direct", studio_owner))
+        self.assertTrue(any("sizga loyiha yubordi" in t for t in self.unread("+998901111111")))
 
-        # 6. The freelancer applies (1 coin); the client is notified and also invites the studio.
+        # 6. The freelancer sees the public order (1 coin to apply); the client is notified. The direct order stays hidden.
         self.new_visitor()
         self.log_in("+998902222222", "pw")
-        market = self.client.get(reverse("freelancer_dashboard") if False else reverse("architects:freelancer_dashboard") + "?tab=market")
+        market = self.client.get(reverse("architects:freelancer_dashboard") + "?tab=market")
         self.assertContains(market, "Toshkent, Yunusobod")
-        self.assertContains(market, "$1500–2750")
-        self.client.post(reverse("offers:architect_apply", args=[order.pk]))
+        self.assertNotContains(market, "Samarqand")
+        self.assertContains(market, "$2350–4250")
+        applied = self.client.post(reverse("offers:architect_apply", args=[public_order.pk]))
+        self.assertEqual(applied.status_code, 302)
         freelancer.wallet.refresh_from_db()
         self.assertEqual(freelancer.wallet.balance, 1)
         self.assertTrue(any("ariza yubordi" in t for t in self.unread("+998904444444")))
-
-        self.new_visitor()
-        self.log_in("+998904444444")
-        self.client.post(reverse("offers:send", args=[studio_owner.pk]), {"application": order.pk})
-        self.assertTrue(any("sizga loyiha yubordi" in t for t in self.unread("+998901111111")))
+        self.assertEqual(self.client.get(reverse("offers:architect_apply", args=[order.pk])).status_code, 404)
 
         # 7. The studio accepts the invitation (2 coins); the employee is told about the new order.
         self.new_visitor()
@@ -170,7 +195,6 @@ class FullJourneyTests(TestCase):
         self.assertEqual(invitation.status, Offer.Status.ACCEPTED)
         self.assertTrue(any("Studiyaga yangi buyurtma" in t for t in self.unread("+998903333333")))
         self.assertTrue(any("taklifingizni qabul qildi" in t for t in self.unread("+998904444444")))
-        self.assertTrue(any("boshqa arxitektorni tanladi" in t for t in self.unread("+998902222222")))   # the freelancer lost
 
         # 8. The studio sees it on its orders page, labelled as sent by the client, and hands it to the employee.
         orders = self.client.get(reverse("architects:studio_dashboard") + "?tab=orders")

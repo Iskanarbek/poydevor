@@ -44,7 +44,7 @@
       {% if is_owner %}
         <a href="{% url 'architects:portfolio_edit' %}" class="btn-ghost">Profilni tahrirlash</a>
       {% elif show_apply %}
-        <a href="{% if user.is_authenticated %}{% url 'offers:send' profile.id %}{% else %}{% url 'accounts:login' %}{% endif %}" class="btn-clay">Ariza yuborish <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a href="{% if user.is_authenticated %}{% url 'offers:send' profile.id %}{% else %}{% url 'accounts:login' %}{% endif %}" class="btn-clay">E'lon yuborish <svg class="icon"><use href="#i-arrow"/></svg></a>
       {% endif %}
     </div>
   </div>

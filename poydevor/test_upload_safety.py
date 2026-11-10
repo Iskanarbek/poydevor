@@ -205,11 +205,11 @@ class UploadFormsUseTheCheckTests(TestCase):
             "service_type": "interior", "price_confirmed": "on",
         }
         for name, content in [("uy.pdf", PDF), ("uy.jpg", JPEG)]:
-            form = ApplicationForm(base, {"plan_pdf": upload(name, content)})
+            form = ApplicationForm(base, {"files": [upload(name, content)]})
             self.assertTrue(form.is_valid(), form.errors)
-        form = ApplicationForm(base, {"plan_pdf": upload("uy.png", make_png())})     # photos from a phone are fine
+        form = ApplicationForm(base, {"files": [upload("uy.png", make_png())]})     # photos from a phone are fine
         self.assertTrue(form.is_valid(), form.errors)
         for name, content in [("uy.dwg", b"AC1015"), ("uy.apk", b"PK"), ("uy.png", b"not a picture"), ("uy.pdf", b"MZ fake"), ("uy.gif", JPEG)]:
-            form = ApplicationForm(base, {"plan_pdf": upload(name, content)})
+            form = ApplicationForm(base, {"files": [upload(name, content)]})
             self.assertFalse(form.is_valid(), name)
-            self.assertTrue(form.errors.get("plan_pdf"), name)
+            self.assertTrue(form.errors.get("files"), name)

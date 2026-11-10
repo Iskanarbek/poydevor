@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="max-w-xl mx-auto">
-  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">{{ architect.display_name }}ga ariza yuborish</h1>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-2">{{ architect.display_name }}ga e'lon yuborish</h1>
   <p class="text-sm text-charcoal-500 mb-6">
     Arxitektor qabul qilgandan so'ng aloqa ma'lumotlari (telefon, telegram) ikkala tomon uchun ham ko'rinadi.
   </p>
@@ -16,19 +16,20 @@
   {% if applications %}
     <form method="post" class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
       {% csrf_token %}
-      <label class="block text-sm text-charcoal-500 mb-2">Qaysi e'lon uchun ariza yuborasiz?</label>
+      <label class="block text-sm text-charcoal-500 mb-2">Qaysi e'lonni yuborasiz?</label>
       <select name="application" class="w-full rounded-lg border border-charcoal-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay-400 mb-4">
         {% for application in applications %}
-          <option value="{{ application.pk }}">{{ application.location }} — {{ application.rooms_count }} xona</option>
+          <option value="{{ application.pk }}"{% if application.pk == preselected %} selected{% endif %}>{{ application.location }} — {{ application.rooms_count }} xona</option>
         {% endfor %}
       </select>
       <button type="submit" class="w-full bg-clay-600 text-white font-medium rounded-lg px-5 py-2.5 hover:bg-clay-700 transition">
-        Ariza yuborish
+        E'lonni yuborish
       </button>
     </form>
   {% else %}
     <div class="border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6 text-sm text-charcoal-600">
-      Sizda ochiq e'lonlar yo'q.
+      Yuborilmagan e'lon yo'q. Faqat hali hech kimga yuborilmagan e'lonni bitta arxitektorga yuborish mumkin
+      (e'lon yoki hammaga ochiq, yoki bitta arxitektorga yuboriladi).
       <a href="{% url 'applications:post' %}" class="text-clay-700 font-medium underline">Yangi e'lon joylashtirish</a>
     </div>
   {% endif %}

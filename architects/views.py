@@ -235,7 +235,9 @@ def _offers(profile, *statuses):
 
 
 def _market_context(profile, request):
-    open_applications = Application.objects.filter(status=Application.Status.OPEN).select_related("interior_style").annotate(
+    open_applications = Application.objects.filter(
+        status=Application.Status.OPEN, publication=Application.Publication.PUBLIC, deleted_at__isnull=True,
+    ).select_related("interior_style").annotate(
         pending_offers_count=Count("offers", filter=Q(offers__status=Offer.Status.PENDING)),
     )
     open_applications, filter_context = filter_open_orders(request, open_applications)

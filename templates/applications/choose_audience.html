@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}E'lonni kimga yuborasiz? — Poydevor{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-2xl">
+  <p class="mb-1 text-[11px] uppercase tracking-[.22em] text-clay-600">E'lon saqlandi</p>
+  <h1 class="font-serif text-2xl font-semibold text-charcoal-900">E'lonni kimga yuborasiz?</h1>
+  <p class="mt-1 text-sm text-charcoal-500">«{{ application.location }}» e'loningiz saqlandi, lekin hali hech kimga ko'rinmaydi. Bitta variantni tanlang. Keyinroq qaytsangiz ham shu yerdan davom etasiz.</p>
+
+  <div class="mt-6 grid gap-4">
+    <section class="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
+      <h2 class="font-serif text-lg font-semibold text-charcoal-900">1. Hammaga ochiq qilish</h2>
+      <p class="mt-2 text-sm leading-relaxed text-charcoal-600">
+        E'loningiz barcha arxitektor va studiyalarga ko'rinadi. Istalgani unga ariza yuborishi mumkin,
+        oxirida ulardan bittasini siz tanlaysiz.
+      </p>
+      <form method="post" class="mt-4">
+        {% csrf_token %}
+        <input type="hidden" name="audience" value="public">
+        <button type="submit" class="btn-clay !py-2.5">Hammaga ochiq qilish <svg class="icon"><use href="#i-arrow"/></svg></button>
+      </form>
+    </section>
+
+    <section class="rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm">
+      <h2 class="font-serif text-lg font-semibold text-charcoal-900">2. Bitta arxitektorga yuborish</h2>
+      <p class="mt-2 text-sm leading-relaxed text-charcoal-600">
+        Arxitektor yoki studiyani o'zingiz tanlaysiz va e'lonni faqat unga yuborasiz. Boshqalar bu e'lonni ko'rmaydi.
+      </p>
+      <a href="{% url 'applications:pick_architect' application.pk %}" class="btn-ghost mt-4 !py-2.5">Arxitektorlarni ko'rish <svg class="icon"><use href="#i-arrow"/></svg></a>
+    </section>
+  </div>
+
+  <p class="mt-6 text-sm text-charcoal-500"><a href="{% url 'applications:dashboard' %}" class="underline">Keyinroq tanlayman</a> — e'lon saqlanib turadi.</p>
+</div>
+{% endblock %}

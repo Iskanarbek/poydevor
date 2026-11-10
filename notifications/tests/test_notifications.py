@@ -167,6 +167,9 @@ class MarketAndWorkersListNewsTests(Base):
         self.client.force_login(self.client_user)
         from applications.tests.test_views import order_data
         self.client.post(reverse("applications:post"), order_data())
+        self.assertFalse(Notification.objects.filter(user=self.freelancer.user, text__contains="Yangi e'lon").exists())   # a draft tells nobody
+        order = Application.objects.latest("pk")
+        self.client.post(reverse("applications:choose", args=[order.pk]), {"audience": "public"})
         self.assertTrue(Notification.objects.filter(user=self.freelancer.user, text__contains="Yangi e'lon").exists())
 
     def test_a_join_request_puts_a_red_number_on_the_workers_list_tab(self):

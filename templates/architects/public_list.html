@@ -3,6 +3,12 @@
 {% block title %}Arxitektorlar — Poydevor{% endblock %}
 
 {% block content %}
+{% if sending_order %}
+  <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-clay-300 bg-clay-50 px-5 py-4 text-sm text-clay-900">
+    <span><b>«{{ sending_order.location }}»</b> e'loni yuborish uchun arxitektor yoki studiyani tanlang, so'ng uning sahifasidagi <b>E'lon yuborish</b> tugmasini bosing.</span>
+    <a href="{% url 'applications:choose' sending_order.pk %}" class="text-clay-800 underline">Orqaga</a>
+  </div>
+{% endif %}
 <h1 class="font-serif text-2xl font-semibold text-charcoal-900 mb-1">Arxitektorlar</h1>
 <p class="text-sm text-charcoal-500 mb-6">O'zingizga yoqqan uslubdagi arxitektorni tanlang.</p>
 

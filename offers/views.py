@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -48,17 +48,28 @@ def _portfolio_gate_message(architect):
 @login_required
 def send_from_architect_profile(request, architect_pk):
     architect = get_object_or_404(ArchitectProfile.objects.public(), pk=architect_pk)
-    user_applications = request.user.applications.filter(status=Application.Status.OPEN)
+    # Only orders that were saved but not yet sent anywhere can go to one chosen architect: an order
+    # is either public or sent to one architect, never both.
+    user_applications = request.user.applications.filter(
+        status=Application.Status.OPEN, publication=Application.Publication.DRAFT, deleted_at__isnull=True,
+    )
     error = None
     if request.method == "POST":
         application = get_object_or_404(user_applications, pk=request.POST.get("application"))
         try:
-            send_offer(application, architect, source=Offer.Source.USER_INVITED)
-            return redirect("applications:detail", pk=application.pk)
+            with transaction.atomic():
+                send_offer(application, architect, source=Offer.Source.USER_INVITED)
+                application.publication = Application.Publication.DIRECT
+                application.sent_to = architect
+                application.save(update_fields=["publication", "sent_to"])
+            request.session.pop("sending_order", None)
+            messages.success(request, f"E'lon {architect.display_name}ga yuborildi.")
+            return redirect("applications:dashboard")
         except (MaxArchitectsReachedError, ArchitectNotAllowedError) as e:
             error = str(e)
     return render(request, "offers/send_form.html", {
         "architect": architect, "applications": user_applications, "error": error,
+        "preselected": request.session.get("sending_order"),
     })
 
 
@@ -68,6 +79,7 @@ def architect_apply(request, application_pk):
     suits them; POST takes it, spending the coins."""
     application = get_object_or_404(
         Application.objects.select_related("interior_style"), pk=application_pk, status=Application.Status.OPEN,
+        publication=Application.Publication.PUBLIC, deleted_at__isnull=True,
     )
     architect = get_object_or_404(ArchitectProfile.objects.takers(), user=request.user)
     gate_message = _portfolio_gate_message(architect)

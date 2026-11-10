@@ -132,6 +132,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'poydevor.context_processors.architect_wallet',
                 'poydevor.context_processors.unread_notifications',
+                'poydevor.context_processors.sending_order',
             ],
         },
     },

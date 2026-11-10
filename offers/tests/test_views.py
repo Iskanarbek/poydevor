@@ -13,7 +13,7 @@ class SendOfferFromArchitectProfileTests(TestCase):
         self.owner = User.objects.create_user(
             phone="+998901111111", password="x", first_name="Aziz", last_name="K", role=User.Role.USER,
         )
-        self.application = Application.objects.create(owner=self.owner, rooms_count=3, location="Toshkent")
+        self.application = Application.objects.create(owner=self.owner, rooms_count=3, location="Toshkent", publication="draft")
         architect_user = User.objects.create_user(
             phone="+998902222222", password="x", first_name="Nodir", last_name="Y", role=User.Role.ARCHITECT,
         )

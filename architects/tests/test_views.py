@@ -485,7 +485,7 @@ class ProjectDetailPageTests(TestCase):
 
     def test_shows_the_architect_with_rating_skills_and_other_projects(self):
         page = self.client.get(self.url)
-        for expected in ("Nodir Karimov", "4,00", "3D vizualizatsiya", "Ariza yuborish", "Boshqa uy"):
+        for expected in ("Nodir Karimov", "4,00", "3D vizualizatsiya", "E'lon yuborish", "Boshqa uy"):
             self.assertContains(page, expected)
         self.assertContains(page, reverse("architects:project_detail", args=[self.other.pk]))   # other projects, at the bottom
         client = User.objects.create_user(phone="+998901239999", first_name="Mijoz", role=User.Role.USER)
@@ -710,10 +710,11 @@ class ArchitectProjectServiceAndObjectTests(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data["service_type"], "both")
 
-    def test_wedding_hall_cannot_be_chosen_for_a_new_project(self):
+    def test_the_wedding_hall_type_is_called_just_toyxona_and_can_be_chosen(self):
         from architects.forms import PortfolioProjectEditForm
-        self.assertFalse(self.form(object_type="wedding_hall").is_valid())
-        self.assertNotIn("wedding_hall", [v for v, _ in PortfolioProjectEditForm().fields["object_type"].choices])
+        self.assertTrue(self.form(object_type="wedding_hall").is_valid())
+        labels = dict(PortfolioProjectEditForm().fields["object_type"].choices)
+        self.assertEqual(labels["wedding_hall"], "To'yxona")
 
     def test_an_old_wedding_hall_project_can_still_be_edited(self):
         from architects.forms import PortfolioProjectEditForm
@@ -723,11 +724,12 @@ class ArchitectProjectServiceAndObjectTests(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
 
-    def test_a_both_project_shows_under_either_filter_and_the_gallery_has_no_wedding_chip(self):
+    def test_a_both_project_shows_under_either_filter_and_the_gallery_has_a_toyxona_chip(self):
         project = PortfolioProject.objects.create(architect=self.profile, title="Ikkalasi", object_type="yard", service_type="both")
         PortfolioImage.objects.create(project=project, image="portfolio/p.jpg", order=0)
         for service in ("architecture", "interior"):
             response = self.client.get(reverse("architects:project_gallery"), {"service": service})
             self.assertIn("Ikkalasi", {p.title for p in response.context["projects"]})
         labels = [o["label"] for g in response.context["filter_groups"] for o in g["options"]]
+        self.assertIn("To'yxona", labels)
         self.assertNotIn("To'yxona / Tantanalar saroyi", labels)

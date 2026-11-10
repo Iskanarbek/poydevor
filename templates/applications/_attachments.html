@@ -1,0 +1,16 @@
+{# All photos/files the client attached. Needs: application. #}
+{% with items=application.attachments %}
+  {% if items %}
+    <div class="flex flex-wrap gap-2">
+      {% for file, is_image, name in items %}
+        {% if is_image %}
+          <a href="{{ file.url }}" target="_blank" rel="noopener"><img src="{{ file.url }}" alt="{{ name }}" loading="lazy" class="h-28 w-28 rounded-lg border border-charcoal-200 object-cover"></a>
+        {% else %}
+          <a href="{{ file.url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-charcoal-200 px-3 py-2 text-sm text-charcoal-800 hover:border-clay-500">
+            <svg class="icon"><use href="#i-doc"/></svg>{{ name|truncatechars:24 }}
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}Yuklanmagan{% endif %}
+{% endwith %}

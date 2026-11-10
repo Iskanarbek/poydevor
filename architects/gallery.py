@@ -63,7 +63,7 @@ def gallery_context(request):
 
     groups = [
         _group(request, "Xizmat turi", "service", [(v, ServiceType(v).label) for v in SERVICES]),
-        _group(request, "Obyekt turi", "object", [(v, ObjectType(v).label) for v in ObjectType.values if v != ObjectType.WEDDING_HALL]),
+        _group(request, "Obyekt turi", "object", [(v, ObjectType(v).label) for v in ObjectType.values]),
         _group(request, "Narx", "price", [(key, label) for key, label, _, _ in PRICE_RANGES]),
         _group(request, "Uslub", "style", [(s.pk, s.name) for s in Style.objects.all()]),
     ]

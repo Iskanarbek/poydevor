@@ -37,3 +37,16 @@ def unread_notifications(request):
         from offers.services import notify_overdue_assignments
         notify_overdue_assignments(user)          # deadlines have no clock of their own: check when someone looks
     return {"unread_notifications_count": Notification.objects.filter(user=user, is_read=False).count()}
+
+
+def sending_order(request):
+    """The saved-but-unsent order a client is choosing an architect for (set by "Arxitektorlarni ko'rish")."""
+    user = getattr(request, "user", None)
+    session = getattr(request, "session", None)
+    if user is None or not user.is_authenticated or session is None or not session.get("sending_order"):
+        return {}
+    from applications.models import Application
+    order = Application.objects.filter(
+        pk=session["sending_order"], owner=user, publication=Application.Publication.DRAFT, deleted_at__isnull=True,
+    ).first()
+    return {"sending_order": order}

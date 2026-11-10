@@ -35,20 +35,52 @@ def price_estimate(request):
 
 @login_required
 def post_application(request):
+    """Save the order as a DRAFT nobody can see, then ask how to send it (see choose_audience)."""
     if request.method == "POST":
         form = ApplicationForm(request.POST, request.FILES)
         if form.is_valid():
             application = form.save(commit=False)
             application.owner = request.user
+            application.publication = Application.Publication.DRAFT
             application.save()
-            notify_new_order(application)
-            messages.success(request, "E'loningiz joylandi! Arxitektorlar tez orada ariza yuborishadi.")
-            return redirect("applications:dashboard")
+            form.save_files(application)
+            return redirect("applications:choose", pk=application.pk)
     else:
         form = ApplicationForm()
     return render(request, "applications/post_form.html", {
         "form": form,
     })
+
+
+def _own_application(request, pk):
+    return get_object_or_404(Application, pk=pk, owner=request.user, deleted_at__isnull=True)
+
+
+@login_required
+def choose_audience(request, pk):
+    """Step two: the saved (still invisible) order is either shown to every architect or sent to
+    one chosen architect/studio, never both. Opening a draft order again always lands here."""
+    application = _own_application(request, pk)
+    if application.publication != Application.Publication.DRAFT:
+        return redirect("applications:detail", pk=application.pk)
+    if request.method == "POST" and request.POST.get("audience") == "public":
+        application.publication = Application.Publication.PUBLIC
+        application.save(update_fields=["publication"])
+        notify_new_order(application)
+        request.session.pop("sending_order", None)
+        messages.success(request, "E'loningiz hammaga ochiq qilindi. Arxitektorlar ariza yuborishadi.")
+        return redirect("applications:dashboard")
+    return render(request, "applications/choose_audience.html", {"application": application})
+
+
+@login_required
+def pick_architect(request, pk):
+    """"Arxitektorlarni ko'rish": remember which order is being sent and open the architects list."""
+    application = _own_application(request, pk)
+    if application.publication != Application.Publication.DRAFT:
+        return redirect("applications:detail", pk=application.pk)
+    request.session["sending_order"] = application.pk
+    return redirect("architects:list")
 
 
 @login_required
@@ -64,6 +96,8 @@ def dashboard(request):
 @login_required
 def detail(request, pk):
     application = get_object_or_404(Application, pk=pk, owner=request.user, deleted_at__isnull=True)
+    if application.publication == Application.Publication.DRAFT:
+        return redirect("applications:choose", pk=application.pk)
     news = take_url_notifications(request.user, request.path)
     return render(request, "applications/detail.html", {
         "application": application,

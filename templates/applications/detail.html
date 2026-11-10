@@ -25,6 +25,20 @@
     </div>
   {% endif %}
 
+  <div class="mb-6 rounded-2xl border border-charcoal-200 bg-white px-5 py-4 text-sm shadow-sm">
+    {% if application.publication == 'direct' and application.sent_to %}
+      <p class="text-charcoal-500">E'lon yuborilgan:</p>
+      <a href="{% url 'architects:detail' application.sent_to.pk %}" class="mt-1 inline-flex items-center gap-2 font-medium text-clay-700 hover:underline">
+        {% if application.sent_to.avatar %}<img src="{{ application.sent_to.avatar.url }}" alt="" class="h-8 w-8 {% if application.sent_to.kind == 'studio_owner' %}rounded-md bg-white object-contain{% else %}rounded-full object-cover{% endif %}">{% endif %}
+        {{ application.sent_to.display_name }}
+      </a>
+      <p class="mt-1 text-xs text-charcoal-500">Faqat shu arxitektor (studiya) e'loningizni ko'radi.</p>
+    {% else %}
+      <p class="font-medium text-charcoal-900">Hammaga ochiq</p>
+      <p class="mt-1 text-xs text-charcoal-500">E'loningiz barcha arxitektor va studiyalarga ko'rinadi, istalgani ariza yuborishi mumkin.</p>
+    {% endif %}
+  </div>
+
   <dl class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm border border-charcoal-200 rounded-2xl bg-white shadow-sm p-6">
     <dt class="text-charcoal-500">Maydon</dt>
     <dd class="text-charcoal-900">{% if application.size_m2 %}{{ application.size_m2 }} m²{% else %}Noma'lum{% endif %}</dd>
@@ -56,17 +70,9 @@
       <dd class="text-charcoal-900 whitespace-pre-line">{{ application.description }}</dd>
     {% endif %}
 
-    <dt class="text-charcoal-500">Uy rasmi</dt>
+    <dt class="text-charcoal-500">Uy rasmi / kadastr</dt>
     <dd class="text-charcoal-900">
-      {% if application.plan_pdf %}
-        {% if application.plan_is_image %}
-          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener"><img src="{{ application.plan_pdf.url }}" alt="Uy rasmi" class="max-h-40 rounded-lg border border-charcoal-200 object-cover"></a>
-        {% else %}
-          <a href="{{ application.plan_pdf.url }}" class="text-charcoal-700 underline">Yuklab olish</a>
-        {% endif %}
-      {% else %}
-        Yuklanmagan
-      {% endif %}
+      {% include "applications/_attachments.html" %}
     </dd>
   </dl>
 

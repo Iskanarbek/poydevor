@@ -51,18 +51,10 @@
       {% else %}
         <p class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan. Yuqoridagi ma'lumotlar va uy rasmiga qarab baholang.</p>
       {% endif %}
-      {% if application.plan_pdf %}
-        {% if application.plan_is_image %}
-          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener" class="mt-5 block">
-            <span class="mb-2 block text-sm font-medium text-charcoal-700">Uy rasmi</span>
-            <img src="{{ application.plan_pdf.url }}" alt="Uy rasmi" class="max-h-80 w-full rounded-xl border border-charcoal-200 object-cover">
-          </a>
-        {% else %}
-          <a href="{{ application.plan_pdf.url }}" target="_blank" rel="noopener" class="mt-5 inline-flex items-center gap-2 rounded-xl border border-charcoal-200 px-4 py-2.5 text-sm font-medium text-charcoal-800 hover:border-clay-500 hover:text-clay-700 transition">
-            <svg class="icon"><use href="#i-doc"/></svg> Uy rasmini ochish
-          </a>
-        {% endif %}
-      {% endif %}
+      <div class="mt-5">
+        <span class="mb-2 block text-sm font-medium text-charcoal-700">Uy rasmi / kadastr</span>
+        {% include "applications/_attachments.html" %}
+      </div>
     </section>
 
     <p class="reveal flex items-start gap-2 text-sm text-charcoal-500" style="--d:.24s">

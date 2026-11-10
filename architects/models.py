@@ -8,7 +8,7 @@ class ObjectType(models.TextChoices):
     APARTMENT = "apartment", "Kvartira (ko'p qavatli uydan)"
     OFFICE = "office", "Ofis yoki Biznes markazi"
     RESTAURANT = "restaurant", "Restoran / Kafe"
-    WEDDING_HALL = "wedding_hall", "To'yxona / Tantanalar saroyi"
+    WEDDING_HALL = "wedding_hall", "To'yxona"
 
 
 class ServiceType(models.TextChoices):

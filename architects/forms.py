@@ -306,10 +306,7 @@ class PortfolioProjectEditForm(OwnStyleFormMixin, forms.ModelForm):
         self.setup_style("Uslubi (ixtiyoriy)")
         self.fields["object_type"] = forms.ChoiceField(
             label="Obyekt turi",
-            choices=[("", "Tanlang")] + [
-                c for c in ObjectType.choices
-                if c[0] != ObjectType.WEDDING_HALL or self.instance.object_type == ObjectType.WEDDING_HALL
-            ],
+            choices=[("", "Tanlang")] + list(ObjectType.choices),
             error_messages={"required": "Obyekt turini tanlang."},
         )
         self.fields["service_type"] = ServiceTypeField(
