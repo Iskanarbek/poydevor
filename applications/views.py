@@ -17,6 +17,7 @@ from applications.services import (
     notify_new_order,
     delete_application as delete_order,
     live_offers,
+    reopen_audience_choice,
 )
 
 Status = Application.Status
@@ -71,6 +72,18 @@ def choose_audience(request, pk):
         messages.success(request, "E'loningiz hammaga ochiq qilindi. Arxitektorlar ariza yuborishadi.")
         return redirect("applications:dashboard")
     return render(request, "applications/choose_audience.html", {"application": application})
+
+
+@login_required
+@require_POST
+def change_audience(request, pk):
+    """"Yuborish usulini o'zgartirish": back to the two options, if it is not too late."""
+    application = _own_application(request, pk)
+    if reopen_audience_choice(application):
+        messages.success(request, "Endi e'lonni qayta tanlab yuborishingiz mumkin.")
+        return redirect("applications:choose", pk=application.pk)
+    messages.warning(request, "Arxitektor ariza yuborgani yoki qabul qilgani uchun yuborish usulini o'zgartirib bo'lmaydi.")
+    return redirect("applications:detail", pk=application.pk)
 
 
 @login_required

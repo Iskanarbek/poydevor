@@ -79,3 +79,25 @@ def notify_new_order(application: Application) -> int:
     ]
     Notification.objects.bulk_create(rows)
     return len(rows)
+
+
+def reopen_audience_choice(application: Application) -> bool:
+    """Take back "public" or "sent to one architect" so the owner can choose again. Only possible while
+    nobody has applied / accepted (see Application.can_change_audience). Returns whether it was done."""
+    from architects.navigation import dashboard_url
+    from notifications.services import notify
+    from offers.models import Offer
+
+    if not application.can_change_audience:
+        return False
+    if application.publication == Application.Publication.DIRECT:
+        for offer in application.offers.filter(status=Offer.Status.PENDING).select_related("architect__user"):
+            notify(
+                offer.architect, f"Mijoz e'lonni qaytarib oldi: {application.location}.",
+                dashboard_url(offer.architect, "orders"),
+            )
+            offer.delete()
+    application.publication = Application.Publication.DRAFT
+    application.sent_to = None
+    application.save(update_fields=["publication", "sent_to"])
+    return True

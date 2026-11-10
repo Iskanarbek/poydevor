@@ -497,3 +497,69 @@ class LiveEstimateWithBothServicesTests(TestCase):
         one = self.client.get(url, {"size": 100, "object_type": "apartment", "service_type": "interior", "rooms": 3, "location": "Toshkent"}).json()
         self.assertGreater(both["min"], one["min"])
         self.assertContains(self.client.get(reverse("applications:post")), "getAll('service_type')")
+
+
+class ChangeAudienceTests(TwoStepPublishingTests):
+    """The owner may change "public / one architect" until someone applies or accepts; the detail page
+    ends with an orange "Bosh sahifaga qaytish" button."""
+
+    def setUp(self):
+        super().setUp()
+        self.change_url = reverse("applications:change_audience", args=[self.order.pk])
+
+    def make_public(self):
+        self.client.post(reverse("applications:choose", args=[self.order.pk]), {"audience": "public"})
+        self.order.refresh_from_db()
+
+    def test_the_detail_page_ends_with_the_back_button(self):
+        self.make_public()
+        page = self.client.get(reverse("applications:detail", args=[self.order.pk]))
+        self.assertContains(page, "Bosh sahifaga qaytish")
+        self.assertContains(page, "Yuborish usulini o")
+
+    def test_a_public_order_nobody_applied_to_can_be_taken_back_and_resent(self):
+        self.make_public()
+        self.assertTrue(self.order.can_change_audience)
+        response = self.client.post(self.change_url)
+        self.assertRedirects(response, reverse("applications:choose", args=[self.order.pk]), fetch_redirect_response=False)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.publication, "draft")
+        self.assertNotIn(self.order.pk, self.market_places(self.arch1.user))          # gone from the market again
+
+    def test_once_someone_applied_it_is_too_late(self):
+        from offers.services import send_offer
+        self.make_public()
+        send_offer(self.order, self.arch1, source="architect_applied")
+        self.client.force_login(self.owner)
+        self.assertFalse(Application.objects.get(pk=self.order.pk).can_change_audience)
+        response = self.client.post(self.change_url)
+        self.assertRedirects(response, reverse("applications:detail", args=[self.order.pk]), fetch_redirect_response=False)
+        self.assertEqual(Application.objects.get(pk=self.order.pk).publication, "public")
+        self.assertContains(self.client.get(reverse("applications:detail", args=[self.order.pk])), "o'zgartirib bo")
+
+    def test_a_direct_order_can_be_taken_back_until_the_architect_accepts(self):
+        from notifications.models import Notification
+        from offers.models import Offer
+        self.client.post(reverse("offers:send", args=[self.arch1.pk]), {"application": self.order.pk})
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.publication, "direct")
+        self.client.post(self.change_url)
+        self.order.refresh_from_db()
+        self.assertEqual((self.order.publication, self.order.sent_to), ("draft", None))
+        self.assertFalse(Offer.objects.exists())                                     # the invitation was withdrawn
+        self.assertTrue(Notification.objects.filter(user=self.arch1.user, text__contains="qaytarib oldi").exists())
+        # send to the other architect instead, who accepts: now it is final
+        self.client.post(reverse("offers:send", args=[self.arch2.pk]), {"application": self.order.pk})
+        offer = Offer.objects.get()
+        self.client.force_login(self.arch2.user)
+        self.client.post(reverse("offers:respond", args=[offer.pk]), {"decision": "accept"})
+        self.client.force_login(self.owner)
+        self.client.post(self.change_url)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.publication, "direct")
+
+    def test_only_the_owner_and_only_by_post(self):
+        self.make_public()
+        self.assertEqual(self.client.get(self.change_url).status_code, 405)
+        self.client.force_login(self.arch1.user)
+        self.assertEqual(self.client.post(self.change_url).status_code, 404)

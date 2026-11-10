@@ -7,6 +7,7 @@ urlpatterns = [
     path("elon/joylashtirish/", views.post_application, name="post"),
     path("elon/narx/", views.price_estimate, name="price_estimate"),
     path("elon/<int:pk>/yuborish/", views.choose_audience, name="choose"),
+    path("elon/<int:pk>/usulni-ozgartirish/", views.change_audience, name="change_audience"),
     path("elon/<int:pk>/arxitektor-tanlash/", views.pick_architect, name="pick_architect"),
     path("panel/elonlarim/", views.dashboard, name="dashboard"),
     path("elon/<int:pk>/", views.detail, name="detail"),

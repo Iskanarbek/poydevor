@@ -79,6 +79,19 @@ class Application(models.Model):
         return self.interior_style.name if self.interior_style_id else self.custom_style
 
     @property
+    def can_change_audience(self):
+        """The owner may take back the choice (public / one architect) until someone has applied or the
+        chosen architect has accepted. After that it is too late."""
+        if self.status != self.Status.OPEN or self.deleted_at is not None:
+            return False
+        if self.publication == self.Publication.DRAFT:
+            return False
+        from offers.models import Offer
+        if self.publication == self.Publication.PUBLIC:
+            return not self.offers.filter(status__in=[Offer.Status.PENDING, Offer.Status.ACCEPTED, Offer.Status.COMPLETED]).exists()
+        return not self.offers.filter(status__in=[Offer.Status.ACCEPTED, Offer.Status.COMPLETED]).exists()
+
+    @property
     def attachments(self):
         """Everything the client attached: the new multi-file uploads, then the old single file."""
         items = [(f.file, f.is_image, f.name) for f in self.files.all()]
