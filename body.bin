@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Poydevor — a platform for architects and clients</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            charcoal: {
+              50: '#F5F3F1',
+              100: '#E8E3DE',
+              200: '#D3CBC2',
+              300: '#B3A79B',
+              400: '#8C7F72',
+              500: '#6B5E52',
+              600: '#4F443B',
+              700: '#3A322B',
+              800: '#2A241F',
+              900: '#1F1B18',
+            },
+            clay: {
+              50: '#FBF0E9',
+              100: '#F5DCC9',
+              200: '#EABB98',
+              300: '#DE9868',
+              400: '#CD7A47',
+              500: '#C1622D',
+              600: '#B5562A',
+              700: '#954523',
+              800: '#75371C',
+              900: '#5C2C17',
+            },
+            cream: {
+              50: '#FBF7F2',
+              100: '#F7F2EC',
+              200: '#F0E8DE',
+            },
+          },
+          fontFamily: {
+            serif: ['"Fraunces"', 'ui-serif', 'Georgia', 'serif'],
+            sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <script>
+    // Photo slider used on the architect and project cards.
+    document.addEventListener('alpine:init', function () {
+      Alpine.data('carousel', function () {
+        return {
+          i: 0, n: 0, anim: true, busy: false, hovering: false, timer: null, x0: null,
+          init: function () {
+            var track = this.$refs.track;
+            this.n = track.children.length;
+            if (this.n < 2) return;
+            // A copy of the first photo at the end lets the last slide glide on to the first
+            // without rewinding through every photo.
+            track.appendChild(track.children[0].cloneNode(true));
+            var self = this;
+            this.timer = setInterval(function () {
+              if (!self.hovering && !document.hidden && !window.__lightboxOpen) self.next();
+            }, 7000 + Math.random() * 2500);
+          },
+          destroy: function () { clearInterval(this.timer); },
+          unlock: function () { var self = this; setTimeout(function () { self.busy = false; }, 950); },
+          next: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true; this.i += 1;
+            var self = this;
+            setTimeout(function () {
+              if (self.i >= self.n) {
+                self.anim = false; self.i = 0;
+                requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.busy = false; }); });
+              } else { self.busy = false; }
+            }, 950);
+          },
+          prev: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true;
+            var self = this;
+            if (this.i === 0) {
+              this.anim = false; this.i = this.n;
+              requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.i = self.n - 1; self.unlock(); }); });
+            } else { this.i -= 1; this.unlock(); }
+          },
+          go: function (k) {
+            if (this.busy || k === this.i % this.n) return;
+            this.busy = true; this.i = k; this.unlock();
+          },
+          swipe: function (e) {
+            if (this.x0 === null) return;
+            var dx = e.changedTouches[0].clientX - this.x0; this.x0 = null;
+            if (Math.abs(dx) > 40) { dx < 0 ? this.next() : this.prev(); }
+          },
+          open: function (e) {
+            // Clicking a photo opens it full size, starting at the photo being shown. Where the
+            // card also knows every other photo (architect cards), the viewer lets you browse them all.
+            if (e.target.closest('button')) return;
+            if (this.$el.dataset.href) { window.location.href = this.$el.dataset.href; return; }   // cards lead to their page
+            var imgs = this.$refs.track.querySelectorAll('img'), urls = [];
+            for (var k = 0; k < this.n; k++) urls.push(imgs[k].src);
+            var index = this.i % this.n;
+            var full = (this.$el.dataset.full || '').split('|').filter(Boolean).map(function (u) { return new URL(u, window.location.href).href; });
+            if (full.length > urls.length) {
+              var at = full.indexOf(urls[index]);
+              urls = full; index = at >= 0 ? at : 0;
+            }
+            window.dispatchEvent(new CustomEvent('open-lightbox', {
+              detail: { images: urls, index: index, title: this.$el.dataset.title || '' }
+            }));
+          }
+        };
+      });
+
+      // Full-size photo viewer (opened from any slider). It never advances by itself.
+      Alpine.data('lightbox', function () {
+        return {
+          open: false, urls: [], title: '', i: 0, n: 0, anim: true, busy: false, x0: null,
+          get slides() { return this.n > 1 ? this.urls.concat([this.urls[0]]) : this.urls; },
+          show: function (d) {
+            var self = this;
+            this.urls = d.images; this.n = d.images.length; this.title = d.title || '';
+            this.i = d.index || 0; this.busy = false; this.anim = false; this.open = true;
+            window.__lightboxOpen = true; document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; }); });
+          },
+          close: function () { this.open = false; window.__lightboxOpen = false; document.body.style.overflow = ''; },
+          unlock: function () { var self = this; setTimeout(function () { self.busy = false; }, 600); },
+          next: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true; this.i += 1;
+            var self = this;
+            setTimeout(function () {
+              if (self.i >= self.n) {
+                self.anim = false; self.i = 0;
+                requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.busy = false; }); });
+              } else { self.busy = false; }
+            }, 600);
+          },
+          prev: function () {
+            if (this.busy || this.n < 2) return;
+            this.busy = true;
+            var self = this;
+            if (this.i === 0) {
+              this.anim = false; this.i = this.n;
+              requestAnimationFrame(function () { requestAnimationFrame(function () { self.anim = true; self.i = self.n - 1; self.unlock(); }); });
+            } else { this.i -= 1; this.unlock(); }
+          },
+          go: function (k) { if (this.busy || k === this.i % this.n) return; this.busy = true; this.i = k; this.unlock(); },
+          key: function (e) {
+            if (!this.open) return;
+            if (e.key === 'Escape') this.close();
+            else if (e.key === 'ArrowRight') this.next();
+            else if (e.key === 'ArrowLeft') this.prev();
+          },
+          swipe: function (e) {
+            if (this.x0 === null) return;
+            var dx = e.changedTouches[0].clientX - this.x0; this.x0 = null;
+            if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); }
+          }
+        };
+      });
+    });
+  </script>
+  <style>[x-cloak] { display: none !important; }</style>
+  <style>
+    :root { --ease: cubic-bezier(.22, 1, .36, 1); }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+    input[type="text"], input[type="password"], input[type="tel"], input[type="number"],
+    input[type="email"], input[type="date"], input[type="file"], select, textarea {
+      width: 100%;
+      border: 1px solid #D3CBC2;
+      border-radius: 0.7rem;
+      padding: 0.65rem 0.95rem;
+      font-size: 0.95rem;
+      background-color: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, input[type="tel"]:focus,
+    input[type="number"]:focus, input[type="email"]:focus, input[type="date"]:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #B5562A;
+      box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.15);
+    }
+
+    /* Highlights whichever project card a URL fragment (#project-<id>) points
+       to, e.g. arriving from the project gallery, so it's visually distinct
+       from its siblings instead of just scrolled into view. */
+    .target-highlight:target {
+      border-color: #B5562A;
+      box-shadow: 0 0 0 3px rgba(181, 86, 42, 0.25);
+    }
+
+    /* Buttons */
+    .btn-clay, .btn-clay-outline, .btn-ghost, .btn-dark, .btn-disabled {
+      display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+      font-weight: 500; font-size: .9rem; border-radius: .7rem; padding: .65rem 1.15rem;
+      transition: background-color .2s, color .2s, border-color .2s, transform .2s var(--ease), box-shadow .2s;
+      cursor: pointer;
+    }
+    .btn-clay { background: #B5562A; color: #fff; box-shadow: 0 8px 20px -10px rgba(181, 86, 42, .7); }
+    .btn-clay:hover { background: #954523; transform: translateY(-1px); }
+    .btn-clay-outline { color: #954523; border: 1px solid #B5562A; }
+    .btn-clay-outline:hover { background: #B5562A; color: #fff; }
+    .btn-ghost { color: #3A322B; border: 1px solid #D3CBC2; background: #fff; }
+    .btn-ghost:hover { border-color: #8C7F72; }
+    .btn-dark { background: #1F1B18; color: #fff; }
+    .btn-dark:hover { background: #3A322B; transform: translateY(-1px); }
+    .btn-disabled { background: #E8E3DE; color: #8C7F72; cursor: not-allowed; box-shadow: none; }
+
+    /* Motion */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+    @keyframes kenburns {
+      0%   { transform: scale(1) translate3d(0, 0, 0); }
+      100% { transform: scale(1.22) translate3d(-2.2%, -1.6%, 0); }
+    }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes ping-soft { 0% { box-shadow: 0 0 0 0 rgba(193, 98, 45, .45); } 100% { box-shadow: 0 0 0 14px rgba(193, 98, 45, 0); } }
+    .reveal { opacity: 0; animation: fadeUp .85s var(--ease) forwards; animation-delay: var(--d, 0s); }
+    .kenburns { animation: kenburns 24s ease-in-out infinite alternate; will-change: transform; transform-origin: 55% 45%; }
+    .floaty { animation: floaty 6s ease-in-out infinite; }
+    .pulse-ring { animation: ping-soft 2.2s ease-out infinite; }
+    .lift { transition: transform .4s var(--ease), box-shadow .4s var(--ease), border-color .25s; }
+    .lift:hover { transform: translateY(-4px); box-shadow: 0 22px 44px -22px rgba(31, 27, 24, .38); }
+
+    /* Blueprint line art draws itself once scrolled into view (see script below) */
+    .draw * { fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+              stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 2.6s var(--ease) forwards;
+              animation-delay: calc(var(--i, 0) * .18s); animation-play-state: paused; }
+    .draw.in * { animation-play-state: running; }
+
+    /* Backgrounds */
+    .blueprint {
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .07) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+    .blueprint-light {
+      background-image:
+        linear-gradient(rgba(58, 50, 43, .06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(58, 50, 43, .06) 1px, transparent 1px);
+      background-size: 34px 34px;
+    }
+    .glass { background: rgba(255, 255, 255, .1); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+             border: 1px solid rgba(255, 255, 255, .22); }
+    /* Photo slider: slides sit in a row and the row glides sideways. */
+    .slide-track { transition: transform .9s cubic-bezier(.65, 0, .35, 1); will-change: transform; }
+    .slide-track.no-anim { transition: none; }
+    .lb-track { transition: transform .55s cubic-bezier(.65, 0, .35, 1); will-change: transform; }
+    .lb-track.no-anim { transition: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .icon { width: 1.1em; height: 1.1em; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .reveal { opacity: 1; }
+      .draw * { stroke-dashoffset: 0; }
+    }
+  </style>
+</head>
+<body class="bg-cream-50 text-charcoal-900 min-h-screen flex flex-col">
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11Z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-area" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 9h5M4 14h3M9 4v3M14 4v2M20 9h-4"/></symbol>
+  <symbol id="i-rooms" viewBox="0 0 24 24"><path d="M5 21V4h9l5 2v15"/><path d="M5 21h14M14 4v17"/><circle cx="11.3" cy="12.5" r=".6"/></symbol>
+  <symbol id="i-style" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 1.6-2.1-.4-1.1.3-2.4 1.6-2.4H17a4 4 0 0 0 4-4 9 9 0 0 0-9-9.5Z"/><circle cx="7.8" cy="11" r=".9"/><circle cx="10.5" cy="7.3" r=".9"/><circle cx="15" cy="7.8" r=".9"/></symbol>
+  <symbol id="i-budget" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.8c1.8.7 3 2.4 3 5.2"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.3 9.6c0-1 1.2-1.8 2.7-1.8s2.7.7 2.7 1.7c0 2.3-5.4 1.4-5.4 3.8 0 1 1.2 1.7 2.7 1.7s2.7-.8 2.7-1.9"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="3" width="12" height="18" rx="1"/><path d="M8 7h.01M12 7h.01M8 11h.01M12 11h.01M8 15h.01M12 15h.01M16 11h4v10h-4"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/></symbol>
+</svg>
+
+  <nav x-data="{ open: false }" class="border-b border-charcoal-100 bg-cream-50/85 backdrop-blur-md sticky top-0 z-30">
+    <div class="px-6 py-3.5 flex justify-between items-center">
+      <a href="/" class="flex items-center gap-2 group">
+        <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0 transition-transform duration-500 group-hover:-rotate-6">
+          <path d="M16 3 L29 12 V15 L16 6 L3 15 V12 Z" fill="#B5562A"/>
+          <rect x="6" y="15" width="20" height="12" rx="1.5" fill="#1F1B18"/>
+          <rect x="9.5" y="19" width="4.5" height="8" fill="#FBF7F2"/>
+          <rect x="18" y="19" width="4.5" height="4.5" fill="#FBF7F2"/>
+        </svg>
+        <span class="text-xl font-serif font-semibold tracking-tight text-charcoal-900 group-hover:text-clay-700 transition">Poydevor</span>
+      </a>
+      <div class="flex items-center gap-3">
+        
+        <div class="hidden md:flex gap-5 text-sm items-center">
+          
+
+  <a href="/arxitektorlar/" class="text-charcoal-600 hover:text-charcoal-900 transition">Architects</a>
+  
+    <a href="/loyihalar/" class="text-charcoal-600 hover:text-charcoal-900 transition">All projects</a>
+  
+  
+    <a href="/kirish/" class="text-charcoal-600 hover:text-charcoal-900 transition">Sign in</a>
+    <a href="/welcome/" class="btn-clay-outline">Sign up</a>
+  
+  <span class="inline-flex items-center gap-1 rounded-full border border-charcoal-200 bg-white p-0.5 text-[11px] font-semibold" aria-label="Language">
+    
+      <a href="/til/uz/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition text-charcoal-500 hover:text-charcoal-900">UZ</a>
+    
+      <a href="/til/ru/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition text-charcoal-500 hover:text-charcoal-900">RU</a>
+    
+      <a href="/til/en/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition bg-charcoal-900 text-white">EN</a>
+    
+  </span>
+
+
+        </div>
+        <button type="button" @click="open = !open" class="md:hidden p-2 -mr-2 text-charcoal-700" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path x-show="!open" d="M4 7h16M4 12h16M4 17h16"/><path x-show="open" d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div x-show="open" x-cloak x-transition class="md:hidden border-t border-charcoal-100 px-6 py-4 flex flex-col gap-4 text-sm">
+      
+
+  <a href="/arxitektorlar/" class="text-charcoal-600 hover:text-charcoal-900 transition">Architects</a>
+  
+    <a href="/loyihalar/" class="text-charcoal-600 hover:text-charcoal-900 transition">All projects</a>
+  
+  
+    <a href="/kirish/" class="text-charcoal-600 hover:text-charcoal-900 transition">Sign in</a>
+    <a href="/welcome/" class="btn-clay-outline text-center">Sign up</a>
+  
+  <span class="inline-flex items-center gap-1 rounded-full border border-charcoal-200 bg-white p-0.5 text-[11px] font-semibold" aria-label="Language">
+    
+      <a href="/til/uz/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition text-charcoal-500 hover:text-charcoal-900">UZ</a>
+    
+      <a href="/til/ru/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition text-charcoal-500 hover:text-charcoal-900">RU</a>
+    
+      <a href="/til/en/?next=/welcome/"
+         class="rounded-full px-2 py-0.5 transition bg-charcoal-900 text-white">EN</a>
+    
+  </span>
+
+
+    </div>
+  </nav>
+  
+<div x-data="lightbox()" x-show="open" x-cloak x-transition.opacity.duration.250ms
+     @open-lightbox.window="show($event.detail)" @keydown.window="key($event)"
+     class="fixed inset-0 z-[100] flex flex-col bg-charcoal-900/95 backdrop-blur-sm"
+     role="dialog" aria-modal="true" aria-label="Enlarge photo">
+  <div class="flex items-center justify-between gap-4 px-5 py-4 text-white">
+    <div class="min-w-0">
+      <p class="font-serif text-lg truncate" x-text="title"></p>
+      <p class="text-xs text-white/60" x-show="n > 1" x-text="((i % n) + 1) + ' / ' + n"&gt;</p>
+    </div>
+    <button type="button" @click="close()" aria-label="Close"
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+  </div>
+
+  <div class="relative min-h-0 flex-1" @touchstart.passive="x0 = $event.touches[0].clientX" @touchend="swipe($event)">
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="lb-track flex h-full" :class="anim ? '' : 'no-anim'" :style="'transform: translateX(-' + (i * 100) + '%)'">
+        <template x-for="(u, k) in slides" :key="k">
+          <div class="flex h-full w-full shrink-0 items-center justify-center px-4 sm:px-20 pb-2" @click.self="close()">
+            <img :src="u" alt="" draggable="false" class="max-h-full max-w-full select-none rounded-lg object-contain shadow-2xl">
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <template x-if="n > 1">
+      <div>
+        <button type="button" @click="prev()" aria-label="Previous photo"
+                class="absolute left-3 sm:left-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/30 hover:scale-105">
+          <svg class="icon !w-6 !h-6"><use href="#i-chev-l"/></svg>
+        </button>
+        <button type="button" @click="next()" aria-label="Next photo"
+                class="absolute right-3 sm:right-5 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/30 hover:scale-105">
+          <svg class="icon !w-6 !h-6"><use href="#i-chev-r"/></svg>
+        </button>
+      </div>
+    </template>
+  </div>
+
+  <div x-show="n > 1" class="flex justify-center gap-2 overflow-x-auto px-4 py-3">
+    <template x-for="(u, k) in urls" :key="k">
+      <button type="button" @click="go(k)" :aria-label="'Photo ' + (k + 1)"
+              class="h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition"
+              :class="(i % n) === k ? 'border-white opacity-100' : 'border-transparent opacity-50 hover:opacity-90'">
+        <img :src="u" alt="" class="h-full w-full object-cover" draggable="false">
+      </button>
+    </template>
+  </div>
+</div>
+
+  
+
+<main class="flex-1">
+  
+  <section class="relative isolate overflow-hidden bg-charcoal-900 text-white">
+    <img src="/media/site/hero.jpg" alt="" class="absolute inset-0 -z-20 h-full w-full object-cover kenburns" fetchpriority="high">
+    <div class="absolute inset-0 -z-10 bg-gradient-to-b from-charcoal-900/70 via-charcoal-900/50 to-charcoal-900/90"></div>
+    <div class="absolute inset-0 -z-10 blueprint opacity-60 [mask-image:linear-gradient(to_bottom,transparent,black_35%,transparent)]"></div>
+
+    <div class="max-w-6xl mx-auto px-6 py-20 sm:py-28 lg:py-32 grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div class="lg:col-span-7">
+        <p class="reveal inline-flex items-center gap-2 text-[11px] tracking-[.22em] uppercase text-clay-200 border border-white/20 rounded-full px-3.5 py-1.5 mb-6" style="--d:.05s">
+          <svg class="icon"><use href="#i-layers"/></svg> Architecture platform
+        </p>
+        <h1 class="reveal font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.08] tracking-tight" style="--d:.15s">
+          Start your dream home<br>
+          <em class="text-clay-300 not-italic font-medium">from the foundation</em> .
+        </h1>
+        <p class="reveal mt-6 max-w-xl text-base sm:text-lg text-white/75 leading-relaxed" style="--d:.3s">
+          A platform that connects clients with reliable architects and studios: post a listing, browse portfolios and choose the best specialist.
+        </p>
+        <ul class="reveal mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/80" style="--d:.45s">
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-shield"/></svg> Every architect is verified</li>
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-layers"/></svg> Choose by portfolio</li>
+          <li class="flex items-center gap-2"><svg class="icon text-clay-300"><use href="#i-lock"/></svg> Contact details appear once accepted</li>
+        </ul>
+      </div>
+
+      <div class="lg:col-span-5 grid gap-4">
+        <a href="/ro&#x27;yxatdan-o&#x27;tish/" class="reveal glass group rounded-2xl p-6 flex items-center gap-5 lift" style="--d:.35s">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white/15 text-white group-hover:bg-clay-500 transition">
+            <svg class="icon !w-7 !h-7"><use href="#i-user"/></svg>
+          </span>
+          <span class="flex-1">
+            <span class="block font-serif text-xl font-semibold">As a client</span>
+            <span class="block text-sm text-white/70 mt-0.5">Create a project, find good architects and place an order.</span>
+          </span>
+          <svg class="icon text-white/60 transition-transform group-hover:translate-x-1"><use href="#i-arrow"/></svg>
+        </a>
+        <a href="/architect/select-type/" class="reveal glass group rounded-2xl p-6 flex items-center gap-5 lift" style="--d:.5s">
+          <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-clay-500 text-white transition">
+            <svg class="icon !w-7 !h-7"><use href="#i-building"/></svg>
+          </span>
+          <span class="flex-1">
+            <span class="block font-serif text-xl font-semibold">As an architect</span>
+            <span class="block text-sm text-white/70 mt-0.5">Earn as a company or freelancer and present your portfolio.</span>
+          </span>
+          <svg class="icon text-white/60 transition-transform group-hover:translate-x-1"><use href="#i-arrow"/></svg>
+        </a>
+        <p class="reveal text-sm text-white/60 px-1" style="--d:.65s">
+          Already have an account? <a href="/kirish/" class="text-white font-medium underline decoration-clay-300 underline-offset-4 hover:text-clay-200">Sign in</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  
+  <section class="max-w-6xl mx-auto px-6 py-20 grid lg:grid-cols-12 gap-12 items-center">
+    <div class="lg:col-span-5">
+      <p class="text-[11px] tracking-[.22em] uppercase text-clay-600 mb-3">How it works</p>
+      <h2 class="font-serif text-3xl sm:text-4xl font-semibold text-charcoal-900 leading-tight mb-8">Find the right person for your project in three steps</h2>
+      <ol class="space-y-7">
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">1</span>
+          <div><h3 class="font-medium text-charcoal-900">Post a listing</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Enter the area, rooms and style and upload a photo of the house.</p></div>
+        </li>
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">2</span>
+          <div><h3 class="font-medium text-charcoal-900">Get offers</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Verified architects see your listing and apply. At most 3 architects per listing.</p></div>
+        </li>
+        <li class="flex gap-5">
+          <span class="font-serif text-3xl text-clay-500/80 leading-none w-8 shrink-0">3</span>
+          <div><h3 class="font-medium text-charcoal-900">Choose the best match</h3>
+            <p class="text-sm text-charcoal-500 mt-1">Compare portfolios and accept — then contact details are revealed.</p></div>
+        </li>
+      </ol>
+      <div class="mt-9 flex flex-wrap gap-3">
+        <a href="/ro&#x27;yxatdan-o&#x27;tish/" class="btn-clay">Post a listing <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a href="/arxitektorlar/" class="btn-ghost">Browse architects</a>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7">
+      <div class="relative rounded-3xl bg-charcoal-900 p-6 sm:p-10 overflow-hidden text-clay-200">
+        <div class="absolute inset-0 blueprint"></div>
+        <svg viewBox="0 0 480 300" class="draw relative w-full h-auto floaty" aria-hidden="true">
+          <g>
+            <path pathLength="1" style="--i:0" d="M20 268 H460"/>
+            <path pathLength="1" style="--i:1" d="M60 268 V138 L240 42 L420 138 V268"/>
+            <path pathLength="1" style="--i:2" d="M40 140 L240 30 L440 140"/>
+            <path pathLength="1" style="--i:3" d="M100 268 V196 H176 V268"/>
+            <path pathLength="1" style="--i:4" d="M100 196 L138 168 L176 196"/>
+            <rect pathLength="1" style="--i:5" x="226" y="170" width="70" height="56"/>
+            <path pathLength="1" style="--i:6" d="M226 198 H296 M261 170 V226"/>
+            <rect pathLength="1" style="--i:7" x="330" y="170" width="56" height="98"/>
+            <circle pathLength="1" style="--i:8" cx="240" cy="98" r="22"/>
+            <path pathLength="1" style="--i:9" d="M240 76 V120 M218 98 H262"/>
+            <path pathLength="1" style="--i:10" d="M20 292 H460 M20 286 V298 M460 286 V298 M240 286 V298"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+</main>
+
+  <footer class="border-t border-charcoal-100 px-6 py-8 text-xs text-charcoal-500">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <span class="font-serif text-sm text-charcoal-700">Poydevor <span class="text-charcoal-400">· a platform for architects and clients</span></span>
+      <span>&copy; 2026 Poydevor. Barcha huquqlar himoyalangan.</span>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      // Blueprint drawings start when they scroll into view.
+      var drawings = document.querySelectorAll('.draw');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { threshold: 0.25 });
+        drawings.forEach(function (d) { io.observe(d); });
+      } else { drawings.forEach(function (d) { d.classList.add('in'); }); }
+
+      // Numbers that count up to their value.
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.querySelectorAll('[data-count]').forEach(function (el) {
+        var target = parseInt(el.getAttribute('data-count'), 10);
+        if (isNaN(target) || reduce || target === 0) { el.textContent = isNaN(target) ? el.textContent : target; return; }
+        var start = null;
+        function step(t) {
+          if (start === null) start = t;
+          var p = Math.min((t - start) / 900, 1);
+          el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+          if (p < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+      });
+    })();
+  </script>
+  <script>
+    // A show/hide "eye" at the right edge of every password field.
+    (function () {
+      var open = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+      var shut = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.1A10.5 10.5 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.2 3.9M6.6 6.7C3.7 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.1-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+      document.querySelectorAll('input[type="password"]').forEach(function (input) {
+        var wrap = document.createElement('div');
+        wrap.style.position = 'relative';
+        input.parentNode.insertBefore(wrap, input);
+        wrap.appendChild(input);
+        input.style.paddingRight = '2.75rem';
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('aria-label', "Parolni ko'rsatish / yashirish");
+        button.setAttribute('data-eye', '');
+        button.style.cssText = 'position:absolute;right:.6rem;top:50%;transform:translateY(-50%);background:none;border:0;padding:.25rem;cursor:pointer;color:#8C7F72;line-height:0';
+        button.innerHTML = open;
+        button.addEventListener('click', function () {
+          var show = input.type === 'password';
+          input.type = show ? 'text' : 'password';
+          button.innerHTML = show ? shut : open;
+        });
+        wrap.appendChild(button);
+      });
+    })();
+  </script>
+</body>
+</html>

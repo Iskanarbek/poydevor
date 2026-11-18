@@ -1,0 +1,14 @@
+HTTP/1.1 200 OK
+Server: nginx/1.24.0 (Ubuntu)
+Date: Wed, 18 Nov 2026 05:39:00 GMT
+Content-Type: text/html; charset=utf-8
+Content-Length: 33618
+Connection: keep-alive
+X-Frame-Options: DENY
+Vary: Cookie
+Cache-Control: no-store, no-cache, must-revalidate, private, max-age=0
+Pragma: no-cache
+X-Content-Type-Options: nosniff
+Referrer-Policy: same-origin
+Cross-Origin-Opener-Policy: same-origin
+

@@ -83,6 +83,15 @@ class LanguageSwitchTests(TestCase):
         self.client.get(reverse("set_language", args=["uz"]))
         self.assertContains(self.client.get(reverse("accounts:welcome")), "Kirish")
 
+    def test_the_declared_page_length_always_matches_the_translated_page(self):
+        for lang in ("uz", "ru", "en"):
+            self.client.cookies["lang"] = lang
+            for url in (reverse("accounts:welcome"), reverse("accounts:login"), "/yoq-sahifa/"):
+                with self.subTest(lang=lang, url=url):
+                    response = self.client.get(url)
+                    if response.has_header("Content-Length"):
+                        self.assertEqual(int(response["Content-Length"]), len(response.content))
+
     def test_unknown_language_and_outside_addresses_are_ignored(self):
         response = self.client.get(reverse("set_language", args=["xx"]), {"next": "https://evil.example/"})
         self.assertNotIn("lang", self.client.cookies)

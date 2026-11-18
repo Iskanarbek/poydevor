@@ -26,4 +26,8 @@ class LanguageMiddleware:
         ):
             charset = response.charset or "utf-8"
             response.content = translate_html(response.content.decode(charset), lang).encode(charset)
+            # The translated page has another size: a stale Content-Length makes browsers cut the page off
+            # or wait forever for the missing bytes.
+            if response.has_header("Content-Length"):
+                response["Content-Length"] = str(len(response.content))
         return response
