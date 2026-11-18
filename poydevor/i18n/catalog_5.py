@@ -28,7 +28,7 @@ ENTRIES = [
 ("{} / {}", "{} / {}", "{} / {}"),
 ("Orzuingizdagi uyni", "Начните дом своей мечты", "Start your dream home"),
 ("poydevoridan", "с фундамента", "from the foundation"),
-("boshlang", ".", "."),
+("boshlang", "\u200b", "\u200b"),
 ("Qo'shish", "Добавить", "Add"),
 ("Fayl", "Файлы", "Files"),
 ("fayl", "файлов", "files"),
