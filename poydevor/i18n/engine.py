@@ -69,7 +69,7 @@ def translate_text(core: str, lang: str, depth: int = 0):
 
 _TOKEN = re.compile(r"(<!--.*?-->|<script\b.*?</script>|<style\b.*?</style>|<[^>]+>)", re.S)
 _ATTR_TEXT = re.compile(r'(\s(?:placeholder|title|alt|aria-label)=)(")([^"]*)(")')
-_ATTR_JS = re.compile(r'(\s(?:onsubmit|onclick|x-text|x-show|x-init|:class|@click|@change|:title|:aria-label)=)(")([^"]*)(")')
+_ATTR_JS = re.compile(r'(\s(?:onsubmit|onclick|x-data|x-text|x-show|x-init|:class|@click|@change|:title|:aria-label)=)(")([^"]*)(")')
 _JS_LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"")
 
 

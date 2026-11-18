@@ -31,7 +31,7 @@ ENTRIES = [
 ("boshlang", ".", "."),
 ("Qo'shish", "Добавить", "Add"),
 ("Fayl", "Файлы", "Files"),
-("fayl", "файлы", "files"),
+("fayl", "файлов", "files"),
 ("Hammasini o'chirish", "Удалить все", "Remove all"),
 ("Yakunlangan", "Завершён", "Finished"),
 ("Tayyorlandi", "Подготовлено", "Prepared"),
@@ -39,4 +39,9 @@ ENTRIES = [
 ("Payme", "Payme", "Payme"),
 ("To'langan", "Оплачен", "Paid"),
 ("Biriktirilgan", "Назначено", "Assigned"),
+("so'm", "сум", "UZS"),
+("{} so'm", "{} сум", "{} UZS"),
+("Oy", "Месяц", "Month"),
+("yana", "ещё", "more"),
+("ta", "шт.", "pcs"),
 ]
