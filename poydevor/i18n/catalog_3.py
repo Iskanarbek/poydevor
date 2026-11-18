@@ -38,7 +38,7 @@ ENTRIES = [
 ("Telefon", "Телефон", "Phone"),
 ("Telefon raqami", "Номер телефона", "Phone number"),
 ("Telefon raqami kiritilishi shart", "Номер телефона обязателен", "A phone number is required"),
-("Telefon raqamini +998 XX XXX XX XX ko'rinishida kiriting.", "Введите номер телефона в виде +998 XX XXX XX XX.", "Enter the phone number as +998 XX XXX XX XX."),
+("Telefon raqamini davlat kodi bilan kiriting, masalan +998 90 123 45 67.", "Введите номер телефона с кодом страны, например +998 90 123 45 67.", "Enter the phone number with its country code, e.g. +998 90 123 45 67."),
 ("Telegram", "Telegram", "Telegram"),
 ("Telegram akkauntingiz (ixtiyoriy)", "Ваш аккаунт в Telegram (по желанию)", "Your Telegram account (optional)"),
 ("Telegram username", "Имя пользователя в Telegram", "Telegram username"),

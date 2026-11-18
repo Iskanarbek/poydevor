@@ -11,8 +11,13 @@ class PhoneNormalizationTests(TestCase):
         for raw in ["+998901234567", "998901234567", "90 123 45 67", "+998 (90) 123-45-67", "901234567"]:
             self.assertEqual(normalize_phone(raw), "+998901234567", raw)
 
+    def test_accepts_any_country(self):
+        for raw, want in [("+1 202 555 0100", "+12025550100"), ("+44 20 7946 0958", "+442079460958"),
+                          ("0079 1234567890", "+791234567890"), ("+7 (912) 345-67-89", "+79123456789")]:
+            self.assertEqual(normalize_phone(raw), want, raw)
+
     def test_rejects_garbage(self):
-        for raw in ["", "12345", "+1 202 555 0100", "abc"]:
+        for raw in ["", "12345", "abc", "+0123456789", "+1234567890123456"]:
             with self.assertRaises(InvalidPhoneError):
                 normalize_phone(raw)
 

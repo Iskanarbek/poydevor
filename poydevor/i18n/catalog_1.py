@@ -233,6 +233,7 @@ ENTRIES = [
 ("Ishonchingiz komilmi? Taklif rad etiladi va jadvaldan butunlay o'chiriladi.", "Вы уверены? Предложение будет отклонено и полностью удалено из таблицы.", "Are you sure? The offer will be declined and removed from the table completely."),
 ("Ishonchingiz komilmi? So'rov rad etiladi.", "Вы уверены? Запрос будет отклонён.", "Are you sure? The request will be declined."),
 ("Ism", "Имя", "First name"),
+("Familiya", "Фамилия", "Last name"),
 ("Ism va Familiya", "Имя и фамилия", "First and last name"),
 ("Ism va telefon raqamingiz yetarli, parol shart emas.", "Достаточно имени и номера телефона, пароль не нужен.", "Your name and phone number are enough, no password needed."),
 ("Ism yoki telefon raqami bo'yicha qidirish...", "Поиск по имени или номеру телефона...", "Search by name or phone number..."),

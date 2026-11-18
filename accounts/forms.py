@@ -12,7 +12,7 @@ class PhoneField(forms.CharField):
         kwargs.setdefault("label", "Telefon raqami")
         kwargs.setdefault("max_length", 32)
         kwargs.setdefault("widget", forms.TextInput(attrs={
-            "type": "tel", "placeholder": "+998 90 123 45 67", "autocomplete": "tel",
+            "type": "tel", "placeholder": "+998 90 123 45 67 / +1 202 555 0100", "autocomplete": "tel",
         }))
         super().__init__(**kwargs)
 
@@ -75,7 +75,7 @@ class SetPasswordForm(forms.Form):
 class LoginForm(forms.Form):
     phone = forms.CharField(
         label="Telefon raqami", max_length=32,
-        widget=forms.TextInput(attrs={"type": "tel", "placeholder": "+998 90 123 45 67", "autocomplete": "tel"}),
+        widget=forms.TextInput(attrs={"type": "tel", "placeholder": "+998 90 123 45 67 / +1 202 555 0100", "autocomplete": "tel"}),
     )
     # Clients sign in with their phone number alone, so this field is hidden until the number turns
     # out to belong to an architect (then the form comes back asking for the password).

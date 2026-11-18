@@ -6,15 +6,19 @@ class InvalidPhoneError(ValueError):
 
 
 def normalize_phone(raw: str) -> str:
-    """Return an Uzbek phone number as ``+998XXXXXXXXX``.
+    """Return a phone number in international form ``+<country code><number>``.
 
-    Accepts the usual ways people type it ("90 123 45 67", "998901234567",
-    "+998 (90) 123-45-67") and raises ``InvalidPhoneError`` for anything else,
-    so the same number can never be stored twice in different shapes.
+    Any country is accepted. Numbers typed with a leading "+" (or "00") keep
+    their country code; a bare 9-digit number is treated as Uzbek, and a bare
+    number starting with 998 stays Uzbek. Formatting characters are removed so
+    the same number is never stored twice in different shapes.
     """
-    digits = re.sub(r"\D", "", raw or "")
-    if len(digits) == 9:
+    text = (raw or "").strip()
+    digits = re.sub(r"\D", "", text)
+    if text.startswith("00"):
+        digits = digits[2:]
+    elif not text.startswith("+") and len(digits) == 9:
         digits = "998" + digits
-    if len(digits) != 12 or not digits.startswith("998"):
-        raise InvalidPhoneError("Telefon raqamini +998 XX XXX XX XX ko'rinishida kiriting.")
+    if not 7 <= len(digits) <= 15 or digits.startswith("0"):
+        raise InvalidPhoneError("Telefon raqamini davlat kodi bilan kiriting, masalan +998 90 123 45 67.")
     return "+" + digits
