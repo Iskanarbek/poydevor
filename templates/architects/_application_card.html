@@ -1,3 +1,4 @@
+{% load i18n_content %}
 {% load uz_time %}
 {# One open project as an architect sees it in the market. Needs: application, and optionally applied (bool). #}
 <article class="lift flex flex-col rounded-2xl border border-charcoal-200 bg-white p-5 shadow-sm">
@@ -36,7 +37,7 @@
     {% endif %}
     {% if application.style_label %}
       <span class="inline-flex items-center gap-1.5 rounded-lg bg-cream-100 text-charcoal-700 text-xs font-medium px-2.5 py-1.5">
-        <svg class="icon"><use href="#i-style"/></svg>{{ application.style_label }}
+        <svg class="icon"><use href="#i-style"/></svg>{{ application.style_label|tr_content }}
       </span>
     {% endif %}
     {% if application.estimate_min %}
@@ -52,7 +53,7 @@
   </div>
 
   <p class="text-sm text-charcoal-600 leading-relaxed mb-5 flex-1">
-    {% if application.description %}{{ application.description|truncatewords:26 }}{% else %}<span class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan. Tafsilotlar uchun ko'rib chiqing.</span>{% endif %}
+    {% if application.description %}{{ application.description|tr_content|truncatewords:26 }}{% else %}<span class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan. Tafsilotlar uchun ko'rib chiqing.</span>{% endif %}
   </p>
 
   <div class="flex items-center justify-between gap-3 pt-4 border-t border-charcoal-100">

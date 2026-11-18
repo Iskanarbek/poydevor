@@ -50,3 +50,8 @@ def sending_order(request):
         pk=session["sending_order"], owner=user, publication=Application.Publication.DRAFT, deleted_at__isnull=True,
     ).first()
     return {"sending_order": order}
+
+
+def languages(request):
+    """The language switcher in the top bar."""
+    return {"languages": [("uz", "UZ"), ("ru", "RU"), ("en", "EN")]}

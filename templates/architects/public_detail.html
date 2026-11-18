@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n_content %}
 
 {% block title %}{{ profile.display_name }} — Poydevor{% endblock %}
 
@@ -47,7 +48,7 @@
         </div>
       </div>
       {% if review.comment %}
-        <p class="text-sm text-charcoal-600">{{ review.comment }}</p>
+        <p class="text-sm text-charcoal-600">{{ review.comment|tr_content }}</p>
       {% endif %}
     </div>
   {% empty %}

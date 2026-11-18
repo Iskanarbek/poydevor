@@ -20,6 +20,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from poydevor import staff_panel
+from poydevor.i18n import views as i18n_views
 from poydevor.views import dashboard_redirect, home, internal_setup
 from wallet.admin_views import revenue_dashboard
 
@@ -46,6 +47,7 @@ urlpatterns = [
     ),
     path('admin-panel/daromad/', revenue_dashboard, name='revenue_dashboard'),
     path('admin/', admin.site.urls),
+    path('til/<str:code>/', i18n_views.set_language, name='set_language'),
     path('', home, name='home'),
     path('boshqaruv/', dashboard_redirect, name='dashboard'),
     path('internal/setup/', internal_setup, name='internal_setup'),

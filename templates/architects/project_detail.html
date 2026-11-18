@@ -1,6 +1,7 @@
 {% extends "base.html" %}
+{% load i18n_content %}
 
-{% block title %}{{ project.title }} — Poydevor{% endblock %}
+{% block title %}{{ project.title|tr_content }} — Poydevor{% endblock %}
 
 {% block content %}
 <a href="{{ back_url }}" class="reveal mb-5 inline-flex items-center gap-1.5 text-sm text-charcoal-500 transition hover:text-charcoal-800">
@@ -11,10 +12,10 @@
 
 <div class="mt-6 grid gap-6 lg:grid-cols-2">
   <section class="reveal flex flex-col rounded-2xl border border-charcoal-200 bg-white p-6 shadow-sm sm:p-8" style="--d:.06s">
-    {% if project.style_label %}<p class="mb-2 text-[11px] font-medium uppercase tracking-[.2em] text-clay-600">{{ project.style_label }}</p>{% endif %}
-    <h1 class="font-serif text-2xl font-semibold leading-tight text-charcoal-900 sm:text-3xl">{{ project.title }}</h1>
+    {% if project.style_label %}<p class="mb-2 text-[11px] font-medium uppercase tracking-[.2em] text-clay-600">{{ project.style_label|tr_content }}</p>{% endif %}
+    <h1 class="font-serif text-2xl font-semibold leading-tight text-charcoal-900 sm:text-3xl">{{ project.title|tr_content }}</h1>
     {% if project.description %}
-      <p class="mt-4 leading-relaxed text-charcoal-700 whitespace-pre-line">{{ project.description }}</p>
+      <p class="mt-4 leading-relaxed text-charcoal-700 whitespace-pre-line">{{ project.description|tr_content }}</p>
     {% else %}
       <p class="mt-4 text-sm text-charcoal-400">Tavsif kiritilmagan.</p>
     {% endif %}

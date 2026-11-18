@@ -274,7 +274,7 @@ class HouseImageTests(TestCase):
 
     def test_label_says_house_picture_not_plan(self):
         page = self.client.get(reverse("applications:post"))
-        self.assertContains(page, "Uy rasmi yoki kadastr")
+        self.assertContains(page, "kadastr yoki loyiha g")
         self.assertNotContains(page, "rejasi")
         self.assertContains(page, 'accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"')   # PDF or a photo
         self.assertContains(page, "multiple")                                                       # several at once

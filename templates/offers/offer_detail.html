@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n_content %}
 
 {% block title %}{{ application.location }} — Poydevor{% endblock %}
 
@@ -61,10 +62,10 @@
     <dt class="text-charcoal-500">Manzil</dt><dd class="text-charcoal-900">{{ application.location }}</dd>
     {% if application.object_type %}<dt class="text-charcoal-500">Obyekt turi</dt><dd class="text-charcoal-900">{{ application.get_object_type_display }}</dd>{% endif %}
     {% if application.service_type %}<dt class="text-charcoal-500">Xizmat turi</dt><dd class="text-charcoal-900">{{ application.get_service_type_display }}</dd>{% endif %}
-    <dt class="text-charcoal-500">Uslub</dt><dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
+    <dt class="text-charcoal-500">Uslub</dt><dd class="text-charcoal-900">{{ application.style_label|tr_content|default:"Belgilanmagan" }}</dd>
     {% if application.estimate_min %}<dt class="text-charcoal-500">Taxminiy narx</dt><dd class="text-charcoal-900">${{ application.estimate_min }} – ${{ application.estimate_max }}</dd>{% endif %}
     {% if application.description %}
-      <dt class="text-charcoal-500">Nima qilish kerak</dt><dd class="whitespace-pre-line text-charcoal-900">{{ application.description }}</dd>
+      <dt class="text-charcoal-500">Nima qilish kerak</dt><dd class="whitespace-pre-line text-charcoal-900">{{ application.description|tr_content }}</dd>
     {% endif %}
     <dt class="text-charcoal-500">Uy rasmi / kadastr</dt>
     <dd class="text-charcoal-900">

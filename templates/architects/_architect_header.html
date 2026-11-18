@@ -1,3 +1,4 @@
+{% load i18n_content %}
 {# The architect's profile block: photo, name, rating, skills and a short description. Needs: profile, project_count. Optional: is_owner, show_apply (an "Ariza yuborish" button), all_url (a button to their other projects). #}
 <section class="reveal overflow-hidden rounded-3xl border border-charcoal-200 bg-white shadow-sm">
   <div class="h-2 bg-gradient-to-r from-charcoal-900 via-charcoal-700 to-clay-600"></div>
@@ -32,7 +33,7 @@
           </div>
         {% endif %}
         {% if profile.bio %}
-          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-600 {% if all_url %}line-clamp-3{% endif %}">{{ profile.bio }}</p>
+          <p class="mt-3 max-w-2xl text-sm leading-relaxed text-charcoal-600 {% if all_url %}line-clamp-3{% endif %}">{{ profile.bio|tr_content }}</p>
         {% elif is_owner %}
           <p class="mt-3 text-sm text-charcoal-400">Tavsif yo'q — <a href="{% url 'architects:portfolio_edit' %}" class="text-clay-700 hover:underline">o'zingiz haqingizda yozing</a>.</p>
         {% endif %}

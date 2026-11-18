@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load i18n_content %}
 
 {% block title %}{{ application.location }} — Poydevor{% endblock %}
 
@@ -75,11 +76,11 @@
     {% endif %}
 
     <dt class="text-charcoal-500">Interyer uslubi</dt>
-    <dd class="text-charcoal-900">{{ application.style_label|default:"Belgilanmagan" }}</dd>
+    <dd class="text-charcoal-900">{{ application.style_label|tr_content|default:"Belgilanmagan" }}</dd>
 
     {% if application.description %}
       <dt class="text-charcoal-500">Nima qilish kerak</dt>
-      <dd class="text-charcoal-900 whitespace-pre-line">{{ application.description }}</dd>
+      <dd class="text-charcoal-900 whitespace-pre-line">{{ application.description|tr_content }}</dd>
     {% endif %}
 
     <dt class="text-charcoal-500">Uy rasmi / kadastr</dt>
@@ -118,7 +119,7 @@
                     {% for skill in architect.skills.all %}<span class="rounded-full bg-charcoal-100 px-2.5 py-0.5 text-xs font-medium text-charcoal-700">{{ skill.name }}</span>{% endfor %}
                   </div>
                 {% endif %}
-                {% if architect.bio %}<p class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-charcoal-600">{{ architect.bio }}</p>{% endif %}
+                {% if architect.bio %}<p class="mt-2.5 line-clamp-2 text-sm leading-relaxed text-charcoal-600">{{ architect.bio|tr_content }}</p>{% endif %}
               </div>
             </div>
             <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium
@@ -193,7 +194,7 @@
                 <span class="text-charcoal-500 ml-1">{{ offer.review.rating }}</span>
               </div>
               {% if offer.review.comment %}
-                <p class="text-charcoal-600 mt-1">{{ offer.review.comment }}</p>
+                <p class="text-charcoal-600 mt-1">{{ offer.review.comment|tr_content }}</p>
               {% endif %}
             </div>
           {% else %}

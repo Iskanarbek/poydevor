@@ -1,3 +1,4 @@
+{% load i18n_content %}
 {% load uz_time %}
 {# One studio job as an employee sees it. Needs: a (a StudioAssignment) and mode: "mine", "open" or "done". #}
 {% with app=a.offer.application %}
@@ -36,13 +37,13 @@
     </span>
     {% if app.style_label %}
       <span class="inline-flex items-center gap-1.5 rounded-lg bg-cream-100 px-2.5 py-1.5 text-xs font-medium text-charcoal-700">
-        <svg class="icon"><use href="#i-style"/></svg>{{ app.style_label }}
+        <svg class="icon"><use href="#i-style"/></svg>{{ app.style_label|tr_content }}
       </span>
     {% endif %}
   </div>
 
   <p class="mb-4 flex-1 text-sm leading-relaxed text-charcoal-600">
-    {% if app.description %}{{ app.description|truncatewords:30 }}{% else %}<span class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan.</span>{% endif %}
+    {% if app.description %}{{ app.description|tr_content|truncatewords:30 }}{% else %}<span class="text-charcoal-400">Mijoz batafsil tavsif qoldirmagan.</span>{% endif %}
   </p>
 
   {% if mode == 'mine' %}

@@ -1,3 +1,4 @@
+{% load i18n_content %}
 <div class="flex items-start justify-between flex-wrap gap-4 mb-6">
   <div class="flex items-center gap-4">
     {% if profile.avatar %}
@@ -11,7 +12,7 @@
     {% endif %}
     <div>
       <h2 class="font-serif text-xl font-semibold text-charcoal-900">{{ profile.display_name }}</h2>
-      <p class="text-sm text-charcoal-500">{% if profile.bio %}{{ profile.bio|truncatewords:20 }}{% else %}O'zingiz haqingizda qisqacha yozing.{% endif %}</p>
+      <p class="text-sm text-charcoal-500">{% if profile.bio %}{{ profile.bio|tr_content|truncatewords:20 }}{% else %}O'zingiz haqingizda qisqacha yozing.{% endif %}</p>
     </div>
   </div>
   <a href="{% url 'architects:portfolio_edit' %}" class="text-sm text-clay-700 font-medium border border-clay-600 rounded-lg px-4 py-2 hover:bg-clay-600 hover:text-white transition whitespace-nowrap">

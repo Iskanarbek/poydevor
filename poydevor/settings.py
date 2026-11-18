@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     'offers',
     'reviews',
     'notifications',
+    'translations',
 ]
 
 MIDDLEWARE = [
@@ -106,6 +107,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'poydevor.middleware.MediaSecurityHeadersMiddleware',
     'poydevor.middleware.NoStorePagesMiddleware',
+    'poydevor.i18n.middleware.LanguageMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -133,6 +135,7 @@ TEMPLATES = [
                 'poydevor.context_processors.architect_wallet',
                 'poydevor.context_processors.unread_notifications',
                 'poydevor.context_processors.sending_order',
+                'poydevor.context_processors.languages',
             ],
         },
     },
@@ -189,6 +192,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = 'uz'
+LANGUAGES = [('uz', 'Oʻzbekcha'), ('ru', 'Русский'), ('en', 'English')]
+# Machine translation of what people write (optional; without a key the original text is shown).
+GOOGLE_TRANSLATE_API_KEY = os.environ.get('GOOGLE_TRANSLATE_API_KEY', '').strip()
 
 TIME_ZONE = 'Asia/Tashkent'
 

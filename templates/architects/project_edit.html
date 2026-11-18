@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load i18n_content %}
 
 {% block title %}Loyihani tahrirlash — Poydevor{% endblock %}
 
 {% block content %}
 <div class="mx-auto max-w-2xl">
   <a href="{% url 'architects:my_project' project.pk %}" class="reveal inline-flex items-center gap-1.5 text-sm text-charcoal-500 transition hover:text-charcoal-800">
-    <svg class="icon"><use href="#i-back"/></svg> {{ project.title }}
+    <svg class="icon"><use href="#i-back"/></svg> {{ project.title|tr_content }}
   </a>
   <h1 class="reveal mb-5 mt-3 font-serif text-2xl font-semibold text-charcoal-900">Loyihani tahrirlash</h1>
 
